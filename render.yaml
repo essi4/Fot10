@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: fot10
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: SPORTS_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
