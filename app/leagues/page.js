@@ -11,6 +11,13 @@ const leagues = [
   { name: "LaLiga", country: "اسپانیا", icon: "🇪🇸", slug: "laliga" },
   { name: "Bundesliga", country: "آلمان", icon: "🇩🇪", slug: "bundesliga" },
   { name: "Serie A", country: "ایتالیا", icon: "🇮🇹", slug: "serie-a" },
+  { name: "Ligue 1", country: "فرانسه", icon: "🇫🇷", slug: "ligue-1" },
+  { name: "Eredivisie", country: "هلند", icon: "🇳🇱", slug: "eredivisie" },
+  { name: "Primeira Liga", country: "پرتغال", icon: "🇵🇹", slug: "primeira-liga" },
+  { name: "Saudi Pro League", country: "عربستان", icon: "🇸🇦", slug: "saudi-pro-league" },
+  { name: "Süper Lig", country: "ترکیه", icon: "🇹🇷", slug: "super-lig" },
+  { name: "Brasileirão Série A", country: "برزیل", icon: "🇧🇷", slug: "brasileirao" },
+  { name: "Liga Profesional", country: "آرژانتین", icon: "🇦🇷", slug: "liga-profesional" },
 ];
 
 export default function LeaguesPage() {
