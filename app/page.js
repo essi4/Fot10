@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Home, Newspaper, Search, Trophy, Tv, ChevronLeft, RefreshCw } from "lucide-react";
+import { Activity, Home, Newspaper, Search, Trophy, Tv, ChevronLeft, RefreshCw, UserRound } from "lucide-react";
 import Link from "next/link";
 
 const tehranDate = (offset = 0) => {
@@ -73,13 +73,19 @@ export default function HomePage() {
 
   const liveCount = matches.filter((m) => ["1H", "HT", "2H", "ET", "P", "BT", "LIVE"].includes(m.statusShort)).length;
   const leagueCount = new Set(matches.map((m) => `${m.country}|${m.league}`)).size;
-  const nav = [["خانه", Home, "/"], ["بازی‌ها", Tv, "/matches"], ["اخبار", Newspaper, "/news"], ["لیگ‌ها", Trophy, "/leagues"], ["جستجو", Search, "/search"]];
+  const nav = [
+    ["۱۰", Home, "/"],
+    ["بازی‌ها", Tv, "/matches"],
+    ["اخبار فوتبال", Newspaper, "/news"],
+    ["لیگ‌ها", Trophy, "/leagues"],
+    ["حساب من", UserRound, "/account"],
+  ];
 
   return (
     <main className="fot-container pb-28">
       <header className="py-6">
         <div className="flex items-center justify-between">
-          <div><div className="text-2xl font-black tracking-tight">FOT<span className="text-emerald-400">10</span></div><p className="mt-1 text-[10px] text-slate-500">نبض فوتبال، لحظه‌به‌لحظه</p></div>
+          <Link href="/" className="block"><div className="text-2xl font-black tracking-tight">FOT<span className="text-emerald-400">10</span></div><p className="mt-1 text-[10px] text-slate-500">نبض فوتبال، لحظه‌به‌لحظه</p></Link>
           <button onClick={() => load(true)} disabled={refreshing} className="glass touch-target grid h-11 w-11 place-items-center rounded-2xl" aria-label="به‌روزرسانی"><RefreshCw size={17} className={refreshing ? "animate-spin" : ""} /></button>
         </div>
       </header>
