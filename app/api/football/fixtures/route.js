@@ -10,14 +10,12 @@ export async function GET(request) {
   const league = searchParams.get("league") || undefined;
   const season = searchParams.get("season") || undefined;
 
-  if (!live && !date) {
-    return NextResponse.json({ ok: false, error: "date is required unless live=true" }, { status: 400 });
-  }
+  if (!live && !date) return NextResponse.json({ ok: false, error: { code: "INVALID_REQUEST", message: "date is required unless live=true" } }, { status: 400 });
 
   try {
     const matches = await getMatches({ date, live, league, season });
     return NextResponse.json({ ok: true, provider: "api-football", count: matches.length, matches });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error?.message || "Sports API request failed" }, { status: 502 });
+    return NextResponse.json({ ok: false, provider: "api-football", error: { code: error?.code || "API_ERROR", message: error?.message || "Sports API request failed", status: error?.details?.status || null } }, { status: error?.code === "CONFIG_ERROR" ? 503 : 502 });
   }
 }
