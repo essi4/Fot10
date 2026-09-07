@@ -3,7 +3,16 @@ import Golden10Theme from "../components/Golden10Theme";
 
 export const metadata = {
   title: "FOT10 | Football Live",
-  description: "Fast football scores, fixtures and match statistics.",
+  description: "نتایج زنده، لیگ‌ها، تیم‌ها و آمار کامل فوتبال.",
+  applicationName: "FOT10",
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport = {
+  themeColor: "#071018",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }) {
