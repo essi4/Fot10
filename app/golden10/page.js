@@ -12,7 +12,21 @@ const fallbackPlayers = [
   { team: "بارسلونا", country: "اسپانیا", type: "club", name: "رونالدینیو", number: 10, era: "legend", image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ronaldinho_2006.jpg", memoryTitle: "جادوی نیوکمپ", memory: "یکی از ماندگارترین شماره‌های ۱۰ بارسلونا." },
 ];
 
-const NATIONAL_TEAMS = new Set(["ایران", "آرژانتین", "برزیل", "فرانسه", "ایتالیا", "اسپانیا", "آلمان", "انگلیس", "هلند", "پرتغال", "بلژیک", "کرواسی", "اروگوئه", "مکزیک", "کلمبیا", "شیلی", "ژاپن", "کره جنوبی", "آمریکا", "سوئیس", "دانمارک", "سوئد", "صربستان", "لهستان", "سنگال", "مراکش", "کامرون", "نیجریه", "مصر"]);
+const NATIONAL_TEAMS = new Set(["ایران", "آرژانتین", "برزیل", "فرانسه", "ایتالیا", "اسپانیا", "آلمان", "انگلیس", "هلند", "پرتغال", "بلژیک", "کرواسی", "اروگوئه", "مکزیک", "کلمبیا", "شیلی", "ژاپن", "کره جنوبی", "آمریکا", "سوئیس", "دانمارک", "سوئد", "صربستان", "لهستان", "سنگال", "مراکش", "کامرون", "نیجریه", "مصر", "پرو", "رومانی", "مجارستان", "غنا"]);
+
+function normalizeText(value = "") {
+  return String(value)
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[ۀة]/g, "ه")
+    .replace(/ؤ/g, "و")
+    .replace(/[أإ]/g, "ا")
+    .replace(/\u200c/g, " ")
+    .replace(/[ًٌٍَُِّْـ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("fa");
+}
 
 function normalizePlayer(p) {
   const team = p.team_name || p.team || "";
@@ -20,7 +34,7 @@ function normalizePlayer(p) {
   return {
     team,
     country,
-    type: p.type || (NATIONAL_TEAMS.has(team) ? "national" : "club"),
+    type: p.team_type || p.type || (NATIONAL_TEAMS.has(team) ? "national" : "club"),
     name: p.player_name || p.name || "",
     number: Number(p.shirt_number ?? p.number ?? 10),
     era: p.era === "current" ? "current" : "legend",
@@ -49,12 +63,14 @@ export default function Golden10Page() {
   useEffect(() => {
     if (!supabase) return;
     let active = true;
-    supabase.from("fot10_golden10_catalog").select("team_name,player_name,shirt_number,player_image,era,memory_title,memory_text").eq("shirt_number", 10).order("team_name").order("player_name").then(({ data, error: loadError }) => {
+    supabase.from("fot10_golden10_catalog").select("team_name,player_name,shirt_number,player_image,era,memory_title,memory_text,country,team_type").eq("shirt_number", 10).order("team_name").order("player_name").then(({ data, error: loadError }) => {
       if (!active) return;
       if (!loadError && data?.length) {
         const next = data.map(normalizePlayer);
         setCatalog(next);
         setSelectedPlayer((current) => next.find((p) => p.team === current?.team && p.name === current?.name) || next[0]);
+      } else if (loadError) {
+        setError("کاتالوگ آنلاین در دسترس نبود؛ نسخه پشتیبان نمایش داده شد.");
       }
     });
     return () => { active = false; };
@@ -86,9 +102,10 @@ export default function Golden10Page() {
   const teams = useMemo(() => [...new Set(catalog.map((p) => p.team).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa")), [catalog]);
 
   const filteredCatalog = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase();
+    const q = normalizeText(query);
     const result = catalog.filter((p) => {
-      const matchesSearch = !q || `${p.name} ${p.team} ${p.country}`.toLocaleLowerCase().includes(q);
+      const haystack = normalizeText(`${p.name} ${p.team} ${p.country}`);
+      const matchesSearch = !q || haystack.includes(q);
       const matchesType = typeFilter === "all" || p.type === typeFilter;
       const matchesCountry = countryFilter === "all" || p.country === countryFilter;
       const matchesTeam = teamFilter === "all" || p.team === teamFilter;
