@@ -5,7 +5,7 @@ import {
   getFixtureStatistics,
   getFixtureLineups,
   getFixturePlayers,
-} from "../../../../../lib/sports-data";
+} from "../../../../lib/sports-data";
 
 export const dynamic = "force-dynamic";
 
