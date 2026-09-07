@@ -1,4 +1,4 @@
-import { getSportsDataConfig } from "../../../../../lib/sports-data";
+import { getSportsDataConfig } from "../../../../lib/sports-data";
 
 export const dynamic = "force-dynamic";
 
