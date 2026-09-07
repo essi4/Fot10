@@ -9,6 +9,13 @@ const LEAGUES = {
   laliga: { name: "LaLiga", country: "اسپانیا", icon: "🇪🇸", id: 140 },
   bundesliga: { name: "Bundesliga", country: "آلمان", icon: "🇩🇪", id: 78 },
   "serie-a": { name: "Serie A", country: "ایتالیا", icon: "🇮🇹", id: 135 },
+  "ligue-1": { name: "Ligue 1", country: "فرانسه", icon: "🇫🇷", id: 61 },
+  eredivisie: { name: "Eredivisie", country: "هلند", icon: "🇳🇱", id: 88 },
+  "primeira-liga": { name: "Primeira Liga", country: "پرتغال", icon: "🇵🇹", id: 94 },
+  "saudi-pro-league": { name: "Saudi Pro League", country: "عربستان", icon: "🇸🇦", id: 307 },
+  "super-lig": { name: "Süper Lig", country: "ترکیه", icon: "🇹🇷", id: 203 },
+  brasileirao: { name: "Brasileirão Série A", country: "برزیل", icon: "🇧🇷", id: 71 },
+  "liga-profesional": { name: "Liga Profesional", country: "آرژانتین", icon: "🇦🇷", id: 128 },
 };
 
 export const dynamic = "force-dynamic";
@@ -25,8 +32,10 @@ export default async function LeagueDetailPage({ params }) {
   let matches = [];
   let standings = [];
   try {
-    matches = await getMatches({ date: today, league: league.id, season: 2026 });
-    standings = await getStandings(league.id, 2026);
+    [matches, standings] = await Promise.all([
+      getMatches({ date: today, league: league.id, season: 2026 }),
+      getStandings(league.id, 2026),
+    ]);
   } catch {
     matches = [];
     standings = [];
