@@ -34,8 +34,8 @@ export default function Golden10Page() {
       if (!loadError && data?.length) {
         const next = data.map((p) => ({ team: p.team_name, name: p.player_name, number: p.shirt_number, era: p.era, image: p.player_image, memoryTitle: p.memory_title, memory: p.memory_text }));
         setCatalog(next);
-        if (!next.some((p) => p.team === selectedTeam)) setSelectedTeam(next[0].team);
-        setSelectedPlayer(next.find((p) => p.team === selectedTeam) || next[0]);
+        setSelectedTeam((current) => next.some((p) => p.team === current) ? current : next[0].team);
+        setSelectedPlayer((current) => next.find((p) => p.team === current?.team && p.name === current?.name) || next[0]);
       }
     });
     return () => { active = false; };
@@ -50,12 +50,18 @@ export default function Golden10Page() {
       if (!active || !data.user) return;
       setUser(data.user);
       const { data: row, error: loadError } = await supabase.from("fot10_golden_tens").select("id,team_name,player_name,player_image,era,shirt_number,memory_title,memory_text,created_at").eq("user_id", data.user.id).maybeSingle();
-      if (!loadError && row) setGolden({ ...row, number: 10, memoryTitle: row.memory_title, memory: row.memory_text });
+      if (!loadError && row) {
+        const next = { ...row, number: 10, memoryTitle: row.memory_title, memory: row.memory_text };
+        setGolden(next);
+        localStorage.setItem("fot10-golden10", JSON.stringify(next));
+        applyGolden10Event();
+      }
     });
     return () => { active = false; };
   }, [supabase]);
 
   function loadLocal() { try { return JSON.parse(localStorage.getItem("fot10-golden10") || "null"); } catch { return null; } }
+  function applyGolden10Event() { window.dispatchEvent(new CustomEvent("fot10-golden10-change")); }
   function chooseTeam(value) { setSelectedTeam(value); const first = catalog.find((p) => p.team === value && p.number === 10); if (first) setSelectedPlayer(first); }
   function choosePlayer(value) { const next = teamPlayers.find((p) => p.name === value); if (next) setSelectedPlayer(next); }
 
@@ -65,10 +71,10 @@ export default function Golden10Page() {
     const row = { team_name: selectedPlayer.team, player_name: selectedPlayer.name, player_image: selectedPlayer.image, era: selectedPlayer.era === "current" ? "current" : "legend", shirt_number: 10, memory_title: selectedPlayer.memoryTitle, memory_text: selectedPlayer.memory };
     if (!user) {
       const next = { id: `guest-${Date.now()}`, ...row, number: 10, memoryTitle: selectedPlayer.memoryTitle, memory: selectedPlayer.memory };
-      localStorage.setItem("fot10-golden10", JSON.stringify(next)); setGolden(next); setMessage("۱۰ طلایی تو ذخیره شد ✓"); setBusy(false); return;
+      localStorage.setItem("fot10-golden10", JSON.stringify(next)); setGolden(next); applyGolden10Event(); setMessage("۱۰ طلایی تو ذخیره شد ✓"); setBusy(false); return;
     }
     const { data, error: saveError } = await supabase.from("fot10_golden_tens").upsert({ user_id: user.id, ...row, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).select("id,team_name,player_name,player_image,era,shirt_number,memory_title,memory_text,created_at").single();
-    if (saveError) setError(saveError.message); else { setGolden({ ...data, number: 10, memoryTitle: data.memory_title, memory: data.memory_text }); setMessage("۱۰ طلایی تو ذخیره شد ✓"); }
+    if (saveError) setError(saveError.message); else { const next = { ...data, number: 10, memoryTitle: data.memory_title, memory: data.memory_text }; localStorage.setItem("fot10-golden10", JSON.stringify(next)); setGolden(next); applyGolden10Event(); setMessage("۱۰ طلایی تو ذخیره شد ✓"); }
     setBusy(false);
   }
 
@@ -78,7 +84,7 @@ export default function Golden10Page() {
       const { error: removeError } = await supabase.from("fot10_golden_tens").delete().eq("id", golden.id).eq("user_id", user.id);
       if (removeError) { setError(removeError.message); setBusy(false); return; }
     }
-    localStorage.removeItem("fot10-golden10"); setGolden(null); setMessage("۱۰ طلایی حذف شد."); setBusy(false);
+    localStorage.removeItem("fot10-golden10"); setGolden(null); applyGolden10Event(); setMessage("۱۰ طلایی حذف شد."); setBusy(false);
   }
 
   const displayPlayer = golden || selectedPlayer;
