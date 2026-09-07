@@ -4,10 +4,10 @@
 
 :root {
   color-scheme: dark;
-  --bg: #070a12;
-  --panel: #0d1220;
-  --panel-2: #12192a;
-  --line: rgba(255,255,255,.08);
+  --bg: #060810;
+  --panel: #0c1120;
+  --panel-2: #11192a;
+  --line: rgba(255,255,255,.085);
   --text: #f7f8fb;
   --muted: #8e98ad;
   --accent: #25d366;
@@ -15,22 +15,47 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
+html { margin: 0; min-height: 100%; background: var(--bg); }
 body {
-  background: radial-gradient(circle at 50% -10%, #172342 0, var(--bg) 42%);
+  margin: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 85% -5%, rgba(18,168,255,.16), transparent 30%),
+    radial-gradient(circle at 10% 18%, rgba(37,211,102,.08), transparent 26%),
+    var(--bg);
   color: var(--text);
   font-family: Arial, Tahoma, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 button, input { font: inherit; }
-button { cursor: pointer; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+input { font-size: 16px; }
 
-.fot-shell { min-height: 100vh; padding-bottom: 84px; }
-.fot-container { width: min(100%, 760px); margin: auto; padding: 16px; }
-.glass { background: rgba(13,18,32,.82); border: 1px solid var(--line); backdrop-filter: blur(18px); }
+.fot-shell { min-height: 100dvh; padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+.fot-container { width: min(100%, 760px); margin: auto; padding: 14px; }
+.glass {
+  background: linear-gradient(145deg, rgba(17,25,42,.9), rgba(9,14,25,.84));
+  border: 1px solid var(--line);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 45px rgba(0,0,0,.16);
+}
 .card { border-radius: 22px; }
+.hero { box-shadow: 0 24px 70px rgba(18,168,255,.08); }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { scrollbar-width: none; }
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.touch-target { min-width: 44px; min-height: 44px; }
+
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,.28); }
+  50% { box-shadow: 0 0 0 7px rgba(37,211,102,0); }
+}
+.live-pulse { animation: livePulse 2s infinite; }
 
 @media (min-width: 768px) {
   .fot-container { padding: 24px; }
