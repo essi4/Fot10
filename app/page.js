@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Home, Newspaper, Search, Trophy, Tv, ChevronLeft, RefreshCw, UserRound } from "lucide-react";
+import { Activity, Home, Trophy, Tv, ChevronLeft, RefreshCw, UserRound } from "lucide-react";
 import Link from "next/link";
 
 const tehranDate = (offset = 0) => {
@@ -76,7 +76,6 @@ export default function HomePage() {
   const nav = [
     ["۱۰", Home, "/"],
     ["بازی‌ها", Tv, "/matches"],
-    ["اخبار فوتبال", Newspaper, "/news"],
     ["لیگ‌ها", Trophy, "/leagues"],
     ["حساب من", UserRound, "/account"],
   ];
@@ -105,7 +104,7 @@ export default function HomePage() {
         {loading ? <div className="glass rounded-2xl p-8 text-center text-xs text-slate-500">در حال دریافت مسابقات واقعی…</div> : matches.length === 0 ? <div className="glass rounded-2xl p-8 text-center"><div className="text-sm font-bold">برای این روز مسابقه‌ای پیدا نشد</div><p className="mt-2 text-[10px] text-slate-500">به‌محض وجود مسابقه، اینجا نمایش داده می‌شود.</p></div> : <div className="space-y-3">{matches.map((match) => <MatchCard key={match.id} match={match} />)}</div>}
       </section>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-[#05070d]/90 px-2 py-2 backdrop-blur-xl"><div className="mx-auto grid max-w-xl grid-cols-5 gap-1">{nav.map(([label, Icon, href]) => <Link key={href} href={href} className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[9px] text-slate-500"><Icon size={17}/><span>{label}</span></Link>)}</div></nav>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-[#05070d]/90 px-2 py-2 backdrop-blur-xl"><div className="mx-auto grid max-w-xl grid-cols-4 gap-1">{nav.map(([label, Icon, href]) => <Link key={href} href={href} className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[9px] text-slate-500"><Icon size={17}/><span>{label}</span></Link>)}</div></nav>
     </main>
   );
 }
