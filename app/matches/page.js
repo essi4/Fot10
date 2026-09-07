@@ -21,15 +21,7 @@ function toTime(value) {
 function mapGame(match) {
   const live = ["1H", "2H", "ET", "P", "BT", "LIVE"].includes(match.status);
   const finished = ["FT", "AET", "PEN"].includes(match.status);
-  return {
-    ...match,
-    league: match.league || "مسابقات فوتبال",
-    home: match.home || "میزبان",
-    away: match.away || "مهمان",
-    minute: live && match.minute ? `${match.minute}'` : finished ? "پایان" : toTime(match.time),
-    live,
-    finished,
-  };
+  return { ...match, league: match.league || "مسابقات فوتبال", home: match.home || "میزبان", away: match.away || "مهمان", minute: live && match.minute ? `${match.minute}'` : finished ? "پایان" : toTime(match.time), live, finished };
 }
 
 export default function MatchesPage() {
@@ -45,8 +37,7 @@ export default function MatchesPage() {
     setLoading(true);
     setError("");
     try {
-      const endpoint = day === 0 ? `/api/football/fixtures?live=true` : `/api/football/fixtures?date=${date}`;
-      const response = await fetch(endpoint, { cache: "no-store" });
+      const response = await fetch(`/api/football/fixtures?date=${date}`, { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.error || "دریافت مسابقات ناموفق بود");
       setGames(payload.matches.map(mapGame));
@@ -57,12 +48,9 @@ export default function MatchesPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [date, day]);
+  }, [date]);
 
-  useEffect(() => {
-    loadMatches();
-  }, [loadMatches]);
-
+  useEffect(() => { loadMatches(); }, [loadMatches]);
   useEffect(() => {
     if (day !== 0) return;
     const timer = setInterval(() => loadMatches(), 30000);
