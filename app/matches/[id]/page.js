@@ -77,9 +77,9 @@ export default function MatchDetailPage({ params }) {
             <>
               <div className="flex items-center justify-between text-[10px] text-slate-500 mb-5"><span>{match.league?.name || "مسابقه فوتبال"}</span><span className={isLive(match.fixture?.status?.short) ? "text-emerald-400 font-bold" : ""}>{match.fixture?.status?.long || match.fixture?.status?.short || ""}</span></div>
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                <div className="text-center"><img src={teams?.home?.logo} alt="" className="h-14 w-14 object-contain mx-auto" /><b className="block mt-2">{teams?.home?.name || "میزبان"}</b></div>
+                <div className="text-center"><Link href={`/teams/${teams?.home?.id}`} aria-label={`صفحه ${teams?.home?.name || "تیم میزبان"}`}><img src={teams?.home?.logo} alt="" className="h-14 w-14 object-contain mx-auto" /></Link><Link href={`/teams/${teams?.home?.id}`} className="block mt-2 font-bold hover:text-emerald-300">{teams?.home?.name || "میزبان"}</Link></div>
                 <div className="text-center"><div className="text-3xl font-black">{goals?.home ?? "—"} - {goals?.away ?? "—"}</div><div className="mt-1 text-[10px] text-slate-500">{match.fixture?.status?.elapsed ? `${match.fixture.status.elapsed}'` : formatDate(match.fixture?.date)}</div><div className="mt-1 text-[9px] text-slate-600">نیمه اول: {score?.halftime?.home ?? "—"} - {score?.halftime?.away ?? "—"}</div></div>
-                <div className="text-center"><img src={teams?.away?.logo} alt="" className="h-14 w-14 object-contain mx-auto" /><b className="block mt-2">{teams?.away?.name || "مهمان"}</b></div>
+                <div className="text-center"><Link href={`/teams/${teams?.away?.id}`} aria-label={`صفحه ${teams?.away?.name || "تیم مهمان"}`}><img src={teams?.away?.logo} alt="" className="h-14 w-14 object-contain mx-auto" /></Link><Link href={`/teams/${teams?.away?.id}`} className="block mt-2 font-bold hover:text-emerald-300">{teams?.away?.name || "مهمان"}</Link></div>
               </div>
               {isLive(match.fixture?.status?.short) && <div className="mt-5 rounded-xl bg-emerald-400/10 border border-emerald-400/20 py-2 text-center text-[10px] text-emerald-300">● مسابقه زنده است · بروزرسانی خودکار هر ۳۰ ثانیه</div>}
             </>
@@ -92,7 +92,7 @@ export default function MatchDetailPage({ params }) {
 
         {error && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-xs text-amber-200">{error}</div>}
         <section className="space-y-3">
-          {loading ? <div className="glass rounded-2xl p-8 text-center text-sm text-slate-400">در حال بارگذاری…</div> : section === "events" ? <Events data={data} /> : section === "statistics" ? <Statistics data={data} /> : section === "lineups" ? <Lineups data={data} /> : section === "players" ? <Players data={data} /> : <Details data={data} />}
+          {loading ? <div className="glass rounded-2xl p-8 text-center text-sm text-slate-400">در حال بارگذاری…</div> : section === "events" ? <Events data={data} /> : section === "statistics" ? <Statistics data={data} /> : section === "lineups" ? <Lineups data={data} /> : section === "players" ? <Players data={data} /> : <Details data={fixture} />}
         </section>
       </div>
     </main>
@@ -105,7 +105,7 @@ function Events({ data }) {
     const icon = e.type === "Card" ? (e.detail?.includes("Red") ? "🟥" : "🟨") : e.type === "subst" ? "🔄" : e.type === "Goal" ? "⚽" : "•";
     const minute = `${e.time?.elapsed ?? "—"}${e.time?.extra ? `+${e.time.extra}` : ""}'`;
     const subtitle = e.type === "subst" ? `${e.assist?.name ? `ورود: ${e.assist.name}` : ""}` : `${e.team?.name || ""}${e.assist?.name ? ` · پاس گل: ${e.assist.name}` : ""}`;
-    return <div key={`${e.time?.elapsed}-${e.time?.extra}-${i}`} className="flex items-center gap-3 border-b border-white/5 last:border-0 py-3"><span className="text-xs font-black w-12">{minute}</span><span className="text-xl">{icon}</span><div className="flex-1"><b className="text-xs">{e.player?.name || e.detail || e.type}</b><div className="text-[10px] text-slate-500">{subtitle}</div></div></div>;
+    return <div key={`${e.time?.elapsed}-${e.time?.extra}-${i}`} className="flex items-center gap-3 border-b border-white/5 last:border-0 py-3"><span className="text-xs font-black w-12">{minute}</span><span className="text-xl">{icon}</span><div className="flex-1"><b className="text-xs">{e.player?.id ? <Link href={`/players/${e.player.id}`} className="hover:text-emerald-300">{e.player?.name || "بازیکن"}</Link> : (e.player?.name || e.detail || e.type)}</b><div className="text-[10px] text-slate-500">{e.team?.id ? <Link href={`/teams/${e.team.id}`} className="hover:text-emerald-300">{e.team.name}</Link> : e.team?.name || ""}{e.assist?.name ? ` · پاس گل: ${e.assist.name}` : ""}</div></div></div>;
   })}</div>;
 }
 
@@ -123,13 +123,13 @@ function Statistics({ data }) {
 
 function Lineups({ data }) {
   if (!Array.isArray(data) || !data.length) return <Empty text="ترکیب رسمی هنوز اعلام نشده است." />;
-  return <div className="grid gap-3">{data.map((team, i) => <div key={team.team?.id || i} className="glass rounded-2xl p-4"><div className="flex items-center gap-2 mb-3"><img src={team.team?.logo} alt="" className="h-7 w-7 object-contain" /><b>{team.team?.name}</b><span className="mr-auto text-[10px] text-slate-500">{team.formation || "—"}</span></div><div className="grid grid-cols-2 gap-2">{(team.startXI || []).map((p, j) => <div key={p.player?.id || j} className="rounded-xl bg-white/5 p-2 text-[10px] flex justify-between"><span>{p.player?.name}</span><span>{p.player?.number ?? ""}</span></div>)}</div></div>)}</div>;
+  return <div className="grid gap-3">{data.map((team, i) => <div key={team.team?.id || i} className="glass rounded-2xl p-4"><div className="flex items-center gap-2 mb-3"><Link href={`/teams/${team.team?.id}`}><img src={team.team?.logo} alt="" className="h-7 w-7 object-contain" /></Link><Link href={`/teams/${team.team?.id}`} className="font-bold hover:text-emerald-300">{team.team?.name}</Link><span className="mr-auto text-[10px] text-slate-500">{team.formation || "—"}</span></div><div className="grid grid-cols-2 gap-2">{(team.startXI || []).map((p, j) => <div key={p.player?.id || j} className="rounded-xl bg-white/5 p-2 text-[10px] flex justify-between"><Link href={p.player?.id ? `/players/${p.player.id}` : "#"} className="hover:text-emerald-300">{p.player?.name}</Link><span>{p.player?.number ?? ""}</span></div>)}</div></div>)}</div>;
 }
 
 function Players({ data }) {
   if (!Array.isArray(data) || !data.length) return <Empty text="امتیازات بازیکنان هنوز در دسترس نیست." />;
   const teams = data.flatMap((t) => (t.players || []).map((p) => ({ ...p.player, statistics: p.statistics?.[0], team: t.team })));
-  return <div className="grid gap-2">{teams.map((p, i) => <div key={p.id || i} className="glass rounded-2xl p-3 flex items-center gap-3"><img src={p.photo} alt="" className="h-10 w-10 rounded-full object-cover bg-white/5" /><div className="flex-1"><b className="text-xs">{p.name || "بازیکن"}</b><div className="text-[10px] text-slate-500">{p.team?.name || ""} · {p.statistics?.games?.minutes ?? 0} دقیقه</div></div><div className="text-left"><strong className="text-lg">{p.statistics?.games?.rating ? Number(p.statistics.games.rating).toFixed(1) : "—"}</strong><div className="text-[9px] text-slate-500">امتیاز</div></div></div>)}</div>;
+  return <div className="grid gap-2">{teams.map((p, i) => <Link key={p.id || i} href={p.id ? `/players/${p.id}` : "#"} className="glass rounded-2xl p-3 flex items-center gap-3 hover:border-emerald-400/20"><img src={p.photo} alt="" className="h-10 w-10 rounded-full object-cover bg-white/5" /><div className="flex-1"><b className="text-xs">{p.name || "بازیکن"}</b><div className="text-[10px] text-slate-500">{p.team?.id ? <span>{p.team.name}</span> : ""} · {p.statistics?.games?.minutes ?? 0} دقیقه</div></div><div className="text-left"><strong className="text-lg">{p.statistics?.games?.rating ? Number(p.statistics.games.rating).toFixed(1) : "—"}</strong><div className="text-[9px] text-slate-500">امتیاز</div></div></Link>)}</div>;
 }
 
 function Details({ data }) {
