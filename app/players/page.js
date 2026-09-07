@@ -1,18 +1,109 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Search, Star, TrendingUp } from "lucide-react";
 
-const players = [
-  {name:"Lamine Yamal", team:"Barcelona", pos:"RW", rating:"8.7", goals:12, assists:14},
-  {name:"Kylian Mbappé", team:"Real Madrid", pos:"ST", rating:"8.6", goals:25, assists:6},
-  {name:"Mohamed Salah", team:"Liverpool", pos:"RW", rating:"8.5", goals:21, assists:10},
-  {name:"Bukayo Saka", team:"Arsenal", pos:"RW", rating:"8.3", goals:13, assists:9},
-  {name:"Jude Bellingham", team:"Real Madrid", pos:"AM", rating:"8.2", goals:10, assists:8},
-  {name:"Vinícius Júnior", team:"Real Madrid", pos:"LW", rating:"8.1", goals:16, assists:7},
-];
+function normalizePlayer(item) {
+  const stats = item?.statistics?.[0] || {};
+  const games = stats.games || {};
+  const goals = stats.goals || {};
+  return {
+    id: item?.player?.id,
+    name: item?.player?.name || "بازیکن",
+    photo: item?.player?.photo,
+    age: item?.player?.age,
+    nationality: item?.player?.nationality,
+    team: stats.team?.name || "تیم نامشخص",
+    logo: stats.team?.logo,
+    pos: games.position || "—",
+    rating: games.rating || "—",
+    appearances: games.appearances ?? 0,
+    minutes: games.minutes ?? 0,
+    goals: goals.total ?? 0,
+    assists: goals.assists ?? 0,
+    shots: goals.shots ?? 0,
+    penalties: goals.penalty ?? 0,
+  };
+}
 
-export default function PlayersPage(){
- const [q,setQ]=useState(""); const filtered=useMemo(()=>players.filter(p=>(p.name+p.team).toLowerCase().includes(q.toLowerCase())),[q]);
- return <main className="mobile-shell pb-10"><header className="px-5 pb-5 pt-6"><div className="flex items-center justify-between"><div><p className="text-xs text-sky-400">FOT10 • PLAYERS</p><h1 className="mt-1 text-2xl font-black">بازیکنان</h1></div><TrendingUp className="text-emerald-400"/></div><div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><Search size={18} className="text-slate-500"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="جستجوی بازیکن یا تیم..." className="w-full bg-transparent text-sm outline-none placeholder:text-slate-600"/></div></header><section className="space-y-3 px-5">{filtered.map((p,i)=><article key={p.name} className="glass rounded-3xl p-4"><div className="flex items-center gap-3"><div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-500/30 to-emerald-400/10 text-lg font-black">{i+1}<span className="absolute -bottom-1 -left-1 rounded-lg bg-[#0d1220] px-1.5 py-0.5 text-[9px] text-slate-500">{p.pos}</span></div><div className="min-w-0 flex-1"><h2 className="truncate font-black">{p.name}</h2><p className="mt-1 text-xs text-slate-500">{p.team}</p></div><div className="text-left"><b className="text-xl text-emerald-400">{p.rating}</b><p className="text-[10px] text-slate-600">ریتینگ</p></div><Star size={17} className="text-slate-500"/></div><div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-2xl bg-white/5 p-3"><p className="text-[10px] text-slate-500">گل</p><b className="text-lg">{p.goals}</b></div><div className="rounded-2xl bg-white/5 p-3"><p className="text-[10px] text-slate-500">پاس گل</p><b className="text-lg">{p.assists}</b></div></div></article>)}{!filtered.length&&<div className="py-12 text-center text-sm text-slate-500">بازیکنی پیدا نشد.</div>}</section></main>
+export default function PlayersPage() {
+  const [q, setQ] = useState("");
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState("");
+
+  async function searchPlayers(event) {
+    event.preventDefault();
+    const query = q.trim();
+    if (query.length < 2) return;
+    setLoading(true);
+    setSearched(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/football/players?search=${encodeURIComponent(query)}`, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || "خطا در دریافت اطلاعات بازیکن");
+      setPlayers(payload.players.map(normalizePlayer));
+    } catch (err) {
+      setPlayers([]);
+      setError(err?.message || "خطا در دریافت اطلاعات بازیکن");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="mobile-shell pb-10">
+      <header className="px-5 pb-5 pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-sky-400">FOT10 • PLAYERS</p>
+            <h1 className="mt-1 text-2xl font-black">بازیکنان</h1>
+            <p className="mt-1 text-xs text-slate-500">آمار واقعی؛ بدون محدود شدن به شماره ۱۰</p>
+          </div>
+          <TrendingUp className="text-emerald-400" />
+        </div>
+
+        <form onSubmit={searchPlayers} className="mt-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+          <Search size={18} className="text-slate-500" />
+          <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="نام بازیکن؛ مثلاً Mbappe" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-600" />
+          <button type="submit" disabled={loading || q.trim().length < 2} className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">جستجو</button>
+        </form>
+      </header>
+
+      <section className="space-y-3 px-5">
+        {loading && <div className="rounded-3xl bg-white/5 p-6 text-center text-sm text-slate-400">در حال دریافت آمار زنده…</div>}
+        {error && <div className="rounded-3xl border border-red-400/20 bg-red-400/5 p-4 text-sm text-red-300">{error}</div>}
+        {!loading && !error && searched && !players.length && <div className="py-12 text-center text-sm text-slate-500">بازیکنی پیدا نشد.</div>}
+        {!searched && <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-sm text-slate-500">نام بازیکن را جستجو کن تا اطلاعات واقعی نمایش داده شود.</div>}
+
+        {players.map((player) => (
+          <article key={`${player.id}-${player.team}`} className="glass rounded-3xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/5">
+                {player.photo ? <img src={player.photo} alt={player.name} className="h-full w-full object-cover" /> : <span className="text-lg font-black">⚽</span>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate font-black">{player.name}</h2>
+                <p className="mt-1 text-xs text-slate-500">{player.team} • {player.pos}</p>
+              </div>
+              <div className="text-left">
+                <b className="text-xl text-emerald-400">{player.rating}</b>
+                <p className="text-[10px] text-slate-600">ریتینگ</p>
+              </div>
+              <Star size={17} className="text-slate-500" />
+            </div>
+
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              <div className="rounded-2xl bg-white/5 p-3"><p className="text-[10px] text-slate-500">بازی</p><b className="text-lg">{player.appearances}</b></div>
+              <div className="rounded-2xl bg-white/5 p-3"><p className="text-[10px] text-slate-500">دقیقه</p><b className="text-lg">{player.minutes}</b></div>
+              <div className="rounded-2xl bg-white/5 p-3"><p className="text-[10px] text-slate-500">گل</p><b className="text-lg">{player.goals}</b></div>
+              <div className="rounded-2xl bg-white/5 p-3"><p className="text-[10px] text-slate-500">پاس گل</p><b className="text-lg">{player.assists}</b></div>
+            </div>
+          </article>
+        ))}
+      </section>
+    </main>
+  );
 }
