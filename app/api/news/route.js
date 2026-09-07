@@ -9,8 +9,8 @@ function tagFromTitle(title = "") {
   const t = title.toLowerCase();
   if (t.includes("iran") || t.includes("ایران")) return "ایران";
   if (t.includes("world cup") || t.includes("جام جهانی")) return "جام جهانی";
-  if (t.includes("champions league")) return "لیگ قهرمانان";
-  if (t.includes("transfer")) return "نقل‌وانتقالات";
+  if (t.includes("champions league") || t.includes("لیگ قهرمانان")) return "لیگ قهرمانان";
+  if (t.includes("transfer") || t.includes("نقل و انتقال") || t.includes("انتقال")) return "نقل‌وانتقالات";
   return "فوتبال جهان";
 }
 
@@ -36,6 +36,11 @@ export async function GET() {
     return parseXml(await response.text(), source);
   }));
   const items = results.flatMap((r) => r.status === "fulfilled" ? r.value : []);
-  items.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
-  return Response.json({ ok: true, count: items.length, news: items.slice(0, 40) }, { headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=300" } });
+  const unique = new Map();
+  for (const item of items) {
+    const key = item.title.toLowerCase().replace(/\s+/g, " ").trim();
+    if (!unique.has(key)) unique.set(key, item);
+  }
+  const news = [...unique.values()].sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+  return Response.json({ ok: true, count: news.length, news: news.slice(0, 40) }, { headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=300" } });
 }
