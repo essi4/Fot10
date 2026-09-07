@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Crown, Heart, Search, SlidersHorizontal, Sparkles, Star, Trash2 } from "lucide-react";
+import { Crown, Heart, Search, Shield, SlidersHorizontal, Sparkles, Star, Trash2 } from "lucide-react";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const fallbackPlayers = [
@@ -13,6 +13,10 @@ const fallbackPlayers = [
 ];
 
 const NATIONAL_TEAMS = new Set(["ایران", "آرژانتین", "برزیل", "فرانسه", "ایتالیا", "اسپانیا", "آلمان", "انگلیس", "هلند", "پرتغال", "بلژیک", "کرواسی", "اروگوئه", "مکزیک", "کلمبیا", "شیلی", "ژاپن", "کره جنوبی", "آمریکا", "سوئیس", "دانمارک", "سوئد", "صربستان", "لهستان", "سنگال", "مراکش", "کامرون", "نیجریه", "مصر", "پرو", "رومانی", "مجارستان", "غنا"]);
+
+const COUNTRY_CODES = {
+  "ایران": "ir", "آرژانتین": "ar", "برزیل": "br", "فرانسه": "fr", "ایتالیا": "it", "اسپانیا": "es", "آلمان": "de", "انگلیس": "gb", "هلند": "nl", "پرتغال": "pt", "بلژیک": "be", "کرواسی": "hr", "اروگوئه": "uy", "مکزیک": "mx", "کلمبیا": "co", "شیلی": "cl", "ژاپن": "jp", "کره جنوبی": "kr", "آمریکا": "us", "سوئیس": "ch", "دانمارک": "dk", "سوئد": "se", "صربستان": "rs", "لهستان": "pl", "سنگال": "sn", "مراکش": "ma", "کامرون": "cm", "نیجریه": "ng", "مصر": "eg", "پرو": "pe", "رومانی": "ro", "مجارستان": "hu", "غنا": "gh", "اسکاتلند": "gb-sct", "ولز": "gb-wls", "ترکیه": "tr", "اوکراین": "ua", "روسیه": "ru", "اتریش": "at", "چک": "cz", "اسلواکی": "sk", "اسلوونی": "si", "یونان": "gr", "نروژ": "no", "فنلاند": "fi", "ایرلند": "ie", "آفریقای جنوبی": "za", "الجزایر": "dz", "تونس": "tn", "عربستان": "sa", "استرالیا": "au", "کانادا": "ca", "آمریکا": "us", "اسپانیا": "es"
+};
 
 function normalizeText(value = "") {
   return String(value)
@@ -42,6 +46,22 @@ function normalizePlayer(p) {
     memoryTitle: p.memory_title || p.memoryTitle || "خاطره شماره ۱۰",
     memory: p.memory_text || p.memory || "شماره ۱۰ انتخابی تو در FOT10.",
   };
+}
+
+function CountryBadge({ country, type = "club", large = false }) {
+  const code = COUNTRY_CODES[country];
+  if (code && !code.includes("-")) {
+    return (
+      <span className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/15 bg-white/10 ${large ? "h-10 w-14" : "h-5 w-7"}`} title={country}>
+        <img src={`https://flagcdn.com/w80/${code}.png`} alt={`پرچم ${country}`} className="h-full w-full object-cover" loading="lazy" />
+      </span>
+    );
+  }
+  return (
+    <span className={`inline-flex shrink-0 items-center justify-center rounded-md border border-amber-200/20 bg-amber-200/10 text-amber-200 ${large ? "h-10 w-10" : "h-5 w-5"}`} title={country || "کشور"}>
+      {type === "club" ? <Shield size={large ? 18 : 12} /> : "🌍"}
+    </span>
+  );
 }
 
 export default function Golden10Page() {
@@ -165,8 +185,8 @@ export default function Golden10Page() {
           <div className="relative h-[390px] overflow-hidden bg-slate-950">
             {displayPlayer.image ? <img src={displayPlayer.image} alt={displayPlayer.name} className="absolute inset-0 h-full w-full object-cover object-top opacity-75" /> : <div className="absolute inset-0 grid place-items-center text-8xl font-black text-amber-200/20">10</div>}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
-            <div className="absolute top-5 right-5 h-24 w-24 rounded-full border border-amber-200/40 bg-black/20 backdrop-blur-md grid place-items-center"><span className="text-6xl leading-none font-black italic text-amber-200">10</span></div>
-            <div className="absolute bottom-0 inset-x-0 p-5"><div className="flex items-end justify-between gap-3"><div><div className="text-[11px] text-amber-200 font-black">۱۰ طلایی من • {displayPlayer.team}</div><h2 className="text-3xl font-black mt-1">{displayPlayer.name}</h2><div className="text-xs text-slate-300 mt-2">شماره ۱۰ • {displayPlayer.era === "current" ? "معاصر" : "تاریخی"}</div></div><div className="h-16 w-16 rounded-2xl border border-amber-200/30 bg-amber-200/10 grid place-items-center text-amber-200 font-black text-2xl">10</div></div></div>
+            <div className="absolute top-5 right-5 flex items-center gap-2 rounded-2xl border border-amber-200/20 bg-black/30 p-2 backdrop-blur-md"><CountryBadge country={displayPlayer.country} type={displayPlayer.type} large /><span className="text-6xl leading-none font-black italic text-amber-200 px-1">10</span></div>
+            <div className="absolute bottom-0 inset-x-0 p-5"><div className="flex items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-[11px] text-amber-200 font-black"><CountryBadge country={displayPlayer.country} type={displayPlayer.type}/><span>۱۰ طلایی من • {displayPlayer.team}</span></div><h2 className="text-3xl font-black mt-2">{displayPlayer.name}</h2><div className="text-xs text-slate-300 mt-2">شماره ۱۰ • {displayPlayer.era === "current" ? "معاصر" : "تاریخی"}</div></div><div className="h-16 w-16 rounded-2xl border border-amber-200/30 bg-amber-200/10 grid place-items-center text-amber-200 font-black text-2xl">10</div></div></div>
           </div>
           <div className="relative p-4 border-t border-white/5"><div className="flex gap-3"><Crown size={18} className="text-amber-300 mt-0.5 shrink-0"/><div><div className="text-xs font-black text-amber-100">{displayPlayer.memoryTitle || "خاطره شماره ۱۰"}</div><p className="text-[11px] leading-6 text-slate-300 mt-1">{displayPlayer.memory || "شماره ۱۰ انتخابی تو در FOT10."}</p></div></div></div>
         </section>
@@ -189,8 +209,8 @@ export default function Golden10Page() {
               <div className="relative aspect-[.78] bg-slate-950">
                 {player.image ? <img src={player.image} alt={player.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top transition duration-300 group-hover:scale-105" /> : <div className="absolute inset-0 grid place-items-center text-6xl font-black text-amber-200/20">10</div>}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                <div className="absolute top-2 right-2 rounded-xl border border-amber-200/20 bg-black/35 px-2 py-1 text-[9px] font-black text-amber-200">10</div>
-                <div className="absolute bottom-0 inset-x-0 p-3"><div className="text-[9px] text-amber-200/80">{player.type === "national" ? "تیم ملی" : "باشگاه"} • {player.country}</div><div className="mt-1 text-sm font-black leading-5">{player.name}</div><div className="mt-0.5 text-[9px] text-slate-400">{player.team}</div></div>
+                <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-xl border border-white/15 bg-black/45 px-1.5 py-1 backdrop-blur-sm"><CountryBadge country={player.country} type={player.type}/><span className="text-[9px] font-black text-amber-200">10</span></div>
+                <div className="absolute bottom-0 inset-x-0 p-3"><div className="flex items-center gap-1.5 text-[9px] text-amber-200/90"><CountryBadge country={player.country} type={player.type}/><span>{player.type === "national" ? "تیم ملی" : "باشگاه"} • {player.country}</span></div><div className="mt-1 text-sm font-black leading-5">{player.name}</div><div className="mt-0.5 flex items-center gap-1.5 text-[9px] text-slate-400"><Shield size={11}/><span>{player.team}</span></div></div>
               </div>
             </button>
           ))}
