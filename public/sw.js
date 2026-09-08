@@ -8,7 +8,7 @@ self.addEventListener("push", (event) => {
     badge: data.badge || "/icon-192.png",
     data: { url: data.url || "/notifications" },
     tag: data.tag || "fot10-notification",
-    renotify: Boolean(data.renotify),
+    renotify: true,
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
