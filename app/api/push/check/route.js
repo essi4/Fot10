@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendWebPush } from "../../../../../lib/webpush";
+import { sendWebPush } from "../../../../lib/webpush";
 
 const liveStatuses = ["1H", "HT", "2H", "ET", "P", "BT", "LIVE"];
 const finishedStatuses = ["FT", "AET", "PEN"];
