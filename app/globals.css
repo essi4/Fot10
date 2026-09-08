@@ -48,14 +48,41 @@ input { font-size: 16px; }
 .card { border-radius: 22px; }
 .hero { box-shadow: 0 24px 70px color-mix(in srgb, var(--golden-accent-2) 8%, transparent); }
 
-.golden10-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; opacity: 0; transition: opacity .7s ease; }
-html[data-golden10="on"] .golden10-atmosphere { opacity: 1; }
-.golden10-player-image { position: absolute; right: -15%; top: 5%; width: min(560px, 95vw); height: 75vh; background-image: linear-gradient(to left, rgba(6,8,16,.02), rgba(6,8,16,.92) 72%), var(--golden-player); background-position: center top; background-size: cover; background-repeat: no-repeat; filter: saturate(.75) contrast(1.04); opacity: .075; mask-image: linear-gradient(to bottom, black, transparent 88%); }
-.golden10-number { position: absolute; left: -5%; bottom: 3%; font-size: clamp(180px, 42vw, 430px); line-height: .7; font-weight: 1000; font-style: italic; color: var(--golden-accent); opacity: .025; transform: rotate(-8deg); }
-.golden10-badge { position: fixed; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 55; display: flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--golden-accent) 25%, transparent); border-radius: 999px; background: rgba(8,12,20,.76); backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0,0,0,.28), 0 0 25px color-mix(in srgb, var(--golden-accent) 10%, transparent); color: var(--golden-accent); font-weight: 1000; opacity: 0; transform: translateY(8px); transition: .45s ease; pointer-events: none; }
-html[data-golden10="on"] .golden10-badge { opacity: 1; transform: translateY(0); }
-.golden10-badge span { font-size: 17px; font-style: italic; }
-.golden10-badge small { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: #d8deea; }
+/* League-page polish: premium depth, micro-interactions and mobile readability. */
+.fot-container > section { animation: leagueRise .5s ease both; }
+.fot-container > section:nth-of-type(2) { animation-delay: .04s; }
+.fot-container > section:nth-of-type(3) { animation-delay: .08s; }
+.fot-container > section:nth-of-type(4) { animation-delay: .12s; }
+.fot-container .glass { transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease, background .22s ease; }
+.fot-container .glass:hover { border-color: color-mix(in srgb, var(--accent-2) 22%, var(--line)); box-shadow: 0 20px 55px rgba(0,0,0,.23), 0 0 28px color-mix(in srgb, var(--accent-2) 5%, transparent); }
+.fot-container nav.glass { box-shadow: 0 14px 40px rgba(0,0,0,.28); }
+.fot-container nav.glass a { min-height: 44px; }
+.fot-container img { image-rendering: auto; }
+
+@keyframes leagueRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes leagueGlow {
+  0%, 100% { opacity: .45; transform: scale(1); }
+  50% { opacity: .8; transform: scale(1.08); }
+}
+
+/* Make the first large league hero feel alive without adding JS. */
+.fot-container > section:first-of-type::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  left: -70px;
+  bottom: -90px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-2) 13%, transparent);
+  filter: blur(34px);
+  pointer-events: none;
+  animation: leagueGlow 5s ease-in-out infinite;
+}
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { scrollbar-width: none; }
@@ -67,6 +94,20 @@ html[data-golden10="on"] .golden10-badge { opacity: 1; transform: translateY(0);
   50% { box-shadow: 0 0 0 7px rgba(37,211,102,0); }
 }
 .live-pulse { animation: livePulse 2s infinite; }
+
+.golden10-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; opacity: 0; transition: opacity .7s ease; }
+html[data-golden10="on"] .golden10-atmosphere { opacity: 1; }
+.golden10-player-image { position: absolute; right: -15%; top: 5%; width: min(560px, 95vw); height: 75vh; background-image: linear-gradient(to left, rgba(6,8,16,.02), rgba(6,8,16,.92) 72%), var(--golden-player); background-position: center top; background-size: cover; background-repeat: no-repeat; filter: saturate(.75) contrast(1.04); opacity: .075; mask-image: linear-gradient(to bottom, black, transparent 88%); }
+.golden10-number { position: absolute; left: -5%; bottom: 3%; font-size: clamp(180px, 42vw, 430px); line-height: .7; font-weight: 1000; font-style: italic; color: var(--golden-accent); opacity: .025; transform: rotate(-8deg); }
+.golden10-badge { position: fixed; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 55; display: flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--golden-accent) 25%, transparent); border-radius: 999px; background: rgba(8,12,20,.76); backdrop-filter: blur(16px); box-shadow: 0 10px 30px rgba(0,0,0,.28), 0 0 25px color-mix(in srgb, var(--golden-accent) 10%, transparent); color: var(--golden-accent); font-weight: 1000; opacity: 0; transform: translateY(8px); transition: .45s ease; pointer-events: none; }
+html[data-golden10="on"] .golden10-badge { opacity: 1; transform: translateY(0); }
+.golden10-badge span { font-size: 17px; font-style: italic; }
+.golden10-badge small { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: #d8deea; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fot-container > section, .fot-container > section:first-of-type::after { animation: none; }
+  .fot-container .glass { transition: none; }
+}
 
 @media (min-width: 768px) {
   .fot-container { padding: 24px; }
