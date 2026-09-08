@@ -8,6 +8,12 @@ function readLocal() {
   try { return JSON.parse(localStorage.getItem("fot10-profile") || "{}"); } catch { return {}; }
 }
 
+function storageKey(type) {
+  if (type === "league") return "favoriteLeagues";
+  if (type === "player") return "favoritePlayers";
+  return "favorites";
+}
+
 export default function FavoriteButton({ type, name, className = "" }) {
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -15,7 +21,7 @@ export default function FavoriteButton({ type, name, className = "" }) {
   useEffect(() => {
     if (!name) return;
     const raw = readLocal();
-    const list = type === "league" ? raw.favoriteLeagues : raw.favorites;
+    const list = raw[storageKey(type)];
     setActive(Array.isArray(list) && list.includes(name));
 
     const supabase = getSupabaseBrowserClient();
@@ -24,7 +30,7 @@ export default function FavoriteButton({ type, name, className = "" }) {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data?.user || !mounted) return;
       const { data: rows } = await supabase.from("fot10_favorites").select("id").eq("user_id", data.user.id).eq("item_type", type).eq("item_name", name).limit(1);
-      if (mounted) setActive(Array.isArray(rows) && rows.length > 0);
+      if (mounted && Array.isArray(rows)) setActive(rows.length > 0);
     }).catch(() => {});
     return () => { mounted = false; };
   }, [type, name]);
@@ -39,7 +45,7 @@ export default function FavoriteButton({ type, name, className = "" }) {
 
     try {
       const raw = readLocal();
-      const key = type === "league" ? "favoriteLeagues" : "favorites";
+      const key = storageKey(type);
       const list = Array.isArray(raw[key]) ? raw[key] : [];
       const updated = next ? [...new Set([...list, name])] : list.filter(item => item !== name);
       localStorage.setItem("fot10-profile", JSON.stringify({ ...raw, [key]: updated }));
@@ -49,9 +55,11 @@ export default function FavoriteButton({ type, name, className = "" }) {
         const { data } = await supabase.auth.getUser();
         if (data?.user) {
           if (next) {
-            await supabase.from("fot10_favorites").upsert({ user_id: data.user.id, item_type: type, item_name: name }, { onConflict: "user_id,item_type,item_name" });
+            const { error } = await supabase.from("fot10_favorites").upsert({ user_id: data.user.id, item_type: type, item_name: name }, { onConflict: "user_id,item_type,item_name" });
+            if (error) throw error;
           } else {
-            await supabase.from("fot10_favorites").delete().eq("user_id", data.user.id).eq("item_type", type).eq("item_name", name);
+            const { error } = await supabase.from("fot10_favorites").delete().eq("user_id", data.user.id).eq("item_type", type).eq("item_name", name);
+            if (error) throw error;
           }
         }
       }
