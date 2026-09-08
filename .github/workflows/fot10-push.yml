@@ -1,0 +1,19 @@
+name: FOT10 Push Checker
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger push check
+        env:
+          PUSH_CRON_SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+        run: |
+          set -e
+          curl --fail-with-body --silent --show-error \
+            -H "x-push-secret: ${PUSH_CRON_SECRET}" \
+            "https://fot10-dcuw.onrender.com/api/push/check"
