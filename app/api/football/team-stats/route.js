@@ -7,6 +7,7 @@ import {
   getTeamStatistics,
   SportsApiError,
 } from "../../../../lib/sports-data";
+import { jsonWithCache, noStoreHeaders } from "../../../../lib/http-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -24,23 +25,19 @@ function emptyResponse(team, code, message, retryable = true) {
     error: message,
     code,
     retryable,
-  });
+  }, { headers: noStoreHeaders() });
 }
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const team = searchParams.get("team");
 
-  if (!team) {
-    return NextResponse.json({ ok: false, error: "team is required" }, { status: 400 });
-  }
+  if (!team) return NextResponse.json({ ok: false, error: "team is required" }, { status: 400, headers: noStoreHeaders() });
 
   try {
     const leagueEntry = await getTeamCurrentLeague(team);
     const league = leagueEntry?.league?.id || null;
-    const season = league
-      ? await getLeagueCurrentSeason(league)
-      : new Date().getUTCFullYear();
+    const season = league ? await getLeagueCurrentSeason(league) : new Date().getUTCFullYear();
 
     const [statistics, squad, fixtures] = await Promise.all([
       league ? getTeamStatistics(team, league, season) : Promise.resolve(null),
@@ -48,7 +45,7 @@ export async function GET(request) {
       getTeamFixtures(team, season),
     ]);
 
-    return NextResponse.json({
+    return jsonWithCache(NextResponse, {
       ok: true,
       degraded: false,
       provider: "api-football",
@@ -57,7 +54,7 @@ export async function GET(request) {
       statistics,
       squad,
       fixtures: fixtures.slice(0, 10),
-    });
+    }, "team");
   } catch (error) {
     const code = error instanceof SportsApiError ? error.code : "API_ERROR";
     const message =
