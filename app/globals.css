@@ -48,7 +48,6 @@ input { font-size: 16px; }
 .card { border-radius: 22px; }
 .hero { box-shadow: 0 24px 70px color-mix(in srgb, var(--golden-accent-2) 8%, transparent); }
 
-/* League-page polish: premium depth, micro-interactions and mobile readability. */
 .fot-container > section { animation: leagueRise .5s ease both; }
 .fot-container > section:nth-of-type(2) { animation-delay: .04s; }
 .fot-container > section:nth-of-type(3) { animation-delay: .08s; }
@@ -69,7 +68,6 @@ input { font-size: 16px; }
   50% { opacity: .8; transform: scale(1.08); }
 }
 
-/* Make the first large league hero feel alive without adding JS. */
 .fot-container > section:first-of-type::after {
   content: "";
   position: absolute;
@@ -82,6 +80,26 @@ input { font-size: 16px; }
   filter: blur(34px);
   pointer-events: none;
   animation: leagueGlow 5s ease-in-out infinite;
+}
+
+/* FOT10 standings: keep every value aligned with its header on phones. */
+@media (max-width: 639px) {
+  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] {
+    grid-template-columns: 2.2rem minmax(150px, 1fr) repeat(4, 3rem) 4rem !important;
+    min-width: 430px;
+  }
+
+  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] > :nth-child(1) { text-align: center; }
+  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] > :nth-child(n+3) { text-align: center; }
+
+  /* The standings card becomes a real horizontal table instead of crushing columns. */
+  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] {
+    overflow: visible;
+  }
+
+  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] .truncate {
+    max-width: 150px;
+  }
 }
 
 .scrollbar-none::-webkit-scrollbar { display: none; }
