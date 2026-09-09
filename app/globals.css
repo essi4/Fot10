@@ -82,23 +82,76 @@ input { font-size: 16px; }
   animation: leagueGlow 5s ease-in-out infinite;
 }
 
-/* FOT10 standings: keep every value aligned with its header on phones. */
+/* FOT10 professional standings table */
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] {
+  width: max-content;
+  min-width: 100%;
+  align-items: stretch;
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div.contents:first-child > span {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  color: #8e98ad;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents) > * {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,.055);
+  background: rgba(255,255,255,.008);
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:nth-of-type(odd):not(.contents) > * {
+  background: rgba(255,255,255,.018);
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents):hover > * {
+  background: rgba(18,168,255,.065);
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents) > span:first-child {
+  justify-content: center;
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents) > a:nth-child(2) {
+  font-size: 10px;
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents) > *:last-child {
+  color: #f8fafc;
+  font-weight: 900;
+  font-size: 11px;
+}
+.fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Compact horizontal scroll on phones; no crushed columns. */
 @media (max-width: 639px) {
-  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] {
-    grid-template-columns: 2.2rem minmax(150px, 1fr) repeat(4, 3rem) 4rem !important;
-    min-width: 430px;
+  .fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] {
+    min-width: max-content;
   }
-
-  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] > :nth-child(1) { text-align: center; }
-  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] > :nth-child(n+3) { text-align: center; }
-
-  /* The standings card becomes a real horizontal table instead of crushing columns. */
-  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] {
-    overflow: visible;
+  .fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div.contents:first-child > span {
+    min-height: 42px;
+    padding: 0 7px;
+    font-size: 8px;
   }
-
-  .fot-container [class*="grid-cols-[2.2rem_1fr_3rem_3rem_3rem_3.5rem]"] .truncate {
-    max-width: 150px;
+  .fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents) > * {
+    min-height: 48px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] > div:not(.contents) > a:nth-child(2) {
+    padding-inline: 9px;
+  }
+  .fot-container [class*="grid-cols-[2.2rem_minmax(150px,1fr)_3.5rem"] .truncate {
+    max-width: 145px;
   }
 }
 
