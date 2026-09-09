@@ -1,11 +1,11 @@
 "use client";
 
-import { BarChart3, CalendarDays, ChevronLeft, Home, Medal, Repeat2, Table2, Trophy, Tv, UserRound } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronLeft, Home, Medal, Repeat2, Shield, Table2, Trophy, Tv, UserRound } from "lucide-react";
 import Link from "next/link";
 import HomeNews from "./components/HomeNews";
 
 export default function HomePage() {
-  const quickNav = [["لیگ‌ها", Trophy, "/leagues"], ["برنامه بازی‌ها", CalendarDays, "/matches"], ["آمار و ارقام", BarChart3, "/stats"], ["جدول لیگ‌ها", Table2, "/leagues"], ["برترین‌های ماه", Medal, "/players"], ["نقل‌وانتقالات", Repeat2, "/transfers"]];
+  const quickNav = [["لیگ‌ها", Trophy, "/leagues"], ["تیم ملی", Shield, "/national-teams"], ["برنامه بازی‌ها", CalendarDays, "/matches"], ["آمار و ارقام", BarChart3, "/stats"], ["جدول لیگ‌ها", Table2, "/leagues"], ["برترین‌های ماه", Medal, "/players"], ["نقل‌وانتقالات", Repeat2, "/transfers"]];
   const nav = [["خانه", Home, "/"], ["بازی‌ها", Tv, "/matches"], ["لیگ‌ها", Trophy, "/leagues"], ["حساب من", UserRound, "/account"]];
 
   return <main className="fot-container pb-28"><header className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-[#111b2d] via-[#0b1220] to-[#080c15] p-5 shadow-2xl"><div className="absolute -left-10 -top-16 h-40 w-40 rounded-full bg-yellow-400/10 blur-3xl" /><div className="absolute -right-12 bottom-0 h-40 w-40 rounded-full bg-emerald-400/10 blur-3xl" /><div className="relative flex items-center justify-between gap-4"><Link href="/" className="min-w-0"><div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-yellow-300/20 bg-yellow-300/10 text-2xl font-black italic text-yellow-300 shadow-lg">10</div><div><div className="text-2xl font-black tracking-tight">FOT<span className="text-emerald-400">10</span></div><p className="mt-0.5 text-[9px] font-bold text-slate-500">نبض فوتبال، لحظه‌به‌لحظه</p></div></div></Link></div><div className="relative mt-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-[10px] font-black text-yellow-300">GOLDEN 10</p><h1 className="text-[25px] font-black leading-tight">همه فوتبال، یک‌جا</h1><p className="mt-2 max-w-[310px] text-[10px] leading-5 text-slate-400">خبرهای روز، لیگ‌ها، آمار، بازیکنان و مهم‌ترین اتفاقات فوتبال ایران و جهان.</p></div><div className="select-none text-[86px] font-black italic leading-none text-white/[.035]">10</div></div></header>
