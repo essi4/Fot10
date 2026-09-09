@@ -15,7 +15,6 @@ const iranTeamNames = {
 function faTeam(name) { return iranTeamNames[name] || name; }
 
 // برنامه رسمی نیم‌فصل اول لیگ برتر ایران ۱۴۰۵-۱۴۰۶، هفته ۱ تا ۱۷.
-// منبع برنامه قرعه‌کشی: تسنیم / روابط عمومی سازمان لیگ.
 const iranSchedule = {
   1: [["چادرملو","سپاهان"],["صنعت نفت آبادان","ملوان"],["خیبر","فجر سپاسی"],["استقلال","مس شهر بابک"],["ذوب‌آهن","فولاد"],["گل‌گهر","نساجی"],["شمس‌آذر","پرسپولیس"],["استقلال خوزستان","آلومینیوم اراک"],["تراکتور","پیکان"]],
   2: [["آلومینیوم اراک","چادرملو"],["سپاهان","تراکتور"],["پیکان","گل‌گهر"],["پرسپولیس","استقلال خوزستان"],["فولاد","شمس‌آذر"],["نساجی","استقلال"],["فجر سپاسی","صنعت نفت آبادان"],["ملوان","ذوب‌آهن"],["مس شهر بابک","خیبر"]],
@@ -44,14 +43,52 @@ function formatTime(date) {
   if (!date) return "";
   return new Intl.DateTimeFormat("fa-IR", { timeZone: "Asia/Tehran", hour: "2-digit", minute: "2-digit" }).format(new Date(date));
 }
+
 function getWeek(match) {
   const raw = String(match?.round || match?.week || match?.matchweek || "").toLowerCase();
-  const found = raw.match(/(?:week|matchweek|round|مرحله|هفته)?\s*[-#:]?\s*(\d{1,2})\b/);
-  return found ? Number(found[1]) : null;
+  // API-Football often returns values such as "Regular Season - 1".
+  const numbers = raw.match(/\d{1,2}/g);
+  return numbers?.length ? Number(numbers[numbers.length - 1]) : null;
+}
+
+function normalizeTeamKey(name) {
+  return String(name || "")
+    .replace(/[يى]/g, "ی")
+    .replace(/[ك]/g, "ک")
+    .replace(/[‌\s-]/g, "")
+    .toLowerCase();
 }
 
 function fallbackRows(week) {
-  return (iranSchedule[week] || []).map(([home, away], i) => ({ id: `iran-${week}-${i + 1}`, home, away, date: null, homeScore: null, awayScore: null, statusShort: "NS", _week: week }));
+  return (iranSchedule[week] || []).map(([home, away], i) => ({
+    id: `iran-${week}-${i + 1}`,
+    home,
+    away,
+    date: null,
+    homeScore: null,
+    awayScore: null,
+    statusShort: "NS",
+    _week: week,
+    _fallback: true,
+  }));
+}
+
+function mergeWeekRows(week, apiRows) {
+  const scheduleRows = fallbackRows(week);
+  const result = scheduleRows.map(fallback => {
+    const match = apiRows.find(api =>
+      normalizeTeamKey(faTeam(api.home)) === normalizeTeamKey(fallback.home) &&
+      normalizeTeamKey(faTeam(api.away)) === normalizeTeamKey(fallback.away)
+    );
+    return match ? { ...fallback, ...match, _week: week, _fallback: false } : fallback;
+  });
+
+  // Keep any API match that was not matched to the official fixture instead of dropping real results.
+  for (const api of apiRows) {
+    const exists = result.some(row => row.id === api.id);
+    if (!exists) result.push({ ...api, _week: week, _fallback: false });
+  }
+  return result;
 }
 
 export default async function LeagueMatchesPage({ params, searchParams }) {
@@ -72,12 +109,15 @@ export default async function LeagueMatchesPage({ params, searchParams }) {
   }
 
   const normalized = matches.map(m => ({ ...m, _week: getWeek(m) }));
-  const apiWeeks = new Set(normalized.map(m => m._week).filter(Boolean));
   const buildWeekRows = week => {
-    const apiRows = normalized.filter(m => m._week === week).sort((a, b) => new Date(a.date) - new Date(b.date));
-    return apiRows.length >= 9 ? apiRows : (item.leagueId === 195 ? fallbackRows(week) : apiRows);
+    const apiRows = normalized.filter(m => m._week === week).sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+    if (item.leagueId === 195) return mergeWeekRows(week, apiRows);
+    return apiRows;
   };
-  const rows = showAll ? Array.from({ length: 17 }, (_, i) => buildWeekRows(i + 1).map(m => ({ ...m, _displayWeek: i + 1 }))).flat() : buildWeekRows(selected);
+
+  const rows = showAll
+    ? Array.from({ length: 17 }, (_, i) => buildWeekRows(i + 1).map(m => ({ ...m, _displayWeek: i + 1 }))).flat()
+    : buildWeekRows(selected);
   const counts = Array.from({ length: 17 }, (_, i) => buildWeekRows(i + 1).length);
   const finished = rows.filter(m => m.statusShort === "FT" || m.status === "FT" || m.homeScore != null).length;
   const goals = rows.reduce((s, m) => s + (Number(m.homeScore) || 0) + (Number(m.awayScore) || 0), 0);
@@ -87,6 +127,6 @@ export default async function LeagueMatchesPage({ params, searchParams }) {
     <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-400/[.13] via-white/[.035] to-transparent p-4 sm:p-5 shadow-2xl"><div className="absolute -top-16 -left-10 h-36 w-36 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none"/><div className="relative flex items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-cyan-300"><Trophy size={15}/><span className="text-[9px] font-black tracking-[.18em]">MATCH CENTER</span></div><h2 className="text-lg sm:text-xl font-black mt-1">{showAll ? "تمام هفته‌ها" : `هفته ${selected}`}</h2><p className="text-[9px] text-slate-500 mt-1">{showAll ? `${rows.length} بازی در برنامه` : `${rows.length} بازی · ${finished} پایان‌یافته · ${goals} گل`}</p></div><div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2 text-center"><span className="block text-[8px] text-slate-500">SEASON</span><b className="text-sm">۲۰۲۶</b></div></div></section>
     <section className="glass rounded-[24px] border border-white/10 p-2"><div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" dir="rtl"><Link href={`/leagues/${params.slug}/matches?week=all`} className={`shrink-0 rounded-xl px-3.5 py-2.5 text-[10px] font-black transition ${showAll ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20" : "bg-white/[.05] text-slate-400 hover:bg-white/10"}`}>همه</Link>{Array.from({length:17},(_,i)=>i+1).map(week=>{const active=!showAll&&selected===week;return <Link key={week} href={`/leagues/${params.slug}/matches?week=${week}`} className={`shrink-0 min-w-[58px] rounded-xl px-2 py-2 text-center transition ${active ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20" : "bg-white/[.05] text-slate-400 hover:bg-white/10"}`}><span className="block text-[10px] font-black">هفته {week}</span><span className={`block text-[8px] mt-0.5 ${active ? "text-slate-800/70" : "text-slate-600"}`}>{counts[week-1]} بازی</span></Link>})}</div></section>
     <section className="glass rounded-[28px] overflow-hidden border border-white/10"><div className="p-4 sm:p-5 border-b border-white/10 bg-gradient-to-r from-cyan-400/[.08] to-transparent flex items-center justify-between gap-3"><div><p className="text-[9px] text-cyan-300 font-black tracking-widest">{showAll ? "ALL MATCHWEEKS" : `MATCHWEEK ${String(selected).padStart(2,"0")}`}</p><h3 className="text-base font-black mt-1">{showAll ? "بازی‌های لیگ" : `هفته ${selected}`}</h3></div><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-[9px] text-slate-400">{rows.length} بازی</span></div>{rows.length ? <div className="divide-y divide-white/[.06]">{rows.map((m,index)=>{const home=faTeam(m.home),away=faTeam(m.away),isFinished=m.statusShort==="FT"||m.status==="FT"||m.homeScore!=null,score=isFinished?`${m.homeScore??0} - ${m.awayScore??0}`:"—",content=<div className="grid grid-cols-[2rem_minmax(0,1fr)_4.2rem_minmax(0,1fr)_6.8rem] items-center gap-2 px-3 py-3.5 sm:px-5 hover:bg-white/[.035] transition"><span className="h-7 w-7 rounded-lg bg-white/[.05] grid place-items-center text-[9px] font-black text-slate-500">{index+1}</span><div className="min-w-0 text-right"><b className="block text-[10px] sm:text-xs truncate">{home}</b><span className="text-[8px] text-slate-600">میزبان</span></div><div className="text-center"><b className={`inline-flex min-w-[42px] justify-center rounded-xl px-2 py-1.5 text-[11px] font-black ${isFinished ? "bg-cyan-400/10 text-cyan-200" : "bg-white/[.06] text-slate-400"}`}>{score}</b><span className={`block text-[7px] mt-1 font-bold ${isFinished ? "text-emerald-400" : "text-slate-600"}`}>{isFinished ? "پایان" : "برنامه"}</span></div><div className="min-w-0 text-right"><b className="block text-[10px] sm:text-xs truncate">{away}</b><span className="text-[8px] text-slate-600">مهمان</span></div><div className="text-left text-[8px] text-slate-400"><span className="flex items-center gap-1 justify-end"><CalendarDays size={11}/>{formatDate(m.date)}</span>{m.date && <span className="flex items-center gap-1 justify-end mt-1"><Clock3 size={11}/>{formatTime(m.date)}</span>}</div></div>;return m.id&&!String(m.id).startsWith("iran-")?<Link key={`${m.id}-${index}`} href={`/matches/${m.id}`}>{content}</Link>:<div key={`${m.id}-${index}`}>{content}</div>})}</div>:<div className="p-10 text-center"><div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-white/[.04] grid place-items-center text-slate-600"><ChevronLeft size={20}/></div><p className="text-xs font-bold text-slate-400">برای این هفته هنوز بازی ثبت نشده است.</p></div>}</section>
-    <div className="rounded-2xl border border-amber-300/10 bg-amber-300/[.04] px-4 py-3 text-[9px] text-slate-500 leading-5">برنامه روی صفحه بر اساس قرعه رسمی نیم‌فصل اول است؛ تاریخ و ساعت هر مسابقه، هرجا از منبع مسابقات موجود باشد، به‌صورت خودکار نمایش داده می‌شود.</div>
+    <div className="rounded-2xl border border-amber-300/10 bg-amber-300/[.04] px-4 py-3 text-[9px] text-slate-500 leading-5">برنامه روی صفحه بر اساس قرعه رسمی نیم‌فصل اول است؛ نتایج واقعی مسابقات از منبع مسابقات حفظ می‌شود و فقط بازی‌های ناقص با برنامه رسمی تکمیل می‌شوند.</div>
   </div></main>;
 }
