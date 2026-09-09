@@ -5,7 +5,6 @@ const SOURCES = [
   { name: "فوتبال ایران", key: "footballiran", url: "https://footbaliran.com/latest", type: "html", color: "#f59e0b" },
 ];
 
-// فقط خبرهای منتشرشده در ۶۰ دقیقه اخیر وارد فید می‌شوند.
 const MAX_AGE_MS = 60 * 60 * 1000;
 export const revalidate = 300;
 
@@ -15,28 +14,25 @@ const clean = (value = "") => value
   .replace(/&nbsp;/gi, " ")
   .replace(/&amp;/gi, "&")
   .replace(/&quot;/gi, '"')
-  .replace(/&#39;|&apos;/gi, "'")
-  .replace(/&#x27;/gi, "'")
+  .replace(/&#39;|&apos;|&#x27;/gi, "'")
   .replace(/\s+/g, " ")
   .trim();
 
 const decode = (value = "") => clean(value);
 
 const FOOTBALL_EXCLUDES = [
-  "والیبال", "بسکتبال", "هندبال", "کشتی", "وزنه برداری", "وزنه‌برداری",
-  "بوکس", "جودو", "تکواندو", "دوچرخه", "شنا", "اسکی", "فرمول یک",
-  "اتومبیلرانی", "موتورسواری", "تنیس", "پینگ پنگ", "بدمینتون", "ژیمناستیک",
-  "فوتسال", "فوتبال ساحلی"
+  "والیبال", "بسکتبال", "هندبال", "کشتی", "وزنه برداری", "وزنه‌برداری", "بوکس", "جودو",
+  "تکواندو", "دوچرخه", "شنا", "اسکی", "فرمول یک", "اتومبیلرانی", "موتورسواری", "تنیس",
+  "پینگ پنگ", "بدمینتون", "ژیمناستیک", "فوتسال", "فوتبال ساحلی"
 ];
 
 const FOOTBALL_KEYWORDS = [
-  "فوتبال", "لیگ برتر", "جام حذفی", "جام جهانی", "لیگ قهرمانان", "لیگ اروپا",
-  "تیم ملی", "استقلال", "پرسپولیس", "تراکتور", "سپاهان", "فولاد", "ذوب آهن",
-  "ذوب‌آهن", "ملوان", "گل گهر", "گل‌گهر", "آلومینیوم", "چادرملو", "نساجی",
-  "خیبر", "پیکان", "بارسلونا", "رئال مادرید", "رئال", "منچستر", "لیورپول",
-  "آرسنال", "چلسی", "بایرن", "دورتموند", "یوونتوس", "اینتر", "میلان",
-  "پاری سن ژرمن", "پاری‌سن‌ژرمن", "امباپه", "مسی", "رونالدو", "یامال",
-  "بازیکن", "مربی", "دروازه", "پنالتی", "آفساید", "نقل و انتقالات", "نقل‌وانتقالات",
+  "فوتبال", "لیگ برتر", "جام حذفی", "جام جهانی", "لیگ قهرمانان", "لیگ اروپا", "تیم ملی",
+  "استقلال", "پرسپولیس", "تراکتور", "سپاهان", "فولاد", "ذوب آهن", "ذوب‌آهن", "ملوان",
+  "گل گهر", "گل‌گهر", "آلومینیوم", "چادرملو", "نساجی", "خیبر", "پیکان", "بارسلونا",
+  "رئال مادرید", "رئال", "منچستر", "لیورپول", "آرسنال", "چلسی", "بایرن", "دورتموند",
+  "یوونتوس", "اینتر", "میلان", "پاری سن ژرمن", "پاری‌سن‌ژرمن", "امباپه", "مسی", "رونالدو",
+  "یامال", "بازیکن", "مربی", "دروازه", "پنالتی", "آفساید", "نقل و انتقالات", "نقل‌وانتقالات",
   "ترکیب", "گلزنی", "گلزن", "توپ طلا", "VAR"
 ];
 
@@ -47,14 +43,21 @@ function isFootball(title = "", description = "", sourceKey = "") {
   return FOOTBALL_KEYWORDS.some((word) => text.includes(word));
 }
 
-function getImage(item) {
-  return clean(
-    item.match(/<media:content[^>]+url=["']([^"']+)["']/i)?.[1]
-    || item.match(/<media:thumbnail[^>]+url=["']([^"']+)["']/i)?.[1]
-    || item.match(/<enclosure[^>]+url=["']([^"']+)["']/i)?.[1]
-    || item.match(/<image[^>]*>\s*(?:<url>)?([^<\s]+)(?:<\/url>)?\s*<\/image>/i)?.[1]
-    || ""
-  );
+function absolutizeImage(value, baseUrl) {
+  if (!value) return "";
+  try { return new URL(value, baseUrl).toString(); } catch { return ""; }
+}
+
+function getImage(item, baseUrl) {
+  const candidates = [
+    item.match(/<media:content[^>]+url=["']([^"']+)["']/i)?.[1],
+    item.match(/<media:thumbnail[^>]+url=["']([^"']+)["']/i)?.[1],
+    item.match(/<enclosure[^>]+url=["']([^"']+)["']/i)?.[1],
+    item.match(/<(?:content:encoded|description)[^>]*>[\s\S]*?<img[^>]+(?:src|data-src)=["']([^"']+)["']/i)?.[1],
+    item.match(/<(?:content:encoded|description)[^>]*>[\s\S]*?<source[^>]+srcset=["']([^"']+)["']/i)?.[1]?.split(",")[0]?.trim()?.split(" ")[0],
+    item.match(/<image[^>]*>[\s\S]*?<url[^>]*>([^<]+)<\/url>/i)?.[1],
+  ];
+  return absolutizeImage(candidates.find(Boolean) || "", baseUrl);
 }
 
 function isFresh(date) {
@@ -71,19 +74,9 @@ function parseRss(xml, source) {
     const link = clean(item.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1]);
     const description = decode(item.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1]).slice(0, 150);
     const pubDate = clean(item.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)?.[1]);
-    const image = getImage(item);
+    const image = getImage(item, source.url);
     if (!title || !link || !pubDate || !isFresh(pubDate) || !isFootball(title, description, source.key)) return null;
-    return {
-      id: `${source.key}-${index}-${encodeURIComponent(title).slice(0, 20)}`,
-      title,
-      description,
-      link,
-      image,
-      source: source.name,
-      sourceKey: source.key,
-      color: source.color,
-      publishedAt: new Date(pubDate).toISOString(),
-    };
+    return { id: `${source.key}-${index}-${encodeURIComponent(title).slice(0, 20)}`, title, description, link, image, source: source.name, sourceKey: source.key, color: source.color, publishedAt: new Date(pubDate).toISOString() };
   }).filter(Boolean);
 }
 
@@ -109,33 +102,21 @@ function parseHtml(html, source) {
     const link = match[1];
     const title = clean(match[2]);
     if (!title || !link || seen.has(link) || title.length < 12 || !isFootball(title, "", source.key)) continue;
-
-    const start = Math.max(0, match.index - 1600);
-    const end = Math.min(html.length, match.index + match[0].length + 1600);
+    const start = Math.max(0, match.index - 1800);
+    const end = Math.min(html.length, match.index + match[0].length + 1800);
     const context = html.slice(start, end);
     const publishedAt = parseRelativeTime(context)
       || context.match(/(?:datetime|data-date|data-time|dateTime)=["']([^"']+)["']/i)?.[1]
       || context.match(/<meta[^>]+(?:property|name)=["']article:published_time["'][^>]+content=["']([^"']+)["']/i)?.[1]
       || null;
-    const image = clean(
+    const image = absolutizeImage(
       context.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i)?.[1]
       || context.match(/<source[^>]+srcset=["']([^"']+)["']/i)?.[1]?.split(",")[0]?.trim()?.split(" ")[0]
-      || ""
+      || "", source.url
     );
-
     if (!publishedAt || !isFresh(publishedAt)) continue;
     seen.add(link);
-    found.push({
-      id: `${source.key}-${found.length}-${encodeURIComponent(title).slice(0, 16)}`,
-      title,
-      description: "",
-      link,
-      image,
-      source: source.name,
-      sourceKey: source.key,
-      color: source.color,
-      publishedAt: new Date(publishedAt).toISOString(),
-    });
+    found.push({ id: `${source.key}-${found.length}-${encodeURIComponent(title).slice(0, 16)}`, title, description: "", link, image, source: source.name, sourceKey: source.key, color: source.color, publishedAt: new Date(publishedAt).toISOString() });
     if (found.length >= 10) break;
   }
   return found;
@@ -143,17 +124,11 @@ function parseHtml(html, source) {
 
 async function fetchSource(source) {
   try {
-    const response = await fetch(source.url, {
-      headers: { "User-Agent": "FOT10-News/1.0" },
-      signal: AbortSignal.timeout(7000),
-      cache: "no-store",
-    });
+    const response = await fetch(source.url, { headers: { "User-Agent": "Mozilla/5.0 FOT10-News/2.0" }, signal: AbortSignal.timeout(7000), cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const body = await response.text();
     return source.type === "rss" ? parseRss(body, source) : parseHtml(body, source);
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 export async function GET() {
@@ -163,9 +138,5 @@ export async function GET() {
     .filter((item, index, all) => all.findIndex((other) => other.title === item.title) === index)
     .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
     .slice(0, 18);
-
-  return Response.json(
-    { ok: true, news, sport: "football", ttlMinutes: 60, sources: SOURCES.map(({ name, key }) => ({ name, key })), updatedAt: new Date().toISOString() },
-    { headers: { "Cache-Control": "no-store, max-age=0" } }
-  );
+  return Response.json({ ok: true, news, sport: "football", ttlMinutes: 60, sources: SOURCES.map(({ name, key }) => ({ name, key })), updatedAt: new Date().toISOString() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
