@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { teamLogoUrl, teamName } from "../lib/team-identity";
 
 function value(v) { return Number.isFinite(Number(v)) ? Number(v) : 0; }
 function diff(v) { const n = value(v); return n > 0 ? `+${n}` : String(n); }
@@ -30,14 +31,15 @@ export default function LeagueStandingsTable({ rows = [], mode = "full", teamLog
         const ga = value(r.all?.goals?.against);
         const gd = value(r.goalsDiff ?? gf - ga);
         const points = value(r.points);
-        const href = r?.team?.id && !String(r.team.id).startsWith("iran-") ? `/teams/${r.team.id}` : `/teams?search=${encodeURIComponent(r?.team?.name || "")}`;
-        const logo = teamLogo?.(r?.team?.name);
+        const name = r?.team?.name || "—";
+        const href = r?.team?.id && !String(r.team.id).startsWith("iran-") ? `/teams/${r.team.id}` : `/teams?search=${encodeURIComponent(name)}`;
+        const logo = r?.team?.logo || teamLogo?.(name) || teamLogoUrl(r?.team?.id);
         const relegation = rows.length >= 3 && rank > rows.length - 3;
-        return <div key={`${r?.team?.id || r?.team?.name || i}-${rank}`} className={`contents group`}>
+        return <div key={`${r?.team?.id || name || i}-${rank}`} className="contents group">
           <div className={`p-2.5 sm:p-3 flex items-center justify-center border-t border-white/5 ${rank <= 3 ? "" : relegation ? "bg-rose-500/[.05]" : ""}`}><span className={`h-7 min-w-7 px-1 rounded-lg grid place-items-center text-[10px] font-black ${rankClass(rank)}`}>{rank}</span></div>
           <Link href={href} className={`p-2.5 sm:p-3 flex items-center gap-2 min-w-0 border-t border-white/5 hover:bg-white/[.04] ${rank <= 4 ? "bg-cyan-400/[.025]" : relegation ? "bg-rose-500/[.05]" : ""}`}>
             <span className="h-8 w-8 rounded-lg bg-white/[.06] grid place-items-center overflow-hidden shrink-0">{logo ? <img src={logo} alt="" className="h-7 w-7 object-contain"/> : "⚽"}</span>
-            <span className="font-bold truncate">{r?.team?.name || "—"}</span>
+            <span className="font-bold truncate">{teamName(name)}</span>
           </Link>
           {[played, win, ...(full ? [draw, lose, gf, ga] : []), diff(gd), points].map((x, j) => <span key={j} className={`p-2.5 sm:p-3 flex items-center justify-center border-t border-white/5 font-semibold ${j === (full ? 6 : 3) ? "text-cyan-200" : "text-slate-300"}`}>{x}</span>)}
         </div>;
