@@ -4,12 +4,12 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Users, Trophy, Shield, Target, TrendingUp, MapPin, Activity } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import FavoriteButton from "../../../components/FavoriteButton";
+import TeamPowerScore from "../../../components/TeamPowerScore";
 
 function formatDate(value) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("fa-IR", { timeZone: "Asia/Tehran", weekday: "short", day: "numeric", month: "long" }).format(new Date(value));
 }
-
 function resultClass(result) {
   if (result === "W") return "bg-emerald-400 text-slate-950";
   if (result === "D") return "bg-amber-300 text-slate-950";
@@ -20,16 +20,10 @@ export default function TeamDetailPage({ params }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("overview");
-
   useEffect(() => {
     fetch(`/api/football/team-stats?team=${encodeURIComponent(params.id)}`, { cache: "no-store" })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok || !payload.ok) throw new Error(payload.error || "اطلاعات تیم دریافت نشد");
-        return payload;
-      })
-      .then(setData)
-      .catch((err) => setError(err?.message || "خطا در دریافت اطلاعات تیم"));
+      .then(async (response) => { const payload = await response.json(); if (!response.ok || !payload.ok) throw new Error(payload.error || "اطلاعات تیم دریافت نشد"); return payload; })
+      .then(setData).catch((err) => setError(err?.message || "خطا در دریافت اطلاعات تیم"));
   }, [params.id]);
 
   const stat = data?.statistics || {};
@@ -44,36 +38,26 @@ export default function TeamDetailPage({ params }) {
   const goalsAgainst = stat.goals?.against?.total?.total ?? 0;
   const cleanSheets = stat.clean_sheet?.total ?? stat.clean_sheet?.home ?? 0;
   const failedToScore = stat.failed_to_score?.total ?? 0;
-
-  const positions = useMemo(() => squad.reduce((acc, player) => {
-    const key = player.position || "سایر";
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {}), [squad]);
+  const positions = useMemo(() => squad.reduce((acc, player) => { const key = player.position || "سایر"; acc[key] = (acc[key] || 0) + 1; return acc; }, {}), [squad]);
 
   if (error) return <main className="fot-shell p-5"><Link href="/teams" className="text-sm text-cyan-300">بازگشت به تیم‌ها</Link><div className="glass mt-5 rounded-3xl p-5 text-sm text-red-300">{error}</div></main>;
   if (!data) return <main className="fot-shell p-5"><div className="glass rounded-3xl p-8 text-center text-sm text-slate-400">در حال دریافت پرونده حرفه‌ای تیم…</div></main>;
 
   const team = data.team || {};
   const tabs = [["overview", "نمای کلی"], ["matches", "بازی‌ها"], ["squad", "بازیکنان"], ["stats", "آمار پیشرفته"]];
-
   return <main className="fot-shell min-h-screen pb-12"><div className="fot-container space-y-4 sm:space-y-5">
     <header className="flex items-center gap-3 pt-1"><Link href="/teams" aria-label="بازگشت" className="glass h-10 w-10 rounded-xl grid place-items-center hover:bg-white/10 transition"><ArrowRight size={19}/></Link><div className="min-w-0 flex-1"><span className="text-[9px] text-cyan-300 font-bold">TEAM PROFILE · FOT10</span><h1 className="text-xl font-black truncate">{team.name || "پرونده تیم"}</h1><p className="text-[10px] text-slate-500">آمار و اطلاعات فصل {data.season || "—"}</p></div><FavoriteButton type="team" name={team.name || ""} className="shrink-0"/></header>
-
     <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-400/[.16] via-slate-900/90 to-slate-950 p-5 sm:p-7 shadow-2xl"><div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl"/><div className="relative flex items-center gap-4 sm:gap-6"><div className="h-24 w-24 sm:h-28 sm:w-28 rounded-3xl bg-white/[.07] border border-white/10 grid place-items-center overflow-hidden shrink-0">{team.logo ? <img src={team.logo} alt="" className="h-20 w-20 sm:h-24 sm:w-24 object-contain"/> : <Shield size={48} className="text-cyan-300"/>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2 mb-2"><span className="rounded-full bg-cyan-400/10 border border-cyan-300/20 px-2.5 py-1 text-[9px] text-cyan-200">{data.league?.name || "رقابت"}</span><span className="rounded-full bg-white/[.06] px-2.5 py-1 text-[9px] text-slate-400">فصل {data.season || "—"}</span></div><h2 className="text-2xl sm:text-4xl font-black truncate">{team.name || "تیم"}</h2><p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1"><MapPin size={12}/>{team.country || "—"} {team.national ? "· تیم ملی" : ""}</p></div></div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-6">{[["بازی",played,Trophy],["برد",wins,TrendingUp],["گل زده",goalsFor,Target],["گل خورده",goalsAgainst,Shield]].map(([label,value,Icon])=><div key={label} className="rounded-2xl border border-white/5 bg-black/20 p-3.5"><Icon size={15} className="text-cyan-300"/><span className="block text-[9px] text-slate-500 mt-2">{label}</span><b className="block text-xl mt-1">{value}</b></div>)}</div>
     </section>
 
+    <TeamPowerScore teamId={params.id} />
+
     <nav className="glass rounded-2xl p-1 grid grid-cols-4 gap-1 sticky top-2 z-20 backdrop-blur-xl">{tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} className={`rounded-xl px-2 py-2.5 text-[9px] sm:text-[11px] font-bold transition ${tab===id ? "bg-cyan-400 text-slate-950 shadow-lg" : "text-slate-400 hover:bg-white/5"}`}>{label}</button>)}</nav>
-
     {(tab === "overview" || tab === "stats") && <><section className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">{[["فرم اخیر",form,Activity],["مساوی",draws,TrendingUp],["کلین‌شیت",cleanSheets,Shield],["بدون گل",failedToScore,Target]].map(([label,value,Icon])=><div key={label} className="glass rounded-2xl p-4"><Icon size={16} className="text-cyan-300 mb-2"/><b className="block text-xl">{value}</b><span className="text-[9px] text-slate-500">{label}</span></div>)}</section><section className="glass rounded-[24px] p-4 sm:p-5"><div className="flex items-center justify-between mb-4"><div><p className="text-[9px] text-cyan-300 font-bold">FORM</p><h2 className="font-black">فرم ۵ بازی اخیر</h2></div><span className="text-[9px] text-slate-500">W برد · D مساوی · L باخت</span></div><div className="flex gap-2">{form.split("").filter(x=>/[WDL]/.test(x)).map((r,i)=><span key={`${r}-${i}`} className={`h-10 w-10 rounded-xl grid place-items-center font-black text-xs ${resultClass(r)}`}>{r}</span>)}{form === "—" && <span className="text-xs text-slate-500">فرم در دسترس نیست.</span>}</div></section></>}
-
     {(tab === "overview" || tab === "matches") && <section className="glass rounded-[24px] p-4 sm:p-5"><div className="flex items-center justify-between mb-4"><div><p className="text-[9px] text-cyan-300 font-bold">MATCH CENTER</p><h2 className="flex items-center gap-2 font-black"><CalendarDays size={17}/> برنامه و نتایج</h2></div><span className="text-[9px] text-slate-500">۱۰ بازی اخیر/آینده</span></div>{fixtures.length ? <div className="space-y-2">{fixtures.map((match) => <Link key={match.id} href={`/matches/${match.id}`} className="group rounded-2xl border border-white/5 bg-white/[.035] p-3.5 flex items-center gap-3 hover:bg-white/[.06] transition"><div className="h-10 w-10 rounded-xl bg-white/[.05] grid place-items-center overflow-hidden">{match.homeLogo && <img src={match.homeLogo} alt="" className="h-8 w-8 object-contain"/>}</div><div className="flex-1 min-w-0"><div className="text-xs font-semibold truncate">{match.home} <span className="text-slate-600 mx-1">vs</span> {match.away}</div><span className="text-[9px] text-slate-500">{formatDate(match.date)}{match.venue ? ` · ${match.venue}` : ""}</span></div><b className="rounded-lg bg-white/[.06] px-3 py-1.5 text-xs">{match.homeScore ?? "—"} - {match.awayScore ?? "—"}</b></Link>)}</div> : <p className="text-sm text-slate-500">بازی‌ای در دسترس نیست.</p>}</section>}
-
     {(tab === "overview" || tab === "squad") && <section className="glass rounded-[24px] p-4 sm:p-5"><div className="flex items-center justify-between mb-4"><div><p className="text-[9px] text-cyan-300 font-bold">SQUAD</p><h2 className="flex items-center gap-2 font-black"><Users size={17}/> فهرست بازیکنان</h2></div><span className="text-[9px] text-slate-500">{squad.length} بازیکن</span></div>{squad.length ? <><div className="flex flex-wrap gap-2 mb-4">{Object.entries(positions).map(([position,count])=><span key={position} className="rounded-full bg-white/[.05] px-2.5 py-1 text-[9px] text-slate-400">{position}: {count}</span>)}</div><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{squad.slice(0, 30).map((player) => <Link key={player.id} href={`/players/${player.id}`} className="rounded-2xl bg-white/[.04] border border-white/5 p-3 flex items-center gap-3 hover:bg-white/[.07] transition"><div className="h-11 w-11 rounded-xl bg-white/[.06] overflow-hidden grid place-items-center">{player.photo && <img src={player.photo} alt="" className="h-full w-full object-cover"/>}</div><div className="min-w-0 flex-1"><b className="block truncate text-xs">{player.name}</b><span className="text-[10px] text-slate-500">{player.position || "—"} · #{player.number || "—"}</span></div><span className="text-[9px] text-slate-600">›</span></Link>)}</div></> : <p className="text-sm text-slate-500">فهرست بازیکنان در دسترس نیست.</p>}</section>}
-
     {tab === "stats" && <section className="glass rounded-[24px] p-4 sm:p-5"><div className="flex items-center gap-2 mb-5"><Activity size={17} className="text-cyan-300"/><h2 className="font-black">آمار پیشرفته تیم</h2></div><div className="space-y-4">{[["نرخ برد",played ? `${Math.round(wins/played*100)}٪` : "—"],["میانگین گل زده",played ? (goalsFor/played).toFixed(2) : "—"],["میانگین گل خورده",played ? (goalsAgainst/played).toFixed(2) : "—"],["نرخ کلین‌شیت",played ? `${Math.round(cleanSheets/played*100)}٪` : "—"]].map(([label,value])=><div key={label}><div className="flex justify-between text-xs mb-1.5"><span className="text-slate-400">{label}</span><b>{value}</b></div><div className="h-2 rounded-full bg-white/[.06] overflow-hidden"><div className="h-full rounded-full bg-cyan-400" style={{width: typeof value === "string" && value.endsWith("٪") ? value : "0%"}}/></div></div>)}</div></section>}
-
     <p className="text-[10px] leading-5 text-slate-600 text-center">اطلاعات این صفحه از سرویس داده فوتبال FOT10 دریافت می‌شود و ممکن است با تأخیر منبع به‌روزرسانی شود.</p>
   </div></main>;
 }
