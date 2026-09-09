@@ -104,7 +104,6 @@ function Events({ data }) {
   return <div className="glass rounded-2xl p-4 space-y-1">{data.map((e, i) => {
     const icon = e.type === "Card" ? (e.detail?.includes("Red") ? "🟥" : "🟨") : e.type === "subst" ? "🔄" : e.type === "Goal" ? "⚽" : "•";
     const minute = `${e.time?.elapsed ?? "—"}${e.time?.extra ? `+${e.time.extra}` : ""}'`;
-    const subtitle = e.type === "subst" ? `${e.assist?.name ? `ورود: ${e.assist.name}` : ""}` : `${e.team?.name || ""}${e.assist?.name ? ` · پاس گل: ${e.assist.name}` : ""}`;
     return <div key={`${e.time?.elapsed}-${e.time?.extra}-${i}`} className="flex items-center gap-3 border-b border-white/5 last:border-0 py-3"><span className="text-xs font-black w-12">{minute}</span><span className="text-xl">{icon}</span><div className="flex-1"><b className="text-xs">{e.player?.id ? <Link href={`/players/${e.player.id}`} className="hover:text-emerald-300">{e.player?.name || "بازیکن"}</Link> : (e.player?.name || e.detail || e.type)}</b><div className="text-[10px] text-slate-500">{e.team?.id ? <Link href={`/teams/${e.team.id}`} className="hover:text-emerald-300">{e.team.name}</Link> : e.team?.name || ""}{e.assist?.name ? ` · پاس گل: ${e.assist.name}` : ""}</div></div></div>;
   })}</div>;
 }
@@ -123,7 +122,13 @@ function Statistics({ data }) {
 
 function Lineups({ data }) {
   if (!Array.isArray(data) || !data.length) return <Empty text="ترکیب رسمی هنوز اعلام نشده است." />;
-  return <div className="grid gap-3">{data.map((team, i) => <div key={team.team?.id || i} className="glass rounded-2xl p-4"><div className="flex items-center gap-2 mb-3"><Link href={`/teams/${team.team?.id}`}><img src={team.team?.logo} alt="" className="h-7 w-7 object-contain" /></Link><Link href={`/teams/${team.team?.id}`} className="font-bold hover:text-emerald-300">{team.team?.name}</Link><span className="mr-auto text-[10px] text-slate-500">{team.formation || "—"}</span></div><div className="grid grid-cols-2 gap-2">{(team.startXI || []).map((p, j) => <div key={p.player?.id || j} className="rounded-xl bg-white/5 p-2 text-[10px] flex justify-between"><Link href={p.player?.id ? `/players/${p.player.id}` : "#"} className="hover:text-emerald-300">{p.player?.name}</Link><span>{p.player?.number ?? ""}</span></div>)}</div></div>)}</div>;
+  return <div className="grid gap-3">{data.map((team, i) => <div key={team.team?.id || i} className="glass rounded-2xl p-4">
+    <div className="flex items-center gap-2 mb-3"><Link href={`/teams/${team.team?.id}`}><img src={team.team?.logo} alt="" className="h-7 w-7 object-contain" /></Link><Link href={`/teams/${team.team?.id}`} className="font-bold hover:text-emerald-300">{team.team?.name}</Link><span className="mr-auto text-[10px] text-slate-500">{team.formation || "—"}</span></div>
+    <div className="text-[10px] font-bold text-emerald-300 mb-2">ترکیب اصلی</div>
+    <div className="grid grid-cols-2 gap-2">{(team.startXI || []).map((p, j) => <div key={p.player?.id || j} className="rounded-xl bg-white/5 p-2 text-[10px] flex justify-between"><Link href={p.player?.id ? `/players/${p.player.id}` : "#"} className="hover:text-emerald-300">{p.player?.name}</Link><span>{p.player?.number ?? ""}</span></div>)}</div>
+    <div className="text-[10px] font-bold text-slate-300 mt-4 mb-2">نیمکت</div>
+    {(team.substitutes || []).length ? <div className="grid grid-cols-2 gap-2">{team.substitutes.map((p, j) => <div key={p.player?.id || `sub-${j}`} className="rounded-xl bg-white/5 p-2 text-[10px] flex justify-between"><Link href={p.player?.id ? `/players/${p.player.id}` : "#"} className="hover:text-emerald-300">{p.player?.name}</Link><span>{p.player?.number ?? ""}</span></div>)}</div> : <div className="rounded-xl bg-white/5 p-3 text-[10px] text-slate-500">اطلاعات نیمکت هنوز در دسترس نیست.</div>}
+  </div>)}</div>;
 }
 
 function Players({ data }) {
