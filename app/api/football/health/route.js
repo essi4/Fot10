@@ -1,4 +1,4 @@
-import { checkSportsApiConnection, getSportsDataConfig } from "../../../../../lib/sports-data";
+import { checkSportsApiConnection, getSportsDataConfig } from "../../../../lib/sports-data";
 
 export const dynamic = "force-dynamic";
 
