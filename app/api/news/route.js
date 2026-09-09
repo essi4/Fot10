@@ -1,7 +1,7 @@
 const SOURCES = [
   { name: "ورزش سه", key: "varzesh3", url: "https://www.varzesh3.com/rss/all", type: "rss", color: "#22c55e" },
   { name: "تسنیم فوتبال ایران", key: "tasnim-iran", url: "https://www.tasnimnews.ir/fa/service/27/%D9%81%D9%88%D8%AA%D8%A8%D8%A7%D9%84-%D8%A7%DB%8C%D8%B1%D8%A7%D9%86", type: "html", color: "#38bdf8" },
-  { name: "تسنیم فوتبال جهان", key: "tasnim-world", url: "https://www.tasnimnews.ir/fa/service/1410/%D9%81%D9%88%D8%AA%D8%A8%D8%A7%D9%84-%D8%AC%D9%87%D8%A7%D9%86", type: "html", color: "#60a5fa" },
+  { name: "تسنیم فوتبال جهان", key: "tasnim-world", url: "https://www.tasnimnews.ir/fa/service/1410/%D9%81%D9%88%D8%AA%D8%A8%D8%A7%D9%84-%D8%AC%D8%B0%D8%A7%D9%86", type: "html", color: "#60a5fa" },
   { name: "فوتبال ایران", key: "footballiran", url: "https://footbaliran.com/latest", type: "html", color: "#f59e0b" },
 ];
 
@@ -122,6 +122,35 @@ function parseHtml(html, source) {
   return found;
 }
 
+async function articleImage(link) {
+  try {
+    const response = await fetch(link, {
+      headers: { "User-Agent": "Mozilla/5.0 FOT10-News/2.0", Accept: "text/html,application/xhtml+xml" },
+      signal: AbortSignal.timeout(6000),
+      cache: "no-store",
+    });
+    if (!response.ok) return "";
+    const html = await response.text();
+    return absolutizeImage(
+      html.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i)?.[1]
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["']/i)?.[1]
+      || html.match(/<meta[^>]+(?:name|property)=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)?.[1]
+      || html.match(/<img[^>]+(?:data-src|src)=["']([^"']+)["'][^>]*>/i)?.[1]
+      || "",
+      link
+    );
+  } catch {
+    return "";
+  }
+}
+
+async function fillMissingImages(items) {
+  const targets = items.filter((item) => !item.image).slice(0, 12);
+  const images = await Promise.all(targets.map((item) => articleImage(item.link)));
+  const map = new Map(targets.map((item, index) => [item.link, images[index]]));
+  return items.map((item) => ({ ...item, image: item.image || map.get(item.link) || "" }));
+}
+
 async function fetchSource(source) {
   try {
     const response = await fetch(source.url, { headers: { "User-Agent": "Mozilla/5.0 FOT10-News/2.0" }, signal: AbortSignal.timeout(7000), cache: "no-store" });
@@ -133,10 +162,13 @@ async function fetchSource(source) {
 
 export async function GET() {
   const batches = await Promise.all(SOURCES.map(fetchSource));
-  const news = batches.flat()
+  let news = batches.flat()
     .filter((item) => isFresh(item.publishedAt))
     .filter((item, index, all) => all.findIndex((other) => other.title === item.title) === index)
     .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
     .slice(0, 18);
+
+  news = await fillMissingImages(news);
+
   return Response.json({ ok: true, news, sport: "football", ttlMinutes: 60, sources: SOURCES.map(({ name, key }) => ({ name, key })), updatedAt: new Date().toISOString() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
