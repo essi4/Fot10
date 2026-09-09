@@ -2,7 +2,8 @@
 
 import { ChevronLeft, Radio } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { filterMajorLeagues } from "../../lib/major-league-filter";
 
 const TEAM_FA = {
   "Manchester City": "منچسترسیتی", "Manchester United": "منچستریونایتد", "Liverpool": "لیورپول", "Arsenal": "آرسنال", "Chelsea": "چلسی", "Tottenham": "تاتنهام",
@@ -10,10 +11,8 @@ const TEAM_FA = {
   "Tractor": "تراکتور", "Persepolis": "پرسپولیس", "Esteghlal": "استقلال", "Sepahan": "سپاهان", "Foolad": "فولاد", "Gol Gohar": "گل‌گهر", "Malavan": "ملوان", "Zob Ahan": "ذوب‌آهن", "Aluminium Arak": "آلومینیوم اراک", "Paykan": "پیکان", "Fajr Sepasi": "فجر سپاسی", "Nassaji Mazandaran": "نساجی مازندران", "Kheybar Khorramabad": "خیبر خرم‌آباد", "Shams Azar Qazvin": "شمس‌آذر قزوین", "Chadormalu SC": "چادرملو", "Mes Shahr-e Babak": "مس شهر بابک", "Sanat Naft": "صنعت نفت", "Esteghlal Khuzestan": "استقلال خوزستان",
 };
 
-const LEAGUE_RANK = ["UEFA Champions League", "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1", "Eredivisie", "Primeira Liga", "Iranian Pro League", "Persian Gulf Pro League", "Liga MX"];
 const faTeam = (name) => TEAM_FA[name] || name;
-const leagueRank = (name = "") => { const i = LEAGUE_RANK.findIndex((x) => name.toLowerCase().includes(x.toLowerCase())); return i < 0 ? 99 : i; };
-const live = (m) => ["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"].includes(String(m?.statusShort || m?.status || "").toUpperCase());
+const isLiveStatus = (match) => ["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"].includes(String(match?.statusShort || match?.status || "").toUpperCase());
 
 function MatchCard({ match }) {
   const homeScore = Number.isFinite(Number(match.homeScore)) ? match.homeScore : "—";
@@ -29,15 +28,17 @@ function MatchCard({ match }) {
 export default function HomeLiveMatches() {
   const [matches, setMatches] = useState([]);
   const [loaded, setLoaded] = useState(false);
-  const load = async () => { try { const res = await fetch("/api/football/live", { cache: "no-store" }); const json = await res.json(); setMatches(Array.isArray(json.matches) ? json.matches.filter(live) : []); } catch {} finally { setLoaded(true); } };
+  const load = async () => {
+    try {
+      const res = await fetch(`/api/football/live?t=${Date.now()}`, { cache: "no-store" });
+      const json = await res.json();
+      const liveMatches = Array.isArray(json.matches) ? json.matches.filter(isLiveStatus) : [];
+      setMatches(filterMajorLeagues(liveMatches));
+    } catch {} finally { setLoaded(true); }
+  };
   useEffect(() => { load(); const timer = setInterval(load, 30000); return () => clearInterval(timer); }, []);
-  const groups = useMemo(() => { const sorted = [...matches].sort((a, b) => leagueRank(a.league) - leagueRank(b.league)); const strong = sorted.filter((m) => leagueRank(m.league) < 99); const weak = sorted.filter((m) => leagueRank(m.league) >= 99); const iran = strong.filter((m) => /iran|persian gulf|iranian/i.test(`${m.league} ${m.country}`)); const major = strong.filter((m) => !iran.includes(m)); return { major, iran, weak }; }, [matches]);
   if (!loaded && !matches.length) return <section className="mt-5 rounded-3xl border border-red-400/10 bg-red-500/[.025] p-4"><div className="flex items-center gap-2"><Radio size={16} className="text-red-400"/><h2 className="text-sm font-black">بازی‌های زنده</h2></div><div className="mt-3 h-24 animate-pulse rounded-2xl bg-white/[.035]"/></section>;
-  return <section className="mt-5"><div className="mb-3 flex items-end justify-between"><div><div className="flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-red-400"/><h2 className="text-sm font-black">بازی‌های زنده</h2></div><p className="mt-1 text-[9px] font-bold text-slate-600">فقط مسابقات در حال برگزاری</p></div><Link href="/matches?live=1" className="text-[9px] font-black text-red-300">همه زنده‌ها ←</Link></div>
-    {!matches.length ? <div className="rounded-3xl border border-white/10 bg-white/[.025] px-5 py-7 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-red-500/10 text-red-400"><Radio size={21}/></div><p className="mt-3 text-[11px] font-black">فعلاً بازی زنده‌ای در جریان نیست</p><p className="mt-1 text-[9px] font-bold text-slate-600">به محض شروع مسابقه، اینجا نمایش داده می‌شود.</p></div> : <div className="space-y-4">
-      {!!groups.major.length && <div><div className="mb-2 flex items-center gap-2"><span className="text-sm">⭐</span><h3 className="text-[10px] font-black text-slate-200">لیگ‌های معتبر</h3><span className="rounded-full bg-red-400/10 px-2 py-0.5 text-[8px] font-black text-red-300">{groups.major.length}</span></div><div className="grid gap-2.5">{groups.major.map((m) => <MatchCard key={m.id} match={m}/>)}</div></div>}
-      {!!groups.iran.length && <div><div className="mb-2 flex items-center gap-2"><span className="text-sm">🇮🇷</span><h3 className="text-[10px] font-black text-slate-200">لیگ برتر ایران</h3></div><div className="grid gap-2.5">{groups.iran.map((m) => <MatchCard key={m.id} match={m}/>)}</div></div>}
-      {!!groups.weak.length && <details className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.025]"><summary className="cursor-pointer list-none px-4 py-3.5 text-[10px] font-black text-slate-300">🌍 سایر لیگ‌ها <span className="mr-2 rounded-full bg-white/5 px-2 py-0.5 text-[8px] text-slate-500">{groups.weak.length} بازی</span></summary><div className="space-y-2 border-t border-white/5 p-2.5">{groups.weak.map((m) => <MatchCard key={m.id} match={m}/>)}</div></details>}
-    </div>}
+  return <section className="mt-5"><div className="mb-3 flex items-end justify-between"><div><div className="flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-red-400"/><h2 className="text-sm font-black">بازی‌های زنده</h2></div><p className="mt-1 text-[9px] font-bold text-slate-600">فقط مسابقات زنده لیگ‌های معتبر</p></div><Link href="/matches?live=1" className="text-[9px] font-black text-red-300">همه زنده‌ها ←</Link></div>
+    {!matches.length ? <div className="rounded-3xl border border-white/10 bg-white/[.025] px-5 py-7 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-red-500/10 text-red-400"><Radio size={21}/></div><p className="mt-3 text-[11px] font-black">فعلاً بازی زنده‌ای در جریان نیست</p><p className="mt-1 text-[9px] font-bold text-slate-600">به محض شروع مسابقه، اینجا نمایش داده می‌شود.</p></div> : <div className="grid gap-2.5">{matches.map((m) => <MatchCard key={m.id} match={m}/>)}</div>}
   </section>;
 }
