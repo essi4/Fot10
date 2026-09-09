@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bell, CalendarDays, ChevronLeft, Clock3, Trophy, Radio, MapPin } from "lucide-react";
+import { ArrowRight, Bell, CalendarDays, Clock3, MapPin, Radio } from "lucide-react";
 import MatchCenterRefresh from "./MatchCenterRefresh";
 import { CLUB_CUPS, LEAGUE_ENTRIES } from "../../../../lib/fot10-universe";
 import { getMatchesResilient } from "../../../../lib/football-resilient";
@@ -7,76 +7,65 @@ import { getMatchesResilient } from "../../../../lib/football-resilient";
 export const dynamic = "force-dynamic";
 
 const iranTeamNames = {
-  Tractor: "تراکتور", Paykan: "پیکان", Kheybar: "خیبر", "Fajr Sepasi": "فجر سپاسی",
-  Esteghlal: "استقلال", "Mes Shahr": "مس شهر بابک", "Chadormalu SC": "چادرملو", Sepahan: "سپاهان",
-  "Esteghlal Khuzestan": "استقلال خوزستان", "Aluminium Arak": "آلومینیوم اراک", "Gol Gohar FC": "گل‌گهر",
-  Nassaji: "نساجی", "Zob Ahan": "ذوب‌آهن", Foolad: "فولاد", "Shams Azar": "شمس‌آذر",
-  Persepolis: "پرسپولیس", "Sanat Naft": "صنعت نفت آبادان", Malavan: "ملوان",
+  Tractor: "تراکتور", "Tractor Sazi": "تراکتور", Paykan: "پیکان", Peykan: "پیکان",
+  Kheybar: "خیبر", "Kheybar Khorramabad": "خیبر خرم‌آباد", "Fajr Sepasi": "فجر سپاسی",
+  Esteghlal: "استقلال", "Esteghlal FC": "استقلال", "Mes Shahr": "مس شهر بابک", "Mes Shahr-e Babak": "مس شهر بابک",
+  "Chadormalu SC": "چادرملو", "Chadormalu Ardakan SC": "چادرملو", Sepahan: "سپاهان",
+  "Esteghlal Khuzestan": "استقلال خوزستان", "Est. Khuzestan": "استقلال خوزستان", "Aluminium Arak": "آلومینیوم اراک",
+  "Gol Gohar FC": "گل‌گهر", "Gol Gohar": "گل‌گهر", Nassaji: "نساجی", "Nassaji Mazandaran": "نساجی مازندران",
+  "Zob Ahan": "ذوب‌آهن", Foolad: "فولاد", "Foolad Khuzestan": "فولاد خوزستان", "Shams Azar": "شمس‌آذر",
+  "Shams Azar FC": "شمس‌آذر", Persepolis: "پرسپولیس", "Persepolis FC": "پرسپولیس",
+  "Sanat Naft": "صنعت نفت آبادان", Malavan: "ملوان",
 };
-function faTeam(name) { return iranTeamNames[name] || name; }
-function teamLogoUrl(id) { return id && !String(id).startsWith("iran-") ? `https://media.api-sports.io/football/teams/${id}.png` : null; }
+function faTeam(name) { return iranTeamNames[name] || name || "—"; }
+function key(name) { return String(faTeam(name)).replace(/[يى]/g,"ی").replace(/[ك]/g,"ک").replace(/[‌\s-]/g,"").toLowerCase(); }
+function logo(id) { return id && !String(id).startsWith("iran-") ? `https://media.api-sports.io/football/teams/${id}.png` : null; }
+function live(m) { return ["1H","2H","HT","ET","P","LIVE"].includes(String(m?.statusShort || m?.status || "").toUpperCase()); }
+function finished(m) { return ["FT","AET","PEN"].includes(String(m?.statusShort || m?.status || "").toUpperCase()) || (m?.homeScore != null && m?.awayScore != null); }
+function dateText(d) { return d ? new Intl.DateTimeFormat("fa-IR",{timeZone:"Asia/Tehran",weekday:"short",day:"numeric",month:"long"}).format(new Date(d)) : "زمان اعلام می‌شود"; }
+function timeText(d) { return d ? new Intl.DateTimeFormat("fa-IR",{timeZone:"Asia/Tehran",hour:"2-digit",minute:"2-digit"}).format(new Date(d)) : ""; }
 
-const iranSchedule = {
-  1: [["چادرملو","سپاهان"],["صنعت نفت آبادان","ملوان"],["خیبر","فجر سپاسی"],["استقلال","مس شهر بابک"],["ذوب‌آهن","فولاد"],["گل‌گهر","نساجی"],["شمس‌آذر","پرسپولیس"],["استقلال خوزستان","آلومینیوم اراک"],["تراکتور","پیکان"]],
-  2: [["آلومینیوم اراک","چادرملو"],["سپاهان","تراکتور"],["پیکان","گل‌گهر"],["پرسپولیس","استقلال خوزستان"],["فولاد","شمس‌آذر"],["نساجی","استقلال"],["فجر سپاسی","صنعت نفت آبادان"],["ملوان","ذوب‌آهن"],["مس شهر بابک","خیبر"]],
-  3: [["استقلال","سپاهان"],["گل‌گهر","چادرملو"],["ملوان","فجر سپاسی"],["ذوب‌آهن","مس شهر بابک"],["صنعت نفت آبادان","فولاد"],["استقلال خوزستان","نساجی"],["تراکتور","پرسپولیس"],["شمس‌آذر","آلومینیوم اراک"],["خیبر","پیکان"]],
-  4: [["پرسپولیس","ملوان"],["چادرملو","تراکتور"],["سپاهان","گل‌گهر"],["پیکان","استقلال خوزستان"],["نساجی","شمس‌آذر"],["فولاد","استقلال"],["مس شهر بابک","صنعت نفت آبادان"],["فجر سپاسی","ذوب‌آهن"],["آلومینیوم اراک","خیبر"]],
-  5: [["صنعت نفت آبادان","سپاهان"],["استقلال خوزستان","چادرملو"],["شمس‌آذر","تراکتور"],["فجر سپاسی","مس شهر بابک"],["خیبر","فولاد"],["ملوان","نساجی"],["استقلال","پرسپولیس"],["گل‌گهر","آلومینیوم اراک"],["ذوب‌آهن","پیکان"]],
-  6: [["مس شهر بابک","ملوان"],["فولاد","فجر سپاسی"],["تراکتور","گل‌گهر"],["سپاهان","استقلال خوزستان"],["چادرملو","شمس‌آذر"],["آلومینیوم اراک","استقلال"],["پیکان","صنعت نفت آبادان"],["پرسپولیس","ذوب‌آهن"],["نساجی","خیبر"]],
-  7: [["ذوب‌آهن","سپاهان"],["صنعت نفت آبادان","چادرملو"],["استقلال خوزستان","تراکتور"],["شمس‌آذر","گل‌گهر"],["ملوان","فولاد"],["مس شهر بابک","نساجی"],["خیبر","پرسپولیس"],["فجر سپاسی","آلومینیوم اراک"],["استقلال","پیکان"]],
-  8: [["آلومینیوم اراک","ملوان"],["سپاهان","فجر سپاسی"],["فولاد","مس شهر بابک"],["گل‌گهر","استقلال خوزستان"],["پیکان","شمس‌آذر"],["تراکتور","استقلال"],["پرسپولیس","صنعت نفت آبادان"],["نساجی","ذوب‌آهن"],["چادرملو","خیبر"]],
-  9: [["شمس‌آذر","سپاهان"],["ذوب‌آهن","چادرملو"],["ملوان","تراکتور"],["استقلال","گل‌گهر"],["خیبر","استقلال خوزستان"],["فولاد","نساجی"],["مس شهر بابک","پرسپولیس"],["صنعت نفت آبادان","آلومینیوم اراک"],["فجر سپاسی","پیکان"]],
-  10: [["پیکان","ملوان"],["نساجی","فجر سپاسی"],["سپاهان","مس شهر بابک"],["پرسپولیس","فولاد"],["استقلال خوزستان","شمس‌آذر"],["چادرملو","استقلال"],["تراکتور","صنعت نفت آبادان"],["آلومینیوم اراک","ذوب‌آهن"],["گل‌گهر","خیبر"]],
-  11: [["خیبر","سپاهان"],["ملوان","چادرملو"],["فجر سپاسی","تراکتور"],["صنعت نفت آبادان","گل‌گهر"],["ذوب‌آهن","استقلال خوزستان"],["استقلال","شمس‌آذر"],["نساجی","پرسپولیس"],["فولاد","آلومینیوم اراک"],["مس شهر بابک","پیکان"]],
-  12: [["سپاهان","ملوان"],["پرسپولیس","فجر سپاسی"],["آلومینیوم اراک","مس شهر بابک"],["چادرملو","فولاد"],["پیکان","نساجی"],["استقلال خوزستان","استقلال"],["شمس‌آذر","صنعت نفت آبادان"],["گل‌گهر","ذوب‌آهن"],["تراکتور","خیبر"]],
-  13: [["فولاد","سپاهان"],["فجر سپاسی","چادرملو"],["مس شهر بابک","تراکتور"],["ملوان","گل‌گهر"],["صنعت نفت آبادان","استقلال خوزستان"],["ذوب‌آهن","شمس‌آذر"],["خیبر","استقلال"],["نساجی","آلومینیوم اراک"],["پرسپولیس","پیکان"]],
-  14: [["استقلال خوزستان","ملوان"],["گل‌گهر","فجر سپاسی"],["چادرملو","مس شهر بابک"],["پیکان","فولاد"],["سپاهان","نساجی"],["آلومینیوم اراک","پرسپولیس"],["استقلال","صنعت نفت آبادان"],["تراکتور","ذوب‌آهن"],["شمس‌آذر","خیبر"]],
-  15: [["پرسپولیس","سپاهان"],["نساجی","چادرملو"],["فولاد","تراکتور"],["مس شهر بابک","گل‌گهر"],["فجر سپاسی","استقلال خوزستان"],["ملوان","شمس‌آذر"],["ذوب‌آهن","استقلال"],["آلومینیوم اراک","پیکان"],["صنعت نفت آبادان","خیبر"]],
-  16: [["خیبر","ملوان"],["استقلال","فجر سپاسی"],["شمس‌آذر","مس شهر بابک"],["استقلال خوزستان","فولاد"],["تراکتور","نساجی"],["گل‌گهر","پرسپولیس"],["سپاهان","آلومینیوم اراک"],["چادرملو","پیکان"],["صنعت نفت آبادان","ذوب‌آهن"]],
-  17: [["پیکان","سپاهان"],["پرسپولیس","چادرملو"],["آلومینیوم اراک","تراکتور"],["فولاد","گل‌گهر"],["مس شهر بابک","استقلال خوزستان"],["فجر سپاسی","شمس‌آذر"],["ملوان","استقلال"],["نساجی","صنعت نفت آبادان"],["ذوب‌آهن","خیبر"]],
-};
-
-function formatDate(date) { if (!date) return "زمان اعلام می‌شود"; return new Intl.DateTimeFormat("fa-IR", { timeZone: "Asia/Tehran", weekday: "short", day: "numeric", month: "long" }).format(new Date(date)); }
-function formatTime(date) { if (!date) return ""; return new Intl.DateTimeFormat("fa-IR", { timeZone: "Asia/Tehran", hour: "2-digit", minute: "2-digit" }).format(new Date(date)); }
-function getWeek(match) { const raw = String(match?.round || match?.week || match?.matchweek || "").toLowerCase(); const numbers = raw.match(/\d{1,2}/g); return numbers?.length ? Number(numbers[numbers.length - 1]) : null; }
-function normalizeTeamKey(name) { return String(name || "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").replace(/[‌\s-]/g, "").toLowerCase(); }
-function fallbackRows(week) { return (iranSchedule[week] || []).map(([home, away], i) => ({ id: `iran-${week}-${i + 1}`, home, away, date: null, homeScore: null, awayScore: null, statusShort: "NS", _week: week, _fallback: true })); }
-function mergeWeekRows(week, apiRows) { const scheduleRows = fallbackRows(week); const result = scheduleRows.map(fallback => { const match = apiRows.find(api => normalizeTeamKey(faTeam(api.home)) === normalizeTeamKey(fallback.home) && normalizeTeamKey(faTeam(api.away)) === normalizeTeamKey(fallback.away)); return match ? { ...fallback, ...match, _week: week, _fallback: false } : fallback; }); for (const api of apiRows) { if (!result.some(row => row.id === api.id)) result.push({ ...api, _week: week, _fallback: false }); } return result; }
-function isLive(m) { return ["1H", "2H", "HT", "ET", "P", "LIVE"].includes(String(m?.statusShort || m?.status || "").toUpperCase()); }
-function statusLabel(m) { if (isLive(m)) return "زنده"; if (["FT", "AET", "PEN"].includes(String(m?.statusShort || m?.status || "").toUpperCase())) return "پایان"; if (["PST", "CANC", "ABD"].includes(String(m?.statusShort || "").toUpperCase())) return "لغو/تعویق"; return "برنامه"; }
-
-async function resolveTeamLogos(rows) {
-  const names = [...new Set(rows.flatMap(m => [m.home, m.away]).filter(Boolean))];
-  const results = await Promise.all(names.map(async name => {
-    try {
-      const q = encodeURIComponent(String(name));
-      const response = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${q}`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(3500) });
-      const data = await response.json();
-      const team = Array.isArray(data?.teams) ? data.teams[0] : null;
-      return [normalizeTeamKey(faTeam(name)), team?.strBadge || team?.strLogo || null];
-    } catch { return [normalizeTeamKey(faTeam(name)), null]; }
-  }));
-  return Object.fromEntries(results);
+// API-Football's normalized fixture object does not currently expose league.round.
+// Reconstruct the matchweek deterministically from the chronological season fixtures.
+function assignWeeks(matches) {
+  const sorted = [...matches].sort((a,b) => new Date(a.date || "2999-12-31") - new Date(b.date || "2999-12-31"));
+  const byPair = new Map();
+  sorted.forEach((m,i) => {
+    const pair = `${key(m.home)}>${key(m.away)}`;
+    const reverse = `${key(m.away)}>${key(m.home)}`;
+    const existing = byPair.get(pair) || byPair.get(reverse);
+    if (existing) return;
+    // A Persian Gulf Pro League matchweek contains nine fixtures. This keeps old
+    // completed weeks visible even when the provider omits the round field.
+    byPair.set(pair, Math.floor(i / 9) + 1);
+  });
+  return sorted.map((m,i) => ({ ...m, _week: byPair.get(`${key(m.home)}>${key(m.away)}`) || byPair.get(`${key(m.away)}>${key(m.home)}`) || Math.floor(i/9)+1 }));
 }
 
 export default async function LeagueMatchesPage({ params, searchParams }) {
-  const league = LEAGUE_ENTRIES.find(x => x.slug === params.slug); const cup = CLUB_CUPS.find(x => x.slug === params.slug);
+  const league = LEAGUE_ENTRIES.find(x => x.slug === params.slug);
+  const cup = CLUB_CUPS.find(x => x.slug === params.slug);
   if (!league && !cup) return <main className="fot-shell"><div className="fot-container py-20 text-center">رقابت پیدا نشد</div></main>;
-  const item = league || { leagueName: cup.name, leagueId: cup.id, flag: cup.icon, name: cup.name };
-  const requested = String(searchParams?.week || "1").toLowerCase(); const showAll = requested === "all"; const selected = showAll ? null : Math.min(17, Math.max(1, Number(requested) || 1));
+  const item = league || { leagueName: cup.name, leagueId: cup.id, flag: cup.icon };
+  const requested = String(searchParams?.week || "1").toLowerCase();
+  const all = requested === "all";
+  const selected = all ? null : Math.min(17, Math.max(1, Number(requested) || 1));
   let matches = [];
-  if (item.leagueId) { try { const result = await getMatchesResilient({ league: item.leagueId, season: Number(item.leagueId) === 195 ? 2026 : undefined }); matches = result?.data || []; } catch {} }
-  const normalized = matches.map(m => ({ ...m, _week: getWeek(m) }));
-  const buildWeekRows = week => { const apiRows = normalized.filter(m => m._week === week).sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0)); return item.leagueId === 195 ? mergeWeekRows(week, apiRows) : apiRows; };
-  const rows = showAll ? Array.from({ length: 17 }, (_, i) => buildWeekRows(i + 1).map(m => ({ ...m, _displayWeek: i + 1 }))).flat() : buildWeekRows(selected);
-  const logoMap = await resolveTeamLogos(rows);
-  const counts = Array.from({ length: 17 }, (_, i) => buildWeekRows(i + 1).length); const finished = rows.filter(m => ["FT", "AET", "PEN"].includes(String(m.statusShort || m.status || "").toUpperCase())).length; const liveCount = rows.filter(isLive).length; const goals = rows.reduce((s, m) => s + (Number(m.homeScore) || 0) + (Number(m.awayScore) || 0), 0);
+  try {
+    const result = await getMatchesResilient({ league: item.leagueId, season: Number(item.leagueId) === 195 ? 2026 : undefined });
+    matches = Array.isArray(result?.data) ? result.data : [];
+  } catch {}
+  const normalized = Number(item.leagueId) === 195 ? assignWeeks(matches) : matches.map((m,i) => ({...m,_week:i+1}));
+  const rows = (all ? normalized : normalized.filter(m => Number(m._week) === selected)).sort((a,b) => new Date(a.date || 0) - new Date(b.date || 0));
+  const counts = Array.from({length:17},(_,i) => normalized.filter(m => Number(m._week) === i+1).length);
+  const finishedCount = rows.filter(finished).length;
+  const liveCount = rows.filter(live).length;
+  const goals = rows.reduce((s,m)=>s+(Number(m.homeScore)||0)+(Number(m.awayScore)||0),0);
 
   return <main className="fot-shell min-h-screen pb-24"><MatchCenterRefresh/><div className="fot-container space-y-4 sm:space-y-5">
-    <header className="flex items-center gap-3 pt-2"><Link href={`/leagues/${params.slug}`} aria-label="بازگشت" className="glass h-10 w-10 rounded-xl grid place-items-center hover:bg-white/10 transition"><ArrowRight size={19}/></Link><div className="min-w-0 flex-1"><p className="text-[9px] text-emerald-400 font-black tracking-[.22em]">FOT10 MATCH CENTER</p><h1 className="text-xl font-black truncate mt-0.5">{item.flag} {item.leagueName}</h1><p className="text-[10px] text-slate-500 mt-1">برنامه و نتایج فصل ۲۰۲۶ · زمان تهران</p></div><Link href="/notifications" aria-label="اعلان‌ها" className="relative glass h-11 w-11 rounded-2xl grid place-items-center hover:bg-white/10 transition"><Bell size={19}/><span className="absolute -top-0.5 -left-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-950"/></Link></header>
-    <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-400/[.13] via-white/[.035] to-transparent p-4 sm:p-5 shadow-2xl"><div className="absolute -top-16 -left-10 h-36 w-36 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none"/><div className="relative flex items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-cyan-300"><Radio size={15}/><span className="text-[9px] font-black tracking-[.18em]">LIVE MATCH CENTER</span></div><h2 className="text-lg sm:text-xl font-black mt-1">{showAll ? "تمام هفته‌ها" : `هفته ${selected}`}</h2><p className="text-[9px] text-slate-500 mt-1">{showAll ? `${rows.length} بازی در برنامه` : `${rows.length} بازی · ${finished} پایان‌یافته · ${goals} گل`}</p></div><div className="flex items-center gap-2"><div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2 text-center"><span className="block text-[8px] text-slate-500">SEASON</span><b className="text-sm">۲۰۲۶</b></div>{liveCount>0&&<div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-center"><span className="flex items-center gap-1 text-[8px] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/> LIVE</span><b className="text-sm text-emerald-200">{liveCount}</b></div>}</div></div></section>
-    <section className="glass rounded-[24px] border border-white/10 p-2"><div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" dir="rtl"><Link href={`/leagues/${params.slug}/matches?week=all`} className={`shrink-0 rounded-xl px-3.5 py-2.5 text-[10px] font-black transition ${showAll ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20" : "bg-white/[.05] text-slate-400 hover:bg-white/10"}`}>همه</Link>{Array.from({length:17},(_,i)=>i+1).map(week=>{const active=!showAll&&selected===week;return <Link key={week} href={`/leagues/${params.slug}/matches?week=${week}`} className={`shrink-0 min-w-[58px] rounded-xl px-2 py-2 text-center transition ${active ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20" : "bg-white/[.05] text-slate-400 hover:bg-white/10"}`}><span className="block text-[10px] font-black">هفته {week}</span><span className={`block text-[8px] mt-0.5 ${active ? "text-slate-800/70" : "text-slate-600"}`}>{counts[week-1]} بازی</span></Link>})}</div></section>
-    <section className="glass rounded-[28px] overflow-hidden border border-white/10"><div className="p-4 sm:p-5 border-b border-white/10 bg-gradient-to-r from-cyan-400/[.08] to-transparent flex items-center justify-between gap-3"><div><p className="text-[9px] text-cyan-300 font-black tracking-widest">{showAll ? "ALL MATCHWEEKS" : `MATCHWEEK ${String(selected).padStart(2,"0")}`}</p><h3 className="text-base font-black mt-1">{showAll ? "بازی‌های لیگ" : `هفته ${selected}`}</h3></div><span className="rounded-full bg-white/[.06] px-3 py-1.5 text-[9px] text-slate-400">{rows.length} بازی</span></div>{rows.length ? <div className="divide-y divide-white/[.06]">{rows.map((m,index)=>{const home=faTeam(m.home),away=faTeam(m.away),live=isLive(m),label=statusLabel(m),isFinished=["FT","AET","PEN"].includes(String(m.statusShort||m.status||"").toUpperCase()),hasScore=m.homeScore!=null||m.awayScore!=null,score=hasScore?`${m.homeScore??0} - ${m.awayScore??0}`:"—",homeLogo=m.homeLogo||teamLogoUrl(m.homeId),awayLogo=m.awayLogo||teamLogoUrl(m.awayId)||logoMap[normalizeTeamKey(m.away)],resolvedHomeLogo=homeLogo||logoMap[normalizeTeamKey(home)],resolvedAwayLogo=awayLogo||logoMap[normalizeTeamKey(away)],content=<div className={`relative grid grid-cols-[2rem_minmax(0,1fr)_4.6rem_minmax(0,1fr)_6.8rem] items-center gap-2 px-3 py-3.5 sm:px-5 hover:bg-white/[.035] transition ${live?"bg-emerald-400/[.035]":""}`}><span className="h-7 w-7 rounded-lg bg-white/[.05] grid place-items-center text-[9px] font-black text-slate-500">{index+1}</span><div className="min-w-0 text-right flex items-center justify-end gap-2"><div className="min-w-0"><b className="block text-[10px] sm:text-xs truncate">{home}</b><span className="text-[8px] text-slate-600">میزبان</span></div><span className="h-9 w-9 rounded-lg bg-white/[.05] border border-white/10 grid place-items-center shrink-0 overflow-hidden">{resolvedHomeLogo?<img src={resolvedHomeLogo} alt={home} className="h-7 w-7 object-contain"/>:<span className="text-[9px]">⚽</span>}</span></div><div className="text-center"><b className={`inline-flex min-w-[46px] justify-center rounded-xl px-2 py-1.5 text-[11px] font-black ${live?"bg-emerald-400/15 text-emerald-300 animate-pulse":isFinished?"bg-cyan-400/10 text-cyan-200":"bg-white/[.06] text-slate-400"}`}>{score}</b><span className={`flex items-center justify-center gap-1 mt-1 text-[7px] font-bold ${live?"text-emerald-400":isFinished?"text-cyan-300":"text-slate-600"}`}>{live&&<span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/>}{label}</span></div><div className="min-w-0 text-right flex items-center gap-2"><span className="h-9 w-9 rounded-lg bg-white/[.05] border border-white/10 grid place-items-center shrink-0 overflow-hidden">{resolvedAwayLogo?<img src={resolvedAwayLogo} alt={away} className="h-7 w-7 object-contain"/>:<span className="text-[9px]">⚽</span>}</span><div className="min-w-0"><b className="block text-[10px] sm:text-xs truncate">{away}</b><span className="text-[8px] text-slate-600">مهمان</span></div></div><div className="text-left text-[8px] text-slate-400"><span className="flex items-center gap-1 justify-end"><CalendarDays size={11}/>{formatDate(m.date)}</span>{m.date&&<span className="flex items-center gap-1 justify-end mt-1"><Clock3 size={11}/>{formatTime(m.date)}</span>}{m.venue&&<span className="flex items-center gap-1 justify-end mt-1 text-slate-600"><MapPin size={10}/>{m.venue}</span>}</div></div>;return m.id&&!String(m.id).startsWith("iran-")?<Link key={`${m.id}-${index}`} href={`/matches/${m.id}`}>{content}</Link>:<div key={`${m.id}-${index}`}>{content}</div>})}</div>:<div className="p-10 text-center"><div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-white/[.04] grid place-items-center text-slate-600"><ChevronLeft size={20}/></div><p className="text-xs font-bold text-slate-400">برای این هفته هنوز بازی ثبت نشده است.</p></div>}</section>
-    <div className="rounded-2xl border border-amber-300/10 bg-amber-300/[.04] px-4 py-3 text-[9px] text-slate-500 leading-5">برنامه روی صفحه بر اساس قرعه رسمی نیم‌فصل اول است؛ نتایج واقعی مسابقات حفظ می‌شود و بازی‌های ناقص با برنامه رسمی تکمیل می‌شوند.</div>
+    <header className="flex items-center gap-3 pt-2"><Link href={`/leagues/${params.slug}`} className="glass h-10 w-10 rounded-xl grid place-items-center"><ArrowRight size={19}/></Link><div className="min-w-0 flex-1"><p className="text-[9px] text-emerald-400 font-black tracking-[.22em]">FOT10 MATCH CENTER</p><h1 className="text-xl font-black truncate">{item.flag} {item.leagueName}</h1><p className="text-[10px] text-slate-500 mt-1">نتایج واقعی و برنامه فصل ۲۰۲۶ · زمان تهران</p></div><Link href="/notifications" className="glass h-11 w-11 rounded-2xl grid place-items-center"><Bell size={19}/></Link></header>
+    <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-400/[.13] via-white/[.035] to-transparent p-4 sm:p-5"><div className="relative flex items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-cyan-300"><Radio size={15}/><span className="text-[9px] font-black tracking-[.18em]">LIVE MATCH CENTER</span></div><h2 className="text-lg sm:text-xl font-black mt-1">{all ? "تمام هفته‌ها" : `هفته ${selected}`}</h2><p className="text-[9px] text-slate-500 mt-1">{rows.length} بازی · {finishedCount} پایان‌یافته · {goals} گل</p></div>{liveCount>0&&<div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-center"><span className="text-[8px] text-emerald-300">LIVE</span><b className="block text-sm text-emerald-200">{liveCount}</b></div>}</div></section>
+    <section className="glass rounded-[24px] border border-white/10 p-2"><div className="flex items-center gap-2 overflow-x-auto pb-1" dir="rtl"><Link href={`/leagues/${params.slug}/matches?week=all`} className={`shrink-0 rounded-xl px-3.5 py-2.5 text-[10px] font-black ${all?"bg-cyan-400 text-slate-950":"bg-white/[.05] text-slate-400"}`}>همه</Link>{Array.from({length:17},(_,i)=>i+1).map(w=><Link key={w} href={`/leagues/${params.slug}/matches?week=${w}`} className={`shrink-0 min-w-[58px] rounded-xl px-2 py-2 text-center ${!all&&selected===w?"bg-cyan-400 text-slate-950":"bg-white/[.05] text-slate-400"}`}><span className="block text-[10px] font-black">هفته {w}</span><span className="block text-[8px] mt-0.5 opacity-60">{counts[w-1]} بازی</span></Link>)}</div></section>
+    <section className="glass rounded-[28px] overflow-hidden border border-white/10"><div className="p-4 border-b border-white/10"><p className="text-[9px] text-cyan-300 font-black tracking-widest">MATCH CENTER</p><h3 className="text-base font-black mt-1">{all?"همه نتایج و برنامه‌ها":`بازی‌های هفته ${selected}`}</h3></div>{rows.length?<div className="divide-y divide-white/[.06]">{rows.map((m,i)=>{const h=faTeam(m.home),a=faTeam(m.away),hLogo=m.homeLogo||logo(m.homeId),aLogo=m.awayLogo||logo(m.awayId),isLive=live(m),isFinished=finished(m),score=m.homeScore!=null&&m.awayScore!=null?`${m.homeScore} - ${m.awayScore}`:"—";const body=<div className={`grid grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)_9rem] items-center gap-2 px-3 py-4 sm:px-5 ${isLive?"bg-emerald-400/[.04]":""}`}><div className="flex items-center justify-end gap-2 min-w-0"><div className="text-right min-w-0"><b className="block text-[10px] sm:text-xs truncate">{h}</b><span className="text-[8px] text-slate-600">میزبان</span></div>{hLogo?<img src={hLogo} alt={h} className="h-9 w-9 object-contain rounded-lg bg-white/[.04] p-1"/>:<span className="h-9 w-9 grid place-items-center bg-white/[.04] rounded-lg">⚽</span>}</div><div className="text-center"><b className={`inline-flex min-w-[48px] justify-center rounded-xl px-2 py-1.5 text-[11px] font-black ${isLive?"bg-emerald-400/15 text-emerald-300":isFinished?"bg-cyan-400/10 text-cyan-200":"bg-white/[.06] text-slate-400"}`}>{score}</b><span className="block text-[7px] mt-1 text-slate-600">{isLive?"زنده":isFinished?"پایان":"برنامه"}</span></div><div className="flex items-center gap-2 min-w-0"><img src={aLogo||""} alt={a} className={`h-9 w-9 object-contain rounded-lg bg-white/[.04] p-1 ${aLogo?"":"hidden"}`}/>{!aLogo&&<span className="h-9 w-9 grid place-items-center bg-white/[.04] rounded-lg">⚽</span>}<div className="min-w-0"><b className="block text-[10px] sm:text-xs truncate">{a}</b><span className="text-[8px] text-slate-600">مهمان</span></div></div><div className="hidden sm:block text-left text-[8px] text-slate-400"><span className="flex items-center gap-1 justify-end"><CalendarDays size={11}/>{dateText(m.date)}</span>{m.date&&<span className="flex items-center gap-1 justify-end mt-1"><Clock3 size={11}/>{timeText(m.date)}</span>}{m.venue&&<span className="flex items-center gap-1 justify-end mt-1 text-slate-600"><MapPin size={10}/>{m.venue}</span>}</div></div>;return m.id?<Link key={`${m.id}-${i}`} href={`/matches/${m.id}`}>{body}</Link>:<div key={i}>{body}</div>})}</div>:<div className="p-12 text-center text-xs text-slate-500">برای این هفته هنوز اطلاعات بازی از منبع داده دریافت نشده است.</div>}</section>
   </div></main>;
 }
