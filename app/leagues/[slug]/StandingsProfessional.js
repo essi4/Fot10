@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Activity, RefreshCw, BrainCircuit, ShieldCheck, Goal, Trophy } from "lucide-react";
+import TeamComparisonPro from "../../../components/TeamComparisonPro";
 
 const REFRESH_SECONDS = 30;
 
@@ -75,19 +76,12 @@ export default function StandingsProfessional() {
       </div>
       {intel && (
         <div className="mx-auto max-w-4xl rounded-2xl border border-cyan-300/10 bg-cyan-400/[.045] p-3 shadow-lg shadow-cyan-950/10">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="flex items-center gap-2"><BrainCircuit size={15} className="text-cyan-300"/><span className="text-[10px] font-black text-cyan-100">FOT10 League Intelligence</span></div>
-            <span className="text-[8px] text-slate-500">تحلیل خودکار جدول</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><Trophy size={11}/> صدرنشین</div><b className="block text-[11px] mt-1 truncate">{intel.leader?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.leader?.points ?? "—"} امتیاز</span></div>
-            <div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><Goal size={11}/> بهترین حمله</div><b className="block text-[11px] mt-1 truncate">{intel.attack?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.attack?.value ?? "—"} گل</span></div>
-            <div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><ShieldCheck size={11}/> بهترین دفاع</div><b className="block text-[11px] mt-1 truncate">{intel.defense?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.defense?.value ?? "—"} گل خورده</span></div>
-            <div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><Activity size={11}/> بیشترین برد</div><b className="block text-[11px] mt-1 truncate">{intel.wins?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.wins?.value ?? "—"} برد</span></div>
-          </div>
+          <div className="flex items-center justify-between gap-3 mb-2"><div className="flex items-center gap-2"><BrainCircuit size={15} className="text-cyan-300"/><span className="text-[10px] font-black text-cyan-100">FOT10 League Intelligence</span></div><span className="text-[8px] text-slate-500">تحلیل خودکار جدول</span></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2"><div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><Trophy size={11}/> صدرنشین</div><b className="block text-[11px] mt-1 truncate">{intel.leader?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.leader?.points ?? "—"} امتیاز</span></div><div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><Goal size={11}/> بهترین حمله</div><b className="block text-[11px] mt-1 truncate">{intel.attack?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.attack?.value ?? "—"} گل</span></div><div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><ShieldCheck size={11}/> بهترین دفاع</div><b className="block text-[11px] mt-1 truncate">{intel.defense?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.defense?.value ?? "—"} گل خورده</span></div><div className="rounded-xl bg-black/20 border border-white/5 p-2.5"><div className="flex items-center gap-1 text-[8px] text-slate-500"><Activity size={11}/> بیشترین برد</div><b className="block text-[11px] mt-1 truncate">{intel.wins?.team?.name || "—"}</b><span className="text-[8px] text-cyan-300">{intel.wins?.value ?? "—"} برد</span></div></div>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[8px] text-slate-500"><span>⚽ مجموع گل‌ها: <b className="text-slate-300">{intel.goals}</b></span><span>🏟️ بازی‌های محاسبه‌شده: <b className="text-slate-300">{Math.round(intel.matches)}</b></span><span>منبع: <b className="text-slate-300">{intel.provider || "—"}</b></span></div>
         </div>
       )}
+      <TeamComparisonPro />
     </div>
   );
 }
