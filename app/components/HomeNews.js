@@ -32,6 +32,11 @@ function isFresh(item) {
   return Number.isFinite(time) && Date.now() - time <= NEWS_TTL && Date.now() - time >= -5 * 60 * 1000;
 }
 
+function imageUrl(item) {
+  if (!item?.image) return "";
+  return `/api/news/image?url=${encodeURIComponent(item.image)}`;
+}
+
 export default function HomeNews() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +97,7 @@ export default function HomeNews() {
             <a key={item.id} href={item.link} target="_blank" rel="noreferrer" className={`home-news-card glass group ${index === 0 ? "home-news-featured" : ""}`}>
               {item.image ? (
                 <div className="home-news-image-wrap">
-                  <img src={item.image} alt="" className="home-news-image" loading={index < 2 ? "eager" : "lazy"} referrerPolicy="no-referrer" />
+                  <img src={imageUrl(item)} alt="" className="home-news-image" loading={index < 2 ? "eager" : "lazy"} />
                   <span className="home-news-fresh">تازه</span>
                 </div>
               ) : null}
