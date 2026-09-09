@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./home-dashboard.css";
 import Golden10Theme from "../components/Golden10Theme";
 import PushBell from "../components/PushBell";
 import BottomNav from "../components/BottomNav";
