@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const TEAM_FA = {
-  "Esteghlal": "استقلال", "Esteghlal FC": "استقلال", "Persepolis": "پرسپولیس", "Persepolis FC": "پرسپولیس",
-  "Sepahan": "سپاهان", "Sepahan SC": "سپاهان", "Tractor": "تراکتور", "Tractor FC": "تراکتور",
-  "Foolad": "فولاد", "Foolad Khuzestan": "فولاد خوزستان", "Gol Gohar": "گل‌گهر", "Gol Gohar Sirjan": "گل‌گهر سیرجان",
-  "Zob Ahan": "ذوب‌آهن", "Aluminium Arak": "آلومینیوم اراک", "Malavan": "ملوان", "Kheybar Khorramabad": "خیبر خرم‌آباد",
-  "Chadormalu": "چادرملو", "Chadormalu SC": "چادرملو", "Mes Rafsanjan": "مس رفسنجان", "Mes Kerman": "مس کرمان",
-  "Esteghlal Khuzestan": "استقلال خوزستان", "Havadar": "هوادار", "Paykan": "پیکان", "Shams Azar Qazvin": "شمس‌آذر قزوین",
-  "Nassaji Mazandaran": "نساجی مازندران", "Sanat Naft": "صنعت نفت آبادان", "Sepidrood": "سپیدرود", "Pars Jonoubi Jam": "پارس جنوبی جم",
-};
+import { TEAM_FA } from "../lib/team-identity";
 
 function translateText(root, english) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
