@@ -1,18 +1,87 @@
 "use client";
 
-import { BarChart3, ChevronLeft, Medal, Repeat2, Settings, Shield, Table2, Trophy } from "lucide-react";
+import { BarChart3, ChevronLeft, Medal, Search, Settings, Shield, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import HomeMatchdayHub from "./components/HomeMatchdayHub";
 import HomeNews from "./components/HomeNews";
 
+const quickNav = [
+  ["نتایج زنده", Trophy, "/matches?live=1"],
+  ["لیگ‌ها", Trophy, "/leagues"],
+  ["تیم ملی", Shield, "/national-teams"],
+  ["بازیکنان", Users, "/players"],
+  ["آمار", BarChart3, "/stats"],
+  ["برترین‌های ماه", Medal, "/players"],
+  ["تنظیمات", Settings, "/settings"],
+];
+
 export default function HomePage() {
-  const quickNav = [["لیگ‌ها", Trophy, "/leagues"], ["تیم ملی", Shield, "/national-teams"], ["آمار و ارقام", BarChart3, "/stats"], ["جدول لیگ‌ها", Table2, "/leagues"], ["برترین‌های ماه", Medal, "/players"], ["نقل‌وانتقالات", Repeat2, "/transfers"], ["تنظیمات", Settings, "/settings"]];
+  return (
+    <main className="fot-container pb-28" dir="rtl">
+      <header className="relative overflow-hidden rounded-[26px] border border-white/10 bg-[#07101d] shadow-2xl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(34,211,238,.16),transparent_32%),radial-gradient(circle_at_95%_100%,rgba(16,185,129,.12),transparent_30%)]" />
+        <div className="relative p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="flex min-w-0 items-center gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-[18px] font-black italic text-slate-950 shadow-[0_8px_28px_rgba(34,211,238,.18)]">10</div>
+              <div className="min-w-0">
+                <div className="text-xl font-black tracking-tight text-white">FOT<span className="text-cyan-300">10</span></div>
+                <div className="text-[8px] font-bold text-slate-500">رسانه و نبض زنده فوتبال</div>
+              </div>
+            </Link>
+            <Link href="/search" aria-label="جستجو" className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-slate-300 transition hover:bg-white/[.08]">
+              <Search size={17} />
+            </Link>
+          </div>
 
-  return <main className="fot-container pb-28"><header className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-[#111b2d] via-[#0b1220] to-[#080c15] p-5 shadow-2xl"><div className="absolute -left-10 -top-16 h-40 w-40 rounded-full bg-yellow-400/10 blur-3xl" /><div className="absolute -right-12 bottom-0 h-40 w-40 rounded-full bg-emerald-400/10 blur-3xl" /><div className="relative flex items-center justify-between gap-4"><Link href="/" className="min-w-0"><div className="flex items-center gap-3"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-yellow-300/20 bg-yellow-300/10 text-2xl font-black italic text-yellow-300 shadow-lg">10</div><div><div className="text-2xl font-black tracking-tight">FOT<span className="text-emerald-400">10</span></div><p className="mt-0.5 text-[9px] font-bold text-slate-500">نبض فوتبال، لحظه‌به‌لحظه</p></div></div></Link></div><div className="relative mt-5 flex items-end justify-between gap-4"><div><p className="mb-1 text-[10px] font-black text-yellow-300">GOLDEN 10</p><h1 className="text-[25px] font-black leading-tight">همه فوتبال، یک‌جا</h1><p className="mt-2 max-w-[310px] text-[10px] leading-5 text-slate-400">خبرهای روز، لیگ‌ها، آمار، بازیکنان و مهم‌ترین اتفاقات فوتبال ایران و جهان.</p></div><div className="select-none text-[86px] font-black italic leading-none text-white/[.035]">10</div></div></header>
+          <div className="mt-5 flex items-end justify-between gap-4">
+            <div className="max-w-[520px]">
+              <div className="mb-2 flex items-center gap-2 text-[9px] font-black text-cyan-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> فوتبال، همین حالا
+              </div>
+              <h1 className="text-[25px] font-black leading-[1.25] tracking-tight text-white sm:text-[30px]">همه فوتبال، یک‌جا</h1>
+              <p className="mt-2 text-[10px] font-bold leading-5 text-slate-400">خبر، نتیجه، بازی زنده، لیگ، آمار و بازیکن؛ سریع و ساده، با تمرکز روی چیزی که برای هوادار مهم است.</p>
+            </div>
+            <div className="hidden select-none text-[92px] font-black italic leading-none text-white/[.035] sm:block">360</div>
+          </div>
+        </div>
 
-  <HomeMatchdayHub />
-  <HomeNews />
+        <div className="relative grid grid-cols-3 border-t border-white/10 bg-black/10">
+          <Link href="/matches" className="flex items-center justify-center gap-1.5 py-3 text-[9px] font-black text-slate-300 transition hover:bg-white/[.04]">بازی‌ها <ChevronLeft size={12} /></Link>
+          <Link href="/leagues" className="flex items-center justify-center gap-1.5 border-x border-white/10 py-3 text-[9px] font-black text-slate-300 transition hover:bg-white/[.04]">رقابت‌ها <ChevronLeft size={12} /></Link>
+          <Link href="/players" className="flex items-center justify-center gap-1.5 py-3 text-[9px] font-black text-slate-300 transition hover:bg-white/[.04]">بازیکنان <ChevronLeft size={12} /></Link>
+        </div>
+      </header>
 
-  <section className="mt-4"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-black">دسترسی سریع</h2><p className="mt-1 text-[9px] font-bold text-slate-600">بخش‌های اصلی FOT10</p></div><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[8px] font-black text-emerald-300">FOT10</span></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{quickNav.map(([label, Icon, href], index) => <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[.035] p-3.5 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300/25 hover:bg-white/[.06] active:scale-[.98]"><div className="absolute -left-5 -top-5 h-16 w-16 rounded-full bg-emerald-400/5 blur-2xl" /><div className="relative flex items-center gap-3"><div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border ${label === "تنظیمات" ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-300" : index === 0 ? "border-yellow-300/20 bg-yellow-300/10 text-yellow-300" : "border-emerald-300/10 bg-emerald-400/10 text-emerald-300"}`}><Icon size={19}/></div><div className="min-w-0"><div className="truncate text-[11px] font-black text-slate-100">{label}</div><div className="mt-1 text-[8px] font-bold text-slate-600">{label === "تنظیمات" ? "شخصی‌سازی اپ" : "مشاهده"}</div></div><ChevronLeft size={14} className="mr-auto shrink-0 text-slate-700 transition-transform group-hover:-translate-x-1" /></div></Link>)}</div></section>
-  </main>;
+      <HomeMatchdayHub />
+      <HomeNews />
+
+      <section className="mt-7">
+        <div className="mb-3 flex items-end justify-between">
+          <div>
+            <h2 className="text-sm font-black text-white">فوتبال را انتخاب کن</h2>
+            <p className="mt-1 text-[9px] font-bold text-slate-600">دسترسی سریع به بخش‌های اصلی</p>
+          </div>
+          <Link href="/settings" className="text-[8px] font-black text-cyan-300">شخصی‌سازی</Link>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {quickNav.map(([label, Icon, href], index) => (
+            <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a1422] p-3 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 hover:bg-[#0d1928] active:scale-[.98]">
+              <div className="absolute -left-6 -top-6 h-16 w-16 rounded-full bg-cyan-400/5 blur-2xl" />
+              <div className="relative flex items-center gap-2.5">
+                <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border ${index === 0 ? "border-red-300/20 bg-red-400/10 text-red-300" : index === 1 ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-300" : "border-white/10 bg-white/[.04] text-slate-300"}`}>
+                  <Icon size={18} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[10px] font-black text-slate-100">{label}</div>
+                  <div className="mt-1 text-[7px] font-bold text-slate-600">مشاهده</div>
+                </div>
+                <ChevronLeft size={13} className="shrink-0 text-slate-700 transition-transform group-hover:-translate-x-1" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
 }
