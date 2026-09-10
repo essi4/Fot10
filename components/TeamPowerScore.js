@@ -7,7 +7,7 @@ import { teamName } from "../lib/team-identity";
 const LEAGUES = { iran: 195, "j1-league": 98, "k-league-1": 292, "saudi-pro-league": 307, "qatar-stars-league": 305, "uae-pro-league": 301, "chinese-super-league": 169, "a-league": 188, "premier-league": 39, laliga: 140, bundesliga: 78, "serie-a": 135, "ligue-1": 61, eredivisie: 88, "primeira-liga": 94, "super-lig": 203, mls: 253, "liga-mx": 262, brasileirao: 71, "liga-profesional": 128 };
 function rows(payload) { return (payload?.data || []).flatMap(x => x?.league?.standings?.flat?.() || []).filter(Boolean); }
 function clamp(n) { return Math.max(0, Math.min(100, Math.round(n))); }
-function parts(row, allRows) {
+function scoreParts(row, allRows) {
   const played = Number(row?.all?.played || 0);
   const maxPoints = Math.max(...allRows.map(x => Number(x.points || 0)), 1);
   const maxGF = Math.max(...allRows.map(x => Number(x.all?.goals?.for || 0)), 1);
@@ -22,12 +22,15 @@ function parts(row, allRows) {
 }
 function level(score) { if (score >= 85) return "Elite"; if (score >= 75) return "قوی"; if (score >= 60) return "خوب"; if (score >= 45) return "متوسط"; return "در حال رشد"; }
 
+// Public helpers shared by team score cards.
+export { scoreParts, level, LEAGUES };
+
 export default function TeamPowerScore() {
   const [path, setPath] = useState(""); const [data, setData] = useState([]); const [seconds, setSeconds] = useState(30); const [loading, setLoading] = useState(true);
   useEffect(() => { setPath(window.location.pathname); }, []);
   const slug = path.split("/").filter(Boolean).pop(); const league = LEAGUES[slug]; const season = league === 195 ? 2026 : new Date().getFullYear();
   useEffect(() => { let alive=true; if(!league){setLoading(false);return;} const load=()=>fetch(`/api/football/standings?league=${league}&season=${season}`,{cache:"no-store"}).then(r=>r.json()).then(p=>{if(alive&&p?.ok)setData(rows(p));}).catch(()=>{}).finally(()=>alive&&setLoading(false)); load(); const t=window.setInterval(load,30000); const c=window.setInterval(()=>setSeconds(v=>v<=1?30:v-1),1000); return()=>{alive=false;window.clearInterval(t);window.clearInterval(c);}; },[league,season]);
-  const ranked = useMemo(() => data.map(row => ({ row, parts: parts(row,data) })).sort((a,b) => b.parts.total-a.parts.total), [data]);
+  const ranked = useMemo(() => data.map(row => ({ row, parts: scoreParts(row,data) })).sort((a,b) => b.parts.total-a.parts.total), [data]);
   if(loading) return <section className="mx-auto max-w-5xl rounded-2xl border border-violet-300/10 bg-violet-400/[.035] p-4 text-center text-[10px] text-slate-500"><Activity size={15} className="mx-auto mb-2 animate-pulse text-violet-300"/>در حال محاسبه FOT10 Power Score…</section>;
   if(!ranked.length)return null;
   const leader=ranked[0];
