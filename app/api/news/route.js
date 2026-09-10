@@ -36,6 +36,33 @@ const FOOTBALL_KEYWORDS = [
   "ترکیب", "گلزنی", "گلزن", "توپ طلا", "VAR"
 ];
 
+const TEAM_ALIASES = {
+  "پرسپولیس": ["پرسپولیس", "پرسپولیس تهران", "persepolis", "perspolis"],
+  "رئال مادرید": ["رئال مادرید", "رئال", "real madrid", "real madrid cf"],
+  "بارسلونا": ["بارسلونا", "barcelona", "fc barcelona", "barça", "barca"],
+  "آرسنال": ["آرسنال", "arsenal", "arsenal fc"],
+  "بایرن مونیخ": ["بایرن مونیخ", "بایرن", "bayern munich", "bayern münchen", "fc bayern"],
+  "منچسترسیتی": ["منچسترسیتی", "منچستر سیتی", "منچستر سیتی", "manchester city", "man city"]
+};
+
+function normalize(value = "") {
+  return String(value)
+    .toLowerCase()
+    .replace(/[يى]/g, "ی")
+    .replace(/[ك]/g, "ک")
+    .replace(/\u200c/g, "")
+    .replace(/[أإ]/g, "ا")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function teamMatches(item, team) {
+  if (!team) return true;
+  const aliases = TEAM_ALIASES[team] || [team];
+  const text = normalize(`${item.title} ${item.description}`);
+  return aliases.some((alias) => text.includes(normalize(alias)));
+}
+
 function isFootball(title = "", description = "", sourceKey = "") {
   if (sourceKey.startsWith("tasnim") || sourceKey === "footballiran") return true;
   const text = `${title} ${description}`.toLowerCase();
@@ -160,15 +187,22 @@ async function fetchSource(source) {
   } catch { return []; }
 }
 
-export async function GET() {
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const team = searchParams.get("team")?.trim() || "";
+  const requestedLimit = Number(searchParams.get("limit") || 5);
+  const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 10) : 5;
+
   const batches = await Promise.all(SOURCES.map(fetchSource));
   let news = batches.flat()
     .filter((item) => isFresh(item.publishedAt))
     .filter((item, index, all) => all.findIndex((other) => other.title === item.title) === index)
-    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-    .slice(0, 18);
+    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+
+  if (team) news = news.filter((item) => teamMatches(item, team)).slice(0, limit);
+  else news = news.slice(0, 18);
 
   news = await fillMissingImages(news);
 
-  return Response.json({ ok: true, news, sport: "football", ttlMinutes: 60, sources: SOURCES.map(({ name, key }) => ({ name, key })), updatedAt: new Date().toISOString() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  return Response.json({ ok: true, news, team: team || null, sport: "football", ttlMinutes: 60, sources: SOURCES.map(({ name, key }) => ({ name, key })), updatedAt: new Date().toISOString() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
