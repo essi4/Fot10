@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock3, Radio, RefreshCw, Star, Trophy } from "lucide-react";
+import HomeLiveMatches from "../components/HomeLiveMatches";
 
 function iranDate(offset = 0) {
   const now = new Date();
@@ -51,22 +52,15 @@ export default function MatchesPage() {
   }, [date]);
 
   useEffect(() => { loadMatches(); }, [loadMatches]);
-  useEffect(() => {
-    if (day !== 0) return;
-    const timer = setInterval(() => loadMatches(), 30000);
-    return () => clearInterval(timer);
-  }, [day, loadMatches]);
+  useEffect(() => { if (day !== 0) return; const timer = setInterval(() => loadMatches(), 30000); return () => clearInterval(timer); }, [day, loadMatches]);
 
   const liveCount = games.filter((g) => g.live).length;
-  const grouped = games.reduce((acc, g) => {
-    const key = g.country ? `${g.country} · ${g.league}` : g.league;
-    (acc[key] ||= []).push(g);
-    return acc;
-  }, {});
+  const grouped = games.reduce((acc, g) => { const key = g.country ? `${g.country} · ${g.league}` : g.league; (acc[key] ||= []).push(g); return acc; }, {});
   const dayLabel = day === -1 ? "دیروز" : day === 1 ? "فردا" : "امروز";
 
   return <main className="fot-shell"><div className="fot-container space-y-5">
     <header className="flex items-center justify-between"><div className="flex items-center gap-3"><Link href="/" className="glass h-10 w-10 rounded-xl grid place-items-center"><ArrowRight size={19}/></Link><div><h1 className="text-xl font-black">مرکز بازی‌ها</h1><p className="text-[11px] text-slate-500">نتایج واقعی و زنده فوتبال</p></div></div><button onClick={() => loadMatches({ manual: true })} className="glass h-10 w-10 rounded-xl grid place-items-center" aria-label="به‌روزرسانی"><RefreshCw size={18} className={refreshing ? "animate-spin" : ""}/></button></header>
+    <HomeLiveMatches />
     <div className="grid grid-cols-3 gap-2">{[-1,0,1].map((n) => <button key={n} onClick={() => setDay(n)} className={`rounded-2xl p-3 text-center ${day === n ? "bg-emerald-400 text-slate-950" : "glass"}`}><CalendarDays size={16} className="mx-auto mb-1"/><b className="text-xs">{n === -1 ? "دیروز" : n === 1 ? "فردا" : "امروز"}</b><div className="text-[9px] opacity-70">{new Date(iranDate(n)).toLocaleDateString("fa-IR", { day: "numeric", month: "long", timeZone: "Asia/Tehran" })}</div></button>)}</div>
     <div className="grid grid-cols-3 gap-2"><div className="rounded-2xl bg-emerald-400 text-slate-950 p-3 text-center"><Radio size={16} className="mx-auto mb-1"/><b className="text-sm">زنده</b><div className="text-[10px]">{liveCount} بازی</div></div><div className="glass rounded-2xl p-3 text-center"><Clock3 size={16} className="mx-auto mb-1 text-slate-400"/><b className="text-sm">{dayLabel}</b><div className="text-[10px] text-slate-500">{games.length} بازی</div></div><div className="glass rounded-2xl p-3 text-center"><Trophy size={16} className="mx-auto mb-1 text-slate-400"/><b className="text-sm">لیگ‌ها</b><div className="text-[10px] text-slate-500">{Object.keys(grouped).length}</div></div></div>
     {error && <div className="rounded-2xl border border-amber-400/15 bg-amber-400/5 px-4 py-3 text-[11px] text-amber-200">اتصال داده زنده برقرار نشد: {error}</div>}
