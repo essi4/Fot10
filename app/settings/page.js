@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronLeft, Globe2, Info, LockKeyhole, Moon, Palette, ShieldCheck, SlidersHorizontal, Smartphone, UserRound } from "lucide-react";
+import { Bell, ChevronLeft, Globe2, Info, LockKeyhole, Moon, Palette, ShieldCheck, SlidersHorizontal, Smartphone } from "lucide-react";
 
 const items = [
-  { title: "اعلان‌ها", desc: "مدیریت خبرها و هشدارهای مسابقات", icon: Bell, href: "/notifications", tone: "emerald" },
-  { title: "ظاهر برنامه", desc: "حالت نمایش و تجربه بصری FOT10", icon: Palette, href: "#appearance", tone: "cyan" },
-  { title: "تنظیمات مسابقات", desc: "کنترل نمایش نتایج و مسابقات مورد علاقه", icon: SlidersHorizontal, href: "/matches", tone: "yellow" },
-  { title: "زبان", desc: "فارسی · زبان پیش‌فرض FOT10", icon: Globe2, href: "#language", tone: "violet" },
-  { title: "حریم خصوصی", desc: "مدیریت اطلاعات و دسترسی‌های حساب", icon: LockKeyhole, href: "#privacy", tone: "blue" },
+  { title: "اعلان‌ها", desc: "مدیریت خبرها و هشدارهای مسابقات", icon: Bell, href: "/notifications", style: "border-emerald-300/15 bg-emerald-400/10 text-emerald-300" },
+  { title: "ظاهر برنامه", desc: "حالت نمایش و تجربه بصری FOT10", icon: Palette, href: "#appearance", style: "border-cyan-300/15 bg-cyan-400/10 text-cyan-300" },
+  { title: "تنظیمات مسابقات", desc: "کنترل نمایش نتایج و مسابقات مورد علاقه", icon: SlidersHorizontal, href: "/matches", style: "border-yellow-300/15 bg-yellow-300/10 text-yellow-300" },
+  { title: "زبان", desc: "فارسی · زبان پیش‌فرض FOT10", icon: Globe2, href: "#language", style: "border-violet-300/15 bg-violet-400/10 text-violet-300" },
+  { title: "حریم خصوصی", desc: "مدیریت اطلاعات و دسترسی‌های حساب", icon: LockKeyhole, href: "#privacy", style: "border-blue-300/15 bg-blue-400/10 text-blue-300" },
 ];
 
 export default function SettingsPage() {
@@ -26,9 +26,9 @@ export default function SettingsPage() {
       </header>
 
       <section className="mt-4 space-y-2.5">
-        {items.map(({ title, desc, icon: Icon, href, tone }) => (
+        {items.map(({ title, desc, icon: Icon, href, style }) => (
           <Link key={title} href={href} className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.035] p-3.5 shadow-lg transition hover:border-emerald-300/20 hover:bg-white/[.055] active:scale-[.99]">
-            <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-${tone}-300/15 bg-${tone}-400/10 text-${tone}-300`}><Icon size={19} /></div>
+            <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border ${style}`}><Icon size={19} /></div>
             <div className="min-w-0 flex-1 text-right"><div className="text-[11px] font-black text-slate-100">{title}</div><div className="mt-1 truncate text-[8px] font-bold text-slate-600">{desc}</div></div>
             <ChevronLeft size={15} className="text-slate-700 transition-transform group-hover:-translate-x-1" />
           </Link>
@@ -40,9 +40,7 @@ export default function SettingsPage() {
         <div id="language" className="rounded-2xl border border-white/10 bg-white/[.025] p-3.5"><div className="flex items-center gap-2"><Globe2 size={16} className="text-emerald-300" /><span className="text-[10px] font-black">زبان</span></div><p className="mt-2 text-[9px] font-bold text-slate-500">فارسی</p></div>
       </section>
 
-      <section id="privacy" className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-400/[.035] p-4">
-        <div className="flex items-center gap-3"><ShieldCheck size={19} className="text-emerald-300" /><div><h2 className="text-[11px] font-black">حریم خصوصی</h2><p className="mt-1 text-[8px] font-bold text-slate-600">اطلاعات حساب و تنظیمات شما تحت کنترل خودتان است.</p></div></div>
-      </section>
+      <section id="privacy" className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-400/[.035] p-4"><div className="flex items-center gap-3"><ShieldCheck size={19} className="text-emerald-300" /><div><h2 className="text-[11px] font-black">حریم خصوصی</h2><p className="mt-1 text-[8px] font-bold text-slate-600">اطلاعات حساب و تنظیمات شما تحت کنترل خودتان است.</p></div></div></section>
 
       <footer className="mt-5 flex items-center justify-center gap-2 text-[8px] font-bold text-slate-700"><Smartphone size={12} /> FOT10 <span>•</span> <Info size={12} /> مرکز کنترل برنامه</footer>
     </main>
