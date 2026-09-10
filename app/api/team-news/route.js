@@ -18,7 +18,7 @@ const TEAM_ALIASES = {
 };
 
 const clean = (v = "") => String(v).replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]*>/g, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/\s+/g, " ").trim();
-const normalize = (v = "") => clean(v).toLowerCase().replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/‌/g, " ");
+const normalize = (v = "") => clean(v).toLowerCase().replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").replace(/‌/g, " ").replace(/\s+/g, " ").trim();
 
 function matchesTeam(text, aliases) {
   const value = normalize(text);
@@ -65,8 +65,8 @@ async function fetchSource(source, aliases) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const team = searchParams.get("team")?.trim() || "";
-  const aliases = TEAM_ALIASES[team];
-  if (!aliases) return NextResponse.json({ ok: true, team, news: [], message: "تیم مورد نظر در موتور اخبار تیمی تعریف نشده است." });
+  const aliases = TEAM_ALIASES[team] || [team];
+  if (!team) return NextResponse.json({ ok: true, team: "", news: [] });
 
   const batches = await Promise.all(SOURCES.map((source) => fetchSource(source, aliases)));
   const news = batches.flat()
