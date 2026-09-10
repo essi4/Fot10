@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, ChevronLeft, Heart, Languages, LogIn, LogOut, Moon, ShieldCheck, Trophy, UserRound, Zap } from "lucide-react";
 import PushNotifications from "../../components/PushNotifications";
+import FavoriteTeamNews from "../../components/FavoriteTeamNews";
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const teams = ["پرسپولیس", "رئال مادرید", "بارسلونا", "آرسنال", "بایرن مونیخ", "منچسترسیتی"];
@@ -27,7 +28,7 @@ export default function AccountPage() {
   useEffect(() => {
     const local = loadLocalProfile();
     setName(local.name || "");
-    setFavorites(Array.isArray(local.favorites) ? local.favorites : ["پرسپولیس", "رئال مادرید"]);
+    setFavorites(Array.isArray(local.favorites) ? local.favorites.slice(0, 5) : ["پرسپولیس", "رئال مادرید"]);
     setNotifications(typeof local.notifications === "boolean" ? local.notifications : true);
     if (!supabase) { setLoading(false); return; }
     let active = true;
@@ -60,7 +61,7 @@ export default function AccountPage() {
       if (profile?.display_name) setName(profile.display_name);
       if (typeof prefs?.notifications_enabled === "boolean") setNotifications(prefs.notifications_enabled);
       if (Array.isArray(favs)) {
-        const teamFavs = favs.filter(x => x.item_type === "team").map(x => x.item_name);
+        const teamFavs = favs.filter(x => x.item_type === "team").map(x => x.item_name).slice(0, 5);
         const leagueFavs = favs.filter(x => x.item_type === "league").map(x => x.item_name);
         if (teamFavs.length) setFavorites(teamFavs); if (leagueFavs.length) setFavoriteLeagues(leagueFavs);
       }
@@ -77,7 +78,7 @@ export default function AccountPage() {
     setBusy(true); setError("");
     try {
       const nextName = next.name ?? name; const nextNotifications = next.notifications ?? notifications;
-      const nextTeams = next.favorites ?? favorites; const nextLeagues = next.favoriteLeagues ?? favoriteLeagues;
+      const nextTeams = (next.favorites ?? favorites).slice(0, 5); const nextLeagues = next.favoriteLeagues ?? favoriteLeagues;
       const [{ error: profileError }, { error: prefsError }] = await Promise.all([
         supabase.from("fot10_profiles").upsert({ id: user.id, display_name: nextName, updated_at: new Date().toISOString() }),
         supabase.from("fot10_preferences").upsert({ user_id: user.id, notifications_enabled: nextNotifications, language: "fa", theme: "dark", updated_at: new Date().toISOString() }),
@@ -108,7 +109,13 @@ export default function AccountPage() {
   }
 
   async function signOut() { if (!supabase) return; setBusy(true); await supabase.auth.signOut(); setUser(null); setOtpSent(false); setOtp(""); setMessage("از حساب خارج شدی."); setBusy(false); }
-  function toggleFavorite(item) { const next = favorites.includes(item) ? favorites.filter(x => x !== item) : [...favorites, item]; setFavorites(next); user ? saveCloud({ favorites: next }) : persistGuest({ favorites: next }); }
+  function toggleFavorite(item) {
+    const exists = favorites.includes(item);
+    if (!exists && favorites.length >= 5) return setError("حداکثر ۵ تیم محبوب می‌توانی انتخاب کنی.");
+    setError("");
+    const next = exists ? favorites.filter(x => x !== item) : [...favorites, item];
+    setFavorites(next); user ? saveCloud({ favorites: next }) : persistGuest({ favorites: next });
+  }
   function toggleLeague(item) { const next = favoriteLeagues.includes(item) ? favoriteLeagues.filter(x => x !== item) : [...favoriteLeagues, item]; setFavoriteLeagues(next); user ? saveCloud({ favoriteLeagues: next }) : persistGuest({ favoriteLeagues: next }); }
   function toggleNotifications() { const next = !notifications; setNotifications(next); user ? saveCloud({ notifications: next }) : persistGuest({ notifications: next }); }
 
@@ -123,7 +130,8 @@ export default function AccountPage() {
       {(message || error) && <div className={`rounded-2xl p-3 text-xs font-bold ${error ? "border border-rose-400/20 bg-rose-400/[.06] text-rose-200" : "border border-emerald-400/10 bg-emerald-400/[.05] text-emerald-200"}`}>{error || message}</div>}
       <section className="glass card p-5"><div className="flex items-center gap-3 mb-4"><Zap size={18} className="text-emerald-400"/><div><h2 className="font-black">پروفایل</h2><p className="text-[10px] text-slate-500 mt-1">{user ? "در فضای ابری FOT10 ذخیره می‌شود" : "برای ذخیره ابری، وارد حساب شو"}</p></div></div><input value={name} onChange={e => setName(e.target.value)} onBlur={() => user ? saveCloud() : persistGuest()} className="glass w-full rounded-2xl py-3.5 px-4 outline-none focus:ring-2 focus:ring-emerald-400/20 text-sm" placeholder="اسم شما"/><button disabled={busy} onClick={() => user ? saveCloud() : persistGuest()} className="w-full mt-3 rounded-2xl bg-emerald-400 text-slate-950 py-3 font-black text-sm active:scale-[.99] transition disabled:opacity-50">{busy ? "در حال ذخیره…" : saved ? "ذخیره شد ✓" : "ذخیره پروفایل"}</button></section>
       <PushNotifications />
-      <section className="glass card p-5"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><Heart size={18} className="text-rose-300"/><h2 className="font-black">تیم‌های محبوب</h2></div><span className="text-[10px] text-slate-500">{user ? "ابری" : "روی گوشی"}</span></div><div className="flex flex-wrap gap-2">{teams.map(team => <button key={team} onClick={() => toggleFavorite(team)} className={`rounded-full px-3.5 py-2 text-xs font-bold border transition ${favorites.includes(team) ? "bg-emerald-400 text-slate-950 border-emerald-400" : "bg-white/[.03] text-slate-400 border-white/10"}`}>{favorites.includes(team) ? "★ " : "☆ "}{team}</button>)}</div></section>
+      <section className="glass card p-5"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><Heart size={18} className="text-rose-300"/><h2 className="font-black">تیم‌های محبوب</h2></div><span className="text-[10px] text-slate-500">{favorites.length}/۵ • {user ? "ابری" : "روی گوشی"}</span></div><div className="flex flex-wrap gap-2">{teams.map(team => <button key={team} onClick={() => toggleFavorite(team)} className={`rounded-full px-3.5 py-2 text-xs font-bold border transition ${favorites.includes(team) ? "bg-emerald-400 text-slate-950 border-emerald-400" : "bg-white/[.03] text-slate-400 border-white/10"}`}>{favorites.includes(team) ? "★ " : "☆ "}{team}</button>)}</div><p className="text-[9px] text-slate-600 mt-3">حداکثر ۵ باشگاه؛ با انتخاب هر باشگاه، ستون خبرهای همان باشگاه خودکار ساخته می‌شود.</p></section>
+      <FavoriteTeamNews teams={favorites} />
       <section className="glass card p-5"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><Trophy size={18} className="text-amber-300"/><h2 className="font-black">لیگ‌های مورد علاقه</h2></div></div><div className="flex flex-wrap gap-2">{leagues.map(league => <button key={league} onClick={() => toggleLeague(league)} className={`rounded-full px-3.5 py-2 text-xs font-bold border transition ${favoriteLeagues.includes(league) ? "bg-amber-300 text-slate-950 border-amber-300" : "bg-white/[.03] text-slate-400 border-white/10"}`}>{favoriteLeagues.includes(league) ? "★ " : "☆ "}{league}</button>)}</div></section>
       <section className="glass card p-5 space-y-2"><Setting icon={Bell} title="اعلان‌های بازی" sub="شروع بازی، گل و پایان مسابقه" active={notifications} onClick={toggleNotifications}/><Setting icon={Languages} title="زبان" sub="فارسی • آماده برای انگلیسی"/><Setting icon={Moon} title="ظاهر" sub="تم حرفه‌ای تیره"/><Setting icon={ShieldCheck} title="امنیت" sub={user ? "احراز هویت Supabase فعال است" : "ورود امن با OTP آماده است"}/></section>
       <div className="rounded-2xl border border-emerald-400/10 bg-emerald-400/[.04] p-4 text-[10px] leading-5 text-slate-500">FOT10 بین حالت مهمان و حساب واقعی تفاوت می‌گذارد: مهمان تنظیمات را روی دستگاه نگه می‌دارد و حساب واردشده پروفایل، علاقه‌مندی‌ها و تنظیمات را با Supabase همگام می‌کند.</div>
