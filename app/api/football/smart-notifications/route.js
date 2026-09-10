@@ -7,13 +7,14 @@ const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "P", "BT", "LIVE"];
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 const GOAL_TYPES = new Set(["Goal", "goal"]);
 const RED_CARD_DETAILS = new Set(["Red Card", "Second Yellow card", "Second Yellow"]);
+const SUB_TYPES = new Set(["subst", "Substitution", "substitution"]);
 
 function todayTehran() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran" }).format(new Date());
 }
 
 function eventId(event) {
-  return event?.id || `${event?.time?.elapsed || 0}-${event?.team?.id || 0}-${event?.player?.id || event?.player?.name || "event"}-${event?.type || "event"}-${event?.detail || "detail"}`;
+  return event?.id || `${event?.time?.elapsed || 0}-${event?.time?.extra || 0}-${event?.team?.id || 0}-${event?.player?.id || event?.player?.name || "event"}-${event?.assist?.id || event?.assist?.name || "assist"}-${event?.type || "event"}-${event?.detail || "detail"}`;
 }
 
 function eventMinute(event) {
@@ -28,11 +29,8 @@ function eventScore(events, targetEvent, homeId, awayId, baseHome, baseAway) {
   let away = Number(baseAway) || 0;
   const targetId = eventId(targetEvent);
   const goals = events
-    .filter((event) => GOAL_TYPES.has(event?.type) && !/missed|cancelled|var/i.test(String(event?.detail || "")))
-    .sort((a, b) => Number(a?.time?.elapsed || 0) - Number(b?.time?.elapsed || 0));
-  if (!goals.length) return `${home} - ${away}`;
-  home = Number(baseHome) || 0;
-  away = Number(baseAway) || 0;
+    .filter((event) => GOAL_TYPES.has(event?.type) && !/missed|cancelled|cancel|var/i.test(String(event?.detail || "")))
+    .sort((a, b) => (Number(a?.time?.elapsed || 0) * 100 + Number(a?.time?.extra || 0)) - (Number(b?.time?.elapsed || 0) * 100 + Number(b?.time?.extra || 0)));
   let beforeHome = 0;
   let beforeAway = 0;
   for (const event of goals) {
@@ -42,6 +40,21 @@ function eventScore(events, targetEvent, homeId, awayId, baseHome, baseAway) {
   }
   const isHome = Number(targetEvent?.team?.id) === Number(homeId);
   return `${beforeHome + (isHome ? 1 : 0)} - ${beforeAway + (isHome ? 0 : 1)}`;
+}
+
+function isCancelledGoal(event) {
+  const text = `${event?.type || ""} ${event?.detail || ""}`.toLowerCase();
+  return GOAL_TYPES.has(event?.type) && /cancel|cancelled|disallowed|var/.test(text);
+}
+
+function isPenaltyEvent(event) {
+  const text = `${event?.type || ""} ${event?.detail || ""}`.toLowerCase();
+  return /penalty|penalty awarded|penalty missed|penalty saved/.test(text);
+}
+
+function isMissedPenalty(event) {
+  const text = `${event?.type || ""} ${event?.detail || ""}`.toLowerCase();
+  return /penalty.*(missed|saved)|missed.*penalty/.test(text);
 }
 
 export async function GET(request) {
@@ -72,28 +85,54 @@ export async function GET(request) {
 
         if (live) {
           if (Number(match.elapsed) <= 2 || (match.statusShort === "1H" && Number(match.elapsed) <= 2)) {
-            notifications.push({ id: `${prefix}-started`, kind: "started", title: `🚀 ${team.name} بازی را شروع کرد`, body: `${team.name} مقابل ${opponent} شروع شد${score ? ` • ${score}` : ""}.`, match_id: String(match.id), team_name: team.name });
+            notifications.push({ id: `${prefix}-started`, kind: "started", title: `🚀 ${team.name} بازی را شروع کرد`, body: `${team.name} مقابل ${opponent} شروع شد${score ? ` • ${score}` : ""}.`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
           }
 
           try {
             const events = await getFixtureEvents(match.id);
-            events.filter((event) => GOAL_TYPES.has(event?.type) && Number(event?.team?.id) === Number(team.id) && !/missed|cancelled|var/i.test(String(event?.detail || ""))).forEach((event) => {
+            const teamEvents = events.filter((event) => Number(event?.team?.id) === Number(team.id));
+
+            teamEvents.filter((event) => GOAL_TYPES.has(event?.type) && !isCancelledGoal(event) && !/missed/i.test(String(event?.detail || ""))).forEach((event) => {
               const minute = eventMinute(event);
               const scorer = event?.player?.name ? ` توسط ${event.player.name}` : "";
+              const assist = event?.assist?.name ? ` • پاس گل: ${event.assist.name}` : "";
+              const penalty = /penalty/i.test(String(event?.detail || ""));
               const eventScoreText = eventScore(events, event, match.homeId, match.awayId, match.homeScore, match.awayScore);
-              notifications.push({ id: `${prefix}-goal-${eventId(event)}`, kind: "goal", title: `⚽ ${team.name} گل زد`, body: `${team.name}${scorer} گل زد${minute ? ` در دقیقه ${minute}` : ""} • نتیجه: ${eventScoreText}`, match_id: String(match.id), team_name: team.name });
+              notifications.push({ id: `${prefix}-goal-${eventId(event)}`, kind: penalty ? "penalty" : "goal", title: penalty ? `⚽🎯 پنالتی ${team.name} گل شد` : `⚽ ${team.name} گل زد`, body: `${team.name}${scorer} گل زد${minute ? ` در دقیقه ${minute}` : ""}${assist} • نتیجه: ${eventScoreText}`, match_id: String(match.id), team_name: team.name, score_snapshot: eventScoreText });
             });
 
-            events.filter((event) => Number(event?.team?.id) === Number(team.id) && RED_CARD_DETAILS.has(String(event?.detail || ""))).forEach((event) => {
+            teamEvents.filter(isCancelledGoal).forEach((event) => {
               const minute = eventMinute(event);
               const player = event?.player?.name ? ` • ${event.player.name}` : "";
-              notifications.push({ id: `${prefix}-red-${eventId(event)}`, kind: "red-card", title: `🟥 کارت قرمز برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name });
+              notifications.push({ id: `${prefix}-var-${eventId(event)}`, kind: "var", title: `📺 VAR گل ${team.name} را مردود کرد`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه فعلی: ${score}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
+            });
+
+            teamEvents.filter((event) => RED_CARD_DETAILS.has(String(event?.detail || ""))).forEach((event) => {
+              const minute = eventMinute(event);
+              const player = event?.player?.name ? ` • ${event.player.name}` : "";
+              notifications.push({ id: `${prefix}-red-${eventId(event)}`, kind: "red-card", title: `🟥 کارت قرمز برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
+            });
+
+            teamEvents.filter((event) => isPenaltyEvent(event) && !GOAL_TYPES.has(event?.type) && !/penalty/i.test(String(event?.detail || "") === false ? "" : "penalty"))
+              .filter((event) => !GOAL_TYPES.has(event?.type))
+              .forEach((event) => {
+                const minute = eventMinute(event);
+                const player = event?.player?.name ? ` • ${event.player.name}` : "";
+                const missed = isMissedPenalty(event);
+                notifications.push({ id: `${prefix}-penalty-${eventId(event)}`, kind: "penalty", title: missed ? `❌ پنالتی ${team.name} از دست رفت` : `🎯 پنالتی برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
+              });
+
+            teamEvents.filter((event) => SUB_TYPES.has(String(event?.type || ""))).forEach((event) => {
+              const minute = eventMinute(event);
+              const player = event?.player?.name || "بازیکن";
+              const assist = event?.assist?.name || event?.assist?.player || "";
+              notifications.push({ id: `${prefix}-sub-${eventId(event)}`, kind: "substitution", title: `🔄 تعویض ${team.name}`, body: `ورود ${player}${assist ? ` • خروج ${assist}` : ""}${minute ? ` • دقیقه ${minute}` : ""}`, match_id: String(match.id), team_name: team.name, player_name: player, outgoing_player_name: assist, score_snapshot: score });
             });
           } catch {}
 
-          notifications.push({ id: `${prefix}-live`, kind: "live", title: `🔴 ${team.name} در حال بازی است`, body: `${team.name} مقابل ${opponent}${score ? ` • ${score}` : ""}${match.elapsed ? ` • دقیقه ${match.elapsed}` : ""}`, match_id: String(match.id), team_name: team.name });
+          notifications.push({ id: `${prefix}-live`, kind: "live", title: `🔴 ${team.name} در حال بازی است`, body: `${team.name} مقابل ${opponent}${score ? ` • ${score}` : ""}${match.elapsed ? ` • دقیقه ${match.elapsed}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
         } else if (finished) {
-          notifications.push({ id: `${prefix}-result`, kind: "result", title: `🏁 بازی ${team.name} تمام شد`, body: `${team.name} مقابل ${opponent} با نتیجه ${score || "ثبت‌شده"} به پایان رسید.`, match_id: String(match.id), team_name: team.name });
+          notifications.push({ id: `${prefix}-result`, kind: "result", title: `🏁 بازی ${team.name} تمام شد`, body: `${team.name} مقابل ${opponent} با نتیجه ${score || "ثبت‌شده"} به پایان رسید.`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
         } else if (match.date) {
           const minutes = Math.round((new Date(match.date).getTime() - now) / 60000);
           if (minutes > 0 && minutes <= 120) notifications.push({ id: `${prefix}-soon`, kind: "match", title: `⏰ بازی ${team.name} نزدیک است`, body: `${team.name} تا حدود ${minutes} دقیقه دیگر مقابل ${opponent} بازی دارد.`, match_id: String(match.id), team_name: team.name });
