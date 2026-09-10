@@ -25,21 +25,22 @@ function eventMinute(event) {
 }
 
 function eventScore(events, targetEvent, homeId, awayId, baseHome, baseAway) {
-  let home = Number(baseHome) || 0;
-  let away = Number(baseAway) || 0;
-  const targetId = eventId(targetEvent);
   const goals = events
-    .filter((event) => GOAL_TYPES.has(event?.type) && !/missed|cancelled|cancel|var/i.test(String(event?.detail || "")))
+    .filter((event) => GOAL_TYPES.has(event?.type) && !isCancelledGoal(event) && !/missed/i.test(String(event?.detail || "")))
     .sort((a, b) => (Number(a?.time?.elapsed || 0) * 100 + Number(a?.time?.extra || 0)) - (Number(b?.time?.elapsed || 0) * 100 + Number(b?.time?.extra || 0)));
-  let beforeHome = 0;
-  let beforeAway = 0;
+  let home = 0;
+  let away = 0;
+  const targetId = eventId(targetEvent);
   for (const event of goals) {
     if (eventId(event) === targetId) break;
-    if (Number(event?.team?.id) === Number(homeId)) beforeHome += 1;
-    if (Number(event?.team?.id) === Number(awayId)) beforeAway += 1;
+    if (Number(event?.team?.id) === Number(homeId)) home += 1;
+    if (Number(event?.team?.id) === Number(awayId)) away += 1;
   }
   const isHome = Number(targetEvent?.team?.id) === Number(homeId);
-  return `${beforeHome + (isHome ? 1 : 0)} - ${beforeAway + (isHome ? 0 : 1)}`;
+  if (eventId(targetEvent) && goals.some((event) => eventId(event) === targetId)) {
+    return `${home + (isHome ? 1 : 0)} - ${away + (isHome ? 0 : 1)}`;
+  }
+  return `${Number(baseHome) || 0} - ${Number(baseAway) || 0}`;
 }
 
 function isCancelledGoal(event) {
@@ -84,7 +85,7 @@ export async function GET(request) {
         const prefix = `match-${match.id}`;
 
         if (live) {
-          if (Number(match.elapsed) <= 2 || (match.statusShort === "1H" && Number(match.elapsed) <= 2)) {
+          if (Number(match.elapsed) <= 2) {
             notifications.push({ id: `${prefix}-started`, kind: "started", title: `🚀 ${team.name} بازی را شروع کرد`, body: `${team.name} مقابل ${opponent} شروع شد${score ? ` • ${score}` : ""}.`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
           }
 
@@ -98,7 +99,7 @@ export async function GET(request) {
               const assist = event?.assist?.name ? ` • پاس گل: ${event.assist.name}` : "";
               const penalty = /penalty/i.test(String(event?.detail || ""));
               const eventScoreText = eventScore(events, event, match.homeId, match.awayId, match.homeScore, match.awayScore);
-              notifications.push({ id: `${prefix}-goal-${eventId(event)}`, kind: penalty ? "penalty" : "goal", title: penalty ? `⚽🎯 پنالتی ${team.name} گل شد` : `⚽ ${team.name} گل زد`, body: `${team.name}${scorer} گل زد${minute ? ` در دقیقه ${minute}` : ""}${assist} • نتیجه: ${eventScoreText}`, match_id: String(match.id), team_name: team.name, score_snapshot: eventScoreText });
+              notifications.push({ id: `${prefix}-goal-${eventId(event)}`, kind: penalty ? "penalty" : "goal", title: penalty ? `⚽🎯 پنالتی ${team.name} گل شد` : `⚽ ${team.name} گل زد`, body: `${team.name}${scorer} گل زد${minute ? ` در دقیقه ${minute}` : ""}${assist} • نتیجه: ${eventScoreText}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
             });
 
             teamEvents.filter(isCancelledGoal).forEach((event) => {
@@ -113,20 +114,18 @@ export async function GET(request) {
               notifications.push({ id: `${prefix}-red-${eventId(event)}`, kind: "red-card", title: `🟥 کارت قرمز برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
             });
 
-            teamEvents.filter((event) => isPenaltyEvent(event) && !GOAL_TYPES.has(event?.type) && !/penalty/i.test(String(event?.detail || "") === false ? "" : "penalty"))
-              .filter((event) => !GOAL_TYPES.has(event?.type))
-              .forEach((event) => {
-                const minute = eventMinute(event);
-                const player = event?.player?.name ? ` • ${event.player.name}` : "";
-                const missed = isMissedPenalty(event);
-                notifications.push({ id: `${prefix}-penalty-${eventId(event)}`, kind: "penalty", title: missed ? `❌ پنالتی ${team.name} از دست رفت` : `🎯 پنالتی برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
-              });
+            teamEvents.filter((event) => isPenaltyEvent(event) && !GOAL_TYPES.has(event?.type) && !/goal/i.test(String(event?.detail || ""))).forEach((event) => {
+              const minute = eventMinute(event);
+              const player = event?.player?.name ? ` • ${event.player.name}` : "";
+              const missed = isMissedPenalty(event);
+              notifications.push({ id: `${prefix}-penalty-${eventId(event)}`, kind: "penalty", title: missed ? `❌ پنالتی ${team.name} از دست رفت` : `🎯 پنالتی برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name, score_snapshot: score });
+            });
 
             teamEvents.filter((event) => SUB_TYPES.has(String(event?.type || ""))).forEach((event) => {
               const minute = eventMinute(event);
-              const player = event?.player?.name || "بازیکن";
-              const assist = event?.assist?.name || event?.assist?.player || "";
-              notifications.push({ id: `${prefix}-sub-${eventId(event)}`, kind: "substitution", title: `🔄 تعویض ${team.name}`, body: `ورود ${player}${assist ? ` • خروج ${assist}` : ""}${minute ? ` • دقیقه ${minute}` : ""}`, match_id: String(match.id), team_name: team.name, player_name: player, outgoing_player_name: assist, score_snapshot: score });
+              const incoming = event?.player?.name || "بازیکن";
+              const outgoing = event?.assist?.name || event?.assist?.player || "";
+              notifications.push({ id: `${prefix}-sub-${eventId(event)}`, kind: "substitution", title: `🔄 تعویض ${team.name}`, body: `ورود ${incoming}${outgoing ? ` • خروج ${outgoing}` : ""}${minute ? ` • دقیقه ${minute}` : ""}`, match_id: String(match.id), team_name: team.name, player_name: incoming, outgoing_player_name: outgoing, score_snapshot: score });
             });
           } catch {}
 
