@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "P", "BT", "LIVE"];
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 const GOAL_TYPES = new Set(["Goal", "goal"]);
+const RED_CARD_DETAILS = new Set(["Red Card", "Second Yellow card", "Second Yellow"]);
 
 function todayTehran() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran" }).format(new Date());
@@ -17,7 +18,30 @@ function eventId(event) {
 
 function eventMinute(event) {
   const elapsed = Number(event?.time?.elapsed);
-  return Number.isFinite(elapsed) && elapsed > 0 ? `${elapsed}'` : "";
+  const extra = Number(event?.time?.extra);
+  if (!Number.isFinite(elapsed) || elapsed <= 0) return "";
+  return `${elapsed}${Number.isFinite(extra) && extra > 0 ? `+${extra}` : ""}'`;
+}
+
+function eventScore(events, targetEvent, homeId, awayId, baseHome, baseAway) {
+  let home = Number(baseHome) || 0;
+  let away = Number(baseAway) || 0;
+  const targetId = eventId(targetEvent);
+  const goals = events
+    .filter((event) => GOAL_TYPES.has(event?.type) && !/missed|cancelled|var/i.test(String(event?.detail || "")))
+    .sort((a, b) => Number(a?.time?.elapsed || 0) - Number(b?.time?.elapsed || 0));
+  if (!goals.length) return `${home} - ${away}`;
+  home = Number(baseHome) || 0;
+  away = Number(baseAway) || 0;
+  let beforeHome = 0;
+  let beforeAway = 0;
+  for (const event of goals) {
+    if (eventId(event) === targetId) break;
+    if (Number(event?.team?.id) === Number(homeId)) beforeHome += 1;
+    if (Number(event?.team?.id) === Number(awayId)) beforeAway += 1;
+  }
+  const isHome = Number(targetEvent?.team?.id) === Number(homeId);
+  return `${beforeHome + (isHome ? 1 : 0)} - ${beforeAway + (isHome ? 0 : 1)}`;
 }
 
 export async function GET(request) {
@@ -47,23 +71,27 @@ export async function GET(request) {
         const prefix = `match-${match.id}`;
 
         if (live) {
-          if (Number(match.elapsed) <= 2 || match.statusShort === "1H" && Number(match.elapsed) <= 2) {
-            notifications.push({ id: `${prefix}-started`, kind: "match", title: `🚀 ${team.name} بازی را شروع کرد`, body: `${team.name} مقابل ${opponent} وارد زمین شد.`, match_id: String(match.id), team_name: team.name });
+          if (Number(match.elapsed) <= 2 || (match.statusShort === "1H" && Number(match.elapsed) <= 2)) {
+            notifications.push({ id: `${prefix}-started`, kind: "started", title: `🚀 ${team.name} بازی را شروع کرد`, body: `${team.name} مقابل ${opponent} شروع شد${score ? ` • ${score}` : ""}.`, match_id: String(match.id), team_name: team.name });
           }
 
           try {
             const events = await getFixtureEvents(match.id);
-            events.filter((event) => GOAL_TYPES.has(event?.type) && Number(event?.team?.id) === Number(team.id)).forEach((event) => {
+            events.filter((event) => GOAL_TYPES.has(event?.type) && Number(event?.team?.id) === Number(team.id) && !/missed|cancelled|var/i.test(String(event?.detail || ""))).forEach((event) => {
               const minute = eventMinute(event);
               const scorer = event?.player?.name ? ` توسط ${event.player.name}` : "";
-              const detail = event?.detail && /missed|cancelled|var/i.test(String(event.detail)) ? ` (${event.detail})` : "";
-              if (!detail) {
-                notifications.push({ id: `${prefix}-goal-${eventId(event)}`, kind: "goal", title: `⚽ ${team.name} گل زد`, body: `${team.name}${scorer} مقابل ${opponent} گل زد${minute ? ` در دقیقه ${minute}` : ""}.${score ? ` نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name });
-              }
+              const eventScoreText = eventScore(events, event, match.homeId, match.awayId, match.homeScore, match.awayScore);
+              notifications.push({ id: `${prefix}-goal-${eventId(event)}`, kind: "goal", title: `⚽ ${team.name} گل زد`, body: `${team.name}${scorer} گل زد${minute ? ` در دقیقه ${minute}` : ""} • نتیجه: ${eventScoreText}`, match_id: String(match.id), team_name: team.name });
+            });
+
+            events.filter((event) => Number(event?.team?.id) === Number(team.id) && RED_CARD_DETAILS.has(String(event?.detail || ""))).forEach((event) => {
+              const minute = eventMinute(event);
+              const player = event?.player?.name ? ` • ${event.player.name}` : "";
+              notifications.push({ id: `${prefix}-red-${eventId(event)}`, kind: "red-card", title: `🟥 کارت قرمز برای ${team.name}`, body: `${team.name}${player}${minute ? ` • دقیقه ${minute}` : ""}${score ? ` • نتیجه: ${score}` : ""}`, match_id: String(match.id), team_name: team.name });
             });
           } catch {}
 
-          notifications.push({ id: `${prefix}-live`, kind: "live", title: `🔴 ${team.name} در حال بازی است`, body: `${team.name} مقابل ${opponent} ${score ? `• ${score}` : ""}${match.elapsed ? ` • دقیقه ${match.elapsed}` : ""}`, match_id: String(match.id), team_name: team.name });
+          notifications.push({ id: `${prefix}-live`, kind: "live", title: `🔴 ${team.name} در حال بازی است`, body: `${team.name} مقابل ${opponent}${score ? ` • ${score}` : ""}${match.elapsed ? ` • دقیقه ${match.elapsed}` : ""}`, match_id: String(match.id), team_name: team.name });
         } else if (finished) {
           notifications.push({ id: `${prefix}-result`, kind: "result", title: `🏁 بازی ${team.name} تمام شد`, body: `${team.name} مقابل ${opponent} با نتیجه ${score || "ثبت‌شده"} به پایان رسید.`, match_id: String(match.id), team_name: team.name });
         } else if (match.date) {
