@@ -1,6 +1,6 @@
-.page :global(.fot-shell){background:radial-gradient(circle at 50% -12%,rgba(34,211,238,.13),transparent 34%),radial-gradient(circle at 100% 28%,rgba(14,165,233,.05),transparent 28%),#020617}
+.page :global(.fot-shell){background:radial-gradient(circle at 50% -12%,rgba(34,211,238,.13),transparent 34%),radial-gradient(circle at 100% 28%,rgba(14,165,233,.05),transparent 28%),#020617;min-height:100vh}
 .page :global(.fot-container){max-width:980px!important;padding-bottom:32px}
-.page :global(.glass){background:linear-gradient(180deg,rgba(15,23,42,.88),rgba(2,6,23,.94));box-shadow:0 14px 42px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)}
+.page :global(.glass){background:linear-gradient(180deg,rgba(15,23,42,.88),rgba(2,6,23,.94));box-shadow:0 14px 42px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .page :global(.fot-container > header){padding:10px 2px 2px}
 .page :global(.fot-container > header a){transition:color .18s ease,transform .18s ease}
 .page :global(.fot-container > header a:hover){transform:translateX(2px)}
@@ -11,13 +11,15 @@
 .page :global(.fot-container > nav a){min-height:48px;justify-content:center;transition:transform .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease}
 .page :global(.fot-container > nav a:hover){transform:translateY(-1px)}
 .page :global(.fot-container > nav a[class*="bg-cyan"]){font-weight:900;box-shadow:0 5px 18px rgba(34,211,238,.10)}
-.page :global(.fot-container > section:not(.relative)){scroll-margin-top:82px;border-color:rgba(255,255,255,.085);box-shadow:0 14px 42px rgba(0,0,0,.17)}
+.page :global(.fot-container > section:not(.relative)){scroll-margin-top:82px;border-color:rgba(255,255,255,.085);box-shadow:0 14px 42px rgba(0,0,0,.17);animation:leagueSectionIn .32s ease both}
 .page :global(.fot-container > section:not(.relative) > div:first-child){background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))}
-.page :global(.fot-container > section:not(.relative) table tbody tr){transition:background .16s ease}
+.page :global(.fot-container > section:not(.relative) table tbody tr){transition:background .16s ease,transform .16s ease}
 .page :global(.fot-container > section:not(.relative) table tbody tr:hover){background:rgba(34,211,238,.035)}
+.page :global(.fot-container > section:not(.relative) table thead th){font-weight:800;letter-spacing:-.01em}
 .page :global(.fot-container > section:not(.relative) img){image-rendering:auto}
 .page :global(.fot-container > section:not(.relative) a){transition:color .16s ease,opacity .16s ease}
 .page :global(.fot-container > section:not(.relative) a:hover){color:#67e8f9}
+@keyframes leagueSectionIn{from{opacity:.72;transform:translateY(5px)}to{opacity:1;transform:none}}
 @media (max-width:640px){
  .page :global(.fot-container){padding-left:10px;padding-right:10px;padding-bottom:24px}
  .page :global(.fot-container > header){gap:8px;padding-top:8px}
@@ -32,6 +34,8 @@
  .page :global(.fot-container > nav a svg){width:14px;height:14px}
  .page :global(.fot-container > section.glass){border-radius:22px}
  .page :global(.fot-container > section:not(.relative) > div:first-child){padding-top:13px;padding-bottom:13px}
+ .page :global(.fot-container > section:not(.relative) table){font-size:10px}
+ .page :global(.fot-container > section:not(.relative) table th),.page :global(.fot-container > section:not(.relative) table td){white-space:nowrap}
 }
 @media (min-width:641px){
  .page :global(.fot-container > nav){margin-left:18px;margin-right:18px}
