@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarDays, ChevronLeft, Flame, Search, Shield, Trophy, UserRound } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronLeft, Flame, Search, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
