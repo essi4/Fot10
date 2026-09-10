@@ -1,31 +1,41 @@
-.page :global(.fot-shell){background:radial-gradient(circle at 50% -10%,rgba(34,211,238,.10),transparent 38%),#020617}
-.page :global(.fot-container){max-width:980px!important}
-.page :global(.glass){box-shadow:0 12px 40px rgba(0,0,0,.18)}
-.page :global(.fot-container > header){padding:10px 2px 0}
-.page :global(.fot-container > section.relative){background:linear-gradient(145deg,rgba(8,47,73,.88),rgba(15,23,42,.98) 55%,rgba(2,6,23,.99));box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 18px 50px rgba(0,0,0,.28);min-height:154px}
-.page :global(.fot-container > section.relative:before){content:"";position:absolute;inset:-35% -10% auto auto;width:190px;height:190px;border-radius:999px;background:rgba(34,211,238,.10);filter:blur(8px);pointer-events:none}
-.page :global(.fot-container > nav){box-shadow:0 12px 32px rgba(0,0,0,.30)}
-.page :global(.fot-container > nav a){min-height:48px;justify-content:center;transition:transform .18s ease,background .18s ease,color .18s ease}
+.page :global(.fot-shell){background:radial-gradient(circle at 50% -12%,rgba(34,211,238,.13),transparent 34%),radial-gradient(circle at 100% 28%,rgba(14,165,233,.05),transparent 28%),#020617}
+.page :global(.fot-container){max-width:980px!important;padding-bottom:32px}
+.page :global(.glass){background:linear-gradient(180deg,rgba(15,23,42,.88),rgba(2,6,23,.94));box-shadow:0 14px 42px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)}
+.page :global(.fot-container > header){padding:10px 2px 2px}
+.page :global(.fot-container > header a){transition:color .18s ease,transform .18s ease}
+.page :global(.fot-container > header a:hover){transform:translateX(2px)}
+.page :global(.fot-container > section.relative){background:linear-gradient(145deg,rgba(8,47,73,.92),rgba(15,23,42,.98) 52%,rgba(2,6,23,.99));box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 50px rgba(0,0,0,.30);min-height:154px;overflow:hidden}
+.page :global(.fot-container > section.relative:before){content:"";position:absolute;inset:-42% -8% auto auto;width:230px;height:230px;border-radius:999px;background:rgba(34,211,238,.10);filter:blur(10px);pointer-events:none}
+.page :global(.fot-container > section.relative:after){content:"";position:absolute;left:-80px;bottom:-110px;width:220px;height:220px;border-radius:999px;border:1px solid rgba(34,211,238,.07);box-shadow:0 0 0 28px rgba(34,211,238,.025),0 0 0 56px rgba(34,211,238,.012);pointer-events:none}
+.page :global(.fot-container > nav){box-shadow:0 12px 32px rgba(0,0,0,.34);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.page :global(.fot-container > nav a){min-height:48px;justify-content:center;transition:transform .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease}
 .page :global(.fot-container > nav a:hover){transform:translateY(-1px)}
-.page :global(.fot-container > nav a[class*="bg-cyan"]){font-weight:900}
-.page :global(.fot-container > section:not(.relative)){scroll-margin-top:82px}
-.page :global(.fot-container > section:not(.relative) > div:first-child){background:linear-gradient(180deg,rgba(255,255,255,.025),transparent)}
-.page :global(.fot-container > section:not(.relative)){border-color:rgba(255,255,255,.09);box-shadow:0 14px 42px rgba(0,0,0,.16)}
-.page :global(.fot-container > section:first-of-type + nav + div + section){border-radius:24px}
+.page :global(.fot-container > nav a[class*="bg-cyan"]){font-weight:900;box-shadow:0 5px 18px rgba(34,211,238,.10)}
+.page :global(.fot-container > section:not(.relative)){scroll-margin-top:82px;border-color:rgba(255,255,255,.085);box-shadow:0 14px 42px rgba(0,0,0,.17)}
+.page :global(.fot-container > section:not(.relative) > div:first-child){background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))}
+.page :global(.fot-container > section:not(.relative) table tbody tr){transition:background .16s ease}
+.page :global(.fot-container > section:not(.relative) table tbody tr:hover){background:rgba(34,211,238,.035)}
+.page :global(.fot-container > section:not(.relative) img){image-rendering:auto}
+.page :global(.fot-container > section:not(.relative) a){transition:color .16s ease,opacity .16s ease}
+.page :global(.fot-container > section:not(.relative) a:hover){color:#67e8f9}
 @media (max-width:640px){
- .page :global(.fot-container){padding-left:12px;padding-right:12px}
- .page :global(.fot-container > header){gap:8px}
- .page :global(.fot-container > header h1){font-size:16px}
- .page :global(.fot-container > section.relative){padding:18px!important;border-radius:24px;min-height:142px}
- .page :global(.fot-container > section.relative .h-20){height:64px;width:64px;border-radius:20px}
- .page :global(.fot-container > section.relative .h-20 img){height:44px;width:44px}
- .page :global(.fot-container > section.relative h2){font-size:21px;line-height:1.25}
- .page :global(.fot-container > section.relative p){font-size:9px}
- .page :global(.fot-container > nav){top:6px;border-radius:16px}
- .page :global(.fot-container > nav a){padding:8px 2px;min-height:50px;font-size:8px;gap:3px}
+ .page :global(.fot-container){padding-left:10px;padding-right:10px;padding-bottom:24px}
+ .page :global(.fot-container > header){gap:8px;padding-top:8px}
+ .page :global(.fot-container > header h1){font-size:16px;line-height:1.25}
+ .page :global(.fot-container > section.relative){padding:16px!important;border-radius:24px;min-height:138px}
+ .page :global(.fot-container > section.relative .h-20){height:60px;width:60px;border-radius:18px}
+ .page :global(.fot-container > section.relative .h-20 img){height:42px;width:42px}
+ .page :global(.fot-container > section.relative h2){font-size:20px;line-height:1.25}
+ .page :global(.fot-container > section.relative p){font-size:9px;line-height:1.5}
+ .page :global(.fot-container > nav){top:5px;border-radius:16px}
+ .page :global(.fot-container > nav a){padding:7px 2px;min-height:49px;font-size:8px;gap:3px}
  .page :global(.fot-container > nav a svg){width:14px;height:14px}
  .page :global(.fot-container > section.glass){border-radius:22px}
+ .page :global(.fot-container > section:not(.relative) > div:first-child){padding-top:13px;padding-bottom:13px}
 }
 @media (min-width:641px){
  .page :global(.fot-container > nav){margin-left:18px;margin-right:18px}
+}
+@media (prefers-reduced-motion:reduce){
+ .page :global(.fot-container *){scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
