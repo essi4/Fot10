@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Heart, Home, Trophy, Tv } from "lucide-react";
+import { Activity, Heart, Home, Settings, Trophy, Tv } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,7 +9,7 @@ const items = [
   ["علاقه‌مندی‌ها", Heart, "/favorites"],
   ["نتایج زنده", Tv, "/matches?live=1"],
   ["لیگ‌ها", Trophy, "/leagues"],
-  ["مسابقه", Activity, "/matches"],
+  ["تنظیمات", Settings, "/settings"],
 ];
 
 export default function BottomNav() {
