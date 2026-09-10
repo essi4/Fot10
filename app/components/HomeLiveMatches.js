@@ -1,82 +1,72 @@
 "use client";
 
-import { CalendarDays, ChevronLeft, Radio, Trophy } from "lucide-react";
+import { BarChart3, ChevronLeft, Radio, RefreshCw, Trophy } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const TOP_LEAGUES = [
-  { key: "Iran", label: "ایران", names: ["Persian Gulf Pro League", "Iranian Pro League", "خلیج فارس"] },
-  { key: "England", label: "انگلیس", names: ["Premier League"] },
-  { key: "Spain", label: "اسپانیا", names: ["La Liga", "Laliga"] },
-  { key: "Italy", label: "ایتالیا", names: ["Serie A"] },
-  { key: "Germany", label: "آلمان", names: ["Bundesliga"] },
+  { key: "Iran", label: "ایران", names: ["Persian Gulf Pro League", "Iranian Pro League", "خلیج فارس"], countries: ["iran"] },
+  { key: "England", label: "انگلیس", names: ["Premier League"], countries: ["england", "united kingdom"] },
+  { key: "Spain", label: "اسپانیا", names: ["La Liga", "Laliga"], countries: ["spain"] },
+  { key: "Italy", label: "ایتالیا", names: ["Serie A"], countries: ["italy"] },
+  { key: "Germany", label: "آلمان", names: ["Bundesliga"], countries: ["germany"] },
 ];
 
-const TEAM_FA = {
-  "Manchester City": "منچسترسیتی", "Manchester United": "منچستریونایتد", Liverpool: "لیورپول", Arsenal: "آرسنال", Chelsea: "چلسی", Tottenham: "تاتنهام",
-  "Real Madrid": "رئال مادرید", Barcelona: "بارسلونا", "Atletico Madrid": "اتلتیکومادرید", "Bayern Munich": "بایرن مونیخ", "Borussia Dortmund": "بوروسیا دورتموند", Juventus: "یوونتوس", Inter: "اینتر", "AC Milan": "آث میلان", "Paris Saint Germain": "پاری‌سن‌ژرمن", PSG: "پاری‌سن‌ژرمن",
-  Tractor: "تراکتور", Persepolis: "پرسپولیس", Esteghlal: "استقلال", Sepahan: "سپاهان", Foolad: "فولاد", "Gol Gohar": "گل‌گهر", Malavan: "ملوان", "Zob Ahan": "ذوب‌آهن", "Aluminium Arak": "آلومینیوم اراک", Paykan: "پیکان", "Fajr Sepasi": "فجر سپاسی", "Nassaji Mazandaran": "نساجی مازندران", "Kheybar Khorramabad": "خیبر خرم‌آباد", "Shams Azar Qazvin": "شمس‌آذر قزوین", Chadormalu: "چادرملو",
-};
-
+const TEAM_FA = { "Manchester City": "منچسترسیتی", "Manchester United": "منچستریونایتد", Liverpool: "لیورپول", Arsenal: "آرسنال", Chelsea: "چلسی", Tottenham: "تاتنهام", "Real Madrid": "رئال مادرید", Barcelona: "بارسلونا", "Atletico Madrid": "اتلتیکومادرید", "Bayern Munich": "بایرن مونیخ", "Borussia Dortmund": "بوروسیا دورتموند", Juventus: "یوونتوس", Inter: "اینتر", "AC Milan": "آث میلان", PSG: "پاری‌سن‌ژرمن", Tractor: "تراکتور", Persepolis: "پرسپولیس", Esteghlal: "استقلال", Sepahan: "سپاهان" };
 const faTeam = (name) => TEAM_FA[name] || name;
 const normalize = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 const isLive = (m) => ["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"].includes(String(m?.statusShort || m?.status || "").toUpperCase());
-const isFinished = (m) => ["FT", "AET", "PEN"].includes(String(m?.statusShort || m?.status || "").toUpperCase());
-const toTime = (value) => {
-  if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? value : d.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Tehran" });
-};
-const iranToday = () => {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()).reduce((a, p) => ({ ...a, [p.type]: p.value }), {});
-  return `${parts.year}-${parts.month}-${parts.day}`;
-};
-const leagueKey = (match) => TOP_LEAGUES.find((l) => l.names.some((n) => normalize(n) === normalize(match?.league)) && (l.key === "Iran" ? normalize(match?.country).includes("iran") : true))?.key || null;
+const leagueKey = (m) => TOP_LEAGUES.find((l) => l.names.some((n) => normalize(n) === normalize(m?.league)) && l.countries.some((c) => normalize(m?.country).includes(c)))?.key || null;
+
+function valueOf(stats, labels) {
+  const item = (stats || []).find((s) => labels.some((x) => normalize(s?.type).includes(normalize(x))));
+  return item?.value ?? "—";
+}
+
+function StatStrip({ stats }) {
+  const home = stats?.[0]?.statistics || [];
+  const away = stats?.[1]?.statistics || [];
+  const items = [
+    ["مالکیت", valueOf(home, ["ball possession"]), valueOf(away, ["ball possession"])],
+    ["شوت", valueOf(home, ["total shots"]), valueOf(away, ["total shots"])],
+    ["شوت در چارچوب", valueOf(home, ["shots on goal"]), valueOf(away, ["shots on goal"])],
+    ["کرنر", valueOf(home, ["corner kicks"]), valueOf(away, ["corner kicks"])],
+  ];
+  return <div className="mt-2.5 grid grid-cols-4 gap-1 rounded-xl border border-white/6 bg-black/10 p-1.5">{items.map(([label, h, a]) => <div key={label} className="rounded-lg bg-white/[.025] px-1.5 py-2 text-center"><div className="text-[7px] font-bold text-slate-600">{label}</div><div className="mt-1 text-[9px] font-black text-slate-200 tabular-nums"><span>{h}</span><span className="mx-1 text-slate-700">·</span><span>{a}</span></div></div>)}</div>;
+}
 
 function MatchRow({ match }) {
   const live = isLive(match);
-  const finished = isFinished(match);
-  const homeScore = match.homeScore != null ? match.homeScore : "—";
-  const awayScore = match.awayScore != null ? match.awayScore : "—";
-  return <Link href={match.id ? `/matches/${match.id}` : "/matches"} className={`group grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl border px-3 py-3 transition active:scale-[.99] ${live ? "border-red-400/20 bg-red-500/[.055]" : "border-white/7 bg-white/[.025] hover:border-emerald-300/15"}`}>
-    <div className="min-w-0 text-right"><div className="truncate text-[10px] font-black text-slate-100">{faTeam(match.home)}</div></div>
-    <div className="min-w-[58px] text-center"><div className={`text-sm font-black tabular-nums ${live ? "text-white" : "text-slate-200"}`}>{homeScore} <span className="mx-0.5 text-slate-600">-</span> {awayScore}</div><div className={`mt-1 text-[7px] font-black ${live ? "text-red-300" : finished ? "text-slate-500" : "text-slate-600"}`}>{live ? `LIVE${match.elapsed ? ` · ${match.elapsed}'` : ""}` : finished ? "پایان" : toTime(match.time)}</div></div>
-    <div className="min-w-0 text-left"><div className="truncate text-[10px] font-black text-slate-100">{faTeam(match.away)}</div></div>
+  return <Link href={match.id ? `/matches/${match.id}` : "/matches"} className="group block rounded-2xl border border-red-400/15 bg-red-500/[.035] p-3 transition active:scale-[.99] hover:border-red-300/25">
+    <div className="mb-2 flex items-center justify-between gap-2 text-[7px] font-black"><span className="truncate text-slate-500">{match.league}</span><span className="shrink-0 text-red-300">● LIVE {match.elapsed ? `· ${match.elapsed}'` : ""}</span></div>
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"><div className="truncate text-right text-[10px] font-black text-slate-100">{faTeam(match.home)}</div><div className="min-w-[58px] text-center text-base font-black tabular-nums text-white">{match.homeScore ?? "—"} <span className="text-slate-600">-</span> {match.awayScore ?? "—"}</div><div className="truncate text-left text-[10px] font-black text-slate-100">{faTeam(match.away)}</div></div>
+    <StatStrip stats={match.stats} />
   </Link>;
 }
 
 export default function HomeLiveMatches() {
   const [matches, setMatches] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-  const [selected, setSelected] = useState("all");
-  const today = useMemo(() => iranToday(), []);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
+  const load = async (manual = false) => {
+    if (manual) setRefreshing(true);
     try {
-      const res = await fetch(`/api/football/fixtures?date=${today}`, { cache: "no-store" });
+      const res = await fetch("/api/football/live", { cache: "no-store" });
       const json = await res.json();
-      const list = Array.isArray(json.matches) ? json.matches.map((m) => ({ ...m, topKey: leagueKey(m) })).filter((m) => m.topKey) : [];
-      setMatches(list);
-    } catch { setMatches([]); } finally { setLoaded(true); }
+      const live = (Array.isArray(json.matches) ? json.matches : []).map((m) => ({ ...m, topKey: leagueKey(m) })).filter((m) => m.topKey && isLive(m));
+      const enriched = await Promise.all(live.slice(0, 12).map(async (m) => {
+        try { const r = await fetch(`/api/football/fixture?id=${encodeURIComponent(m.id)}&section=statistics`, { cache: "no-store" }); const j = await r.json(); return { ...m, stats: Array.isArray(j.data) ? j.data : [] }; } catch { return { ...m, stats: [] }; }
+      }));
+      setMatches(enriched);
+    } catch { setMatches([]); } finally { setLoading(false); setRefreshing(false); }
   };
 
-  useEffect(() => { load(); const timer = setInterval(load, 30000); return () => clearInterval(timer); }, [today]);
+  useEffect(() => { load(); const timer = setInterval(() => load(), 30000); return () => clearInterval(timer); }, []);
 
-  const visible = selected === "all" ? matches : matches.filter((m) => m.topKey === selected);
-  const liveCount = matches.filter(isLive).length;
-
-  if (!loaded && !matches.length) return <section className="mt-5 rounded-3xl border border-white/8 bg-white/[.025] p-4"><div className="h-20 animate-pulse rounded-2xl bg-white/[.035]"/></section>;
-
-  return <section className="mt-5 rounded-3xl border border-white/8 bg-gradient-to-br from-white/[.04] to-transparent p-3.5 shadow-xl">
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <div><div className="flex items-center gap-2"><CalendarDays size={15} className="text-emerald-300"/><h2 className="text-sm font-black">نتایج امروز</h2>{liveCount > 0 && <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[7px] font-black text-red-300">{liveCount} زنده</span>}</div><p className="mt-1 text-[9px] font-bold text-slate-600">فقط ۵ لیگ مهم · به‌روزرسانی خودکار</p></div>
-      <Link href="/matches" className="shrink-0 rounded-xl border border-white/8 bg-white/[.03] px-2.5 py-2 text-[8px] font-black text-slate-400">همه بازی‌ها <ChevronLeft size={11} className="inline"/></Link>
-    </div>
-
-    <div className="mb-3 grid grid-cols-5 gap-1.5">{TOP_LEAGUES.map((league) => <button key={league.key} onClick={() => setSelected(league.key === selected ? "all" : league.key)} className={`rounded-xl border px-1 py-2 text-[8px] font-black transition ${selected === league.key ? "border-emerald-300/25 bg-emerald-400/10 text-emerald-300" : "border-white/7 bg-white/[.025] text-slate-500 hover:text-slate-300"}`}><Trophy size={11} className="mx-auto mb-1"/>{league.label}</button>)}</div>
-
-    {visible.length ? <div className="space-y-2">{visible.map((m) => <MatchRow key={m.id} match={m}/>)}</div> : <div className="rounded-2xl border border-white/7 bg-white/[.02] px-4 py-6 text-center"><Radio size={19} className="mx-auto text-slate-600"/><p className="mt-2 text-[10px] font-black text-slate-400">امروز بازی‌ای از این ۵ لیگ نداریم</p></div>}
-
-    <Link href="/leagues" className="mt-2.5 flex items-center justify-center gap-2 rounded-2xl border border-white/7 bg-white/[.02] py-2.5 text-[9px] font-black text-slate-500 transition hover:text-emerald-300"><Trophy size={13}/> لیگ‌های دیگر</Link>
+  return <section className="rounded-3xl border border-white/8 bg-gradient-to-br from-red-500/[.045] via-white/[.025] to-transparent p-3.5 shadow-xl">
+    <div className="mb-3 flex items-center justify-between gap-3"><div><div className="flex items-center gap-2"><Radio size={15} className="text-red-300"/><h2 className="text-sm font-black">نتایج زنده</h2><span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[7px] font-black text-red-300">LIVE</span></div><p className="mt-1 text-[9px] font-bold text-slate-600">فقط مسابقات در حال برگزاری · آمار لحظه‌ای</p></div><button onClick={() => load(true)} className="rounded-xl border border-white/8 bg-white/[.03] p-2 text-slate-500" aria-label="به‌روزرسانی"><RefreshCw size={14} className={refreshing ? "animate-spin" : ""}/></button></div>
+    {loading ? <div className="h-24 animate-pulse rounded-2xl bg-white/[.035]"/> : matches.length ? <div className="space-y-2.5">{matches.map((m) => <MatchRow key={m.id} match={m}/>)}</div> : <div className="rounded-2xl border border-white/7 bg-white/[.02] px-4 py-7 text-center"><Radio size={19} className="mx-auto text-slate-700"/><p className="mt-2 text-[10px] font-black text-slate-500">در حال حاضر مسابقه زنده‌ای از ۵ لیگ مهم نداریم</p></div>}
+    <Link href="/leagues" className="mt-2.5 flex items-center justify-center gap-2 rounded-2xl border border-white/7 bg-white/[.02] py-2.5 text-[9px] font-black text-slate-500 transition hover:text-emerald-300"><Trophy size={13}/> لیگ‌های دیگر <ChevronLeft size={12}/></Link>
   </section>;
 }
