@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarDays, ChevronLeft, Flame, Search, Trophy, UserRound } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronLeft, Flame, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -56,7 +56,5 @@ export default function HomeMatchdayHub() {
         <div className="mt-2.5 flex items-center justify-between gap-2"><div className="min-w-0"><div className="truncate text-[10px] font-black text-slate-100">{label}</div><div className="mt-1 truncate text-[8px] font-bold text-slate-600">{hint}</div></div><ChevronLeft size={12} className="shrink-0 text-slate-700 transition group-hover:-translate-x-1"/></div>
       </Link>)}
     </div>
-
-    <Link href="/stats" className="mt-2 flex items-center justify-center gap-2 rounded-2xl border border-emerald-300/10 bg-emerald-400/[.035] py-2.5 text-[9px] font-black text-emerald-300"><Search size={13}/> جستجو و کشف فوتبال</Link>
   </section>;
 }
