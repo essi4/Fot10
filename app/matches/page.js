@@ -6,7 +6,7 @@ import { ArrowRight, CalendarDays, Clock3, Radio, RefreshCw, Star, Trophy } from
 import HomeLiveMatches from "../components/HomeLiveMatches";
 
 const SETTINGS_KEY = "fot10-settings";
-function readSettings() { try { return { autoRefresh: true, compactScores: true, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") }; } catch { return { autoRefresh: true, compactScores: true }; }
+function readSettings() { try { return { autoRefresh: true, compactScores: true, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") }; } catch { return { autoRefresh: true, compactScores: true }; } }
 function iranDate(offset = 0) { const now = new Date(); const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now).reduce((a, p) => ({ ...a, [p.type]: p.value }), {}); const d = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); }
 function toTime(value) { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Tehran" }); }
 function mapGame(match) { const live = ["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"].includes(match.status); const finished = ["FT", "AET", "PEN"].includes(match.status); return { ...match, league: match.league || "مسابقات فوتبال", home: match.home || "میزبان", away: match.away || "مهمان", minute: live && match.minute ? `${match.minute}'` : finished ? "پایان" : toTime(match.time), live, finished }; }
