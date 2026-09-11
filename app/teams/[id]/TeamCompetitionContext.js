@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, BarChart3, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
 import { LEAGUE_ENTRIES, CLUB_CUPS } from "../../../lib/fot10-universe";
 
 function flatten(rows) {
