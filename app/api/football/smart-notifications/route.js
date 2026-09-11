@@ -58,6 +58,32 @@ function isMissedPenalty(event) {
   return /penalty.*(missed|saved)|missed.*penalty/.test(text);
 }
 
+function alertPriority(kind) {
+  return {
+    goal: 100,
+    penalty: 95,
+    "red-card": 95,
+    var: 92,
+    "result-changed": 90,
+    result: 82,
+    started: 78,
+    substitution: 70,
+    live: 60,
+    match: 45,
+    news: 30,
+  }[kind] || 20;
+}
+
+function enrichAlert(item) {
+  const kind = String(item.kind || "match");
+  return {
+    ...item,
+    priority: alertPriority(kind),
+    alert_group: "favorite-team",
+    is_live_alert: ["live", "goal", "penalty", "var", "red-card", "started", "substitution", "result-changed"].includes(kind),
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get("teams") || "";
@@ -140,6 +166,8 @@ export async function GET(request) {
     } catch {}
   }));
 
-  const unique = [...new Map(notifications.map((item) => [item.id, item])).values()];
+  const unique = [...new Map(notifications.map((item) => [item.id, item])).values()]
+    .map(enrichAlert)
+    .sort((a, b) => (Number(b.priority) - Number(a.priority)) || String(b.id).localeCompare(String(a.id)));
   return NextResponse.json({ ok: true, date, trackedTeams: tracked, notifications: unique.slice(0, 30) });
 }
