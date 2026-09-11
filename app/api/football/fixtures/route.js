@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getMatches } from "../../../../lib/sports-data";
 import { getOpenFootballMatches } from "../../../../lib/openfootball";
+import { getSportsDbDayMatches } from "../../../../lib/thesportsdb-day";
 import { jsonWithCache, noStoreHeaders } from "../../../../lib/http-cache";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,13 @@ export async function GET(request) {
   }
 
   try {
+    if (!live && date) {
+      const dayFallback = await getSportsDbDayMatches(date);
+      if (dayFallback.length > 0) {
+        return jsonWithCache(NextResponse, { ok: true, provider: "thesportsdb-day", count: dayFallback.length, matches: dayFallback }, cacheProfile);
+      }
+    }
+
     if (!live && !league && !season) {
       const fallbackMatches = await getOpenFootballMatches(date);
       if (fallbackMatches.length > 0) {
@@ -30,6 +38,10 @@ export async function GET(request) {
   } catch (error) {
     try {
       if (!live && date) {
+        const dayFallback = await getSportsDbDayMatches(date);
+        if (dayFallback.length > 0) {
+          return jsonWithCache(NextResponse, { ok: true, provider: "thesportsdb-day", count: dayFallback.length, matches: dayFallback }, cacheProfile);
+        }
         const fallbackMatches = await getOpenFootballMatches(date);
         return jsonWithCache(NextResponse, { ok: true, provider: "openfootball", count: fallbackMatches.length, matches: fallbackMatches }, cacheProfile);
       }
