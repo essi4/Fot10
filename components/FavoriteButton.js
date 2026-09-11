@@ -64,6 +64,7 @@ export default function FavoriteButton({ type, name, className = "" }) {
         }
       }
       window.dispatchEvent(new CustomEvent("fot10-favorites-changed"));
+      window.dispatchEvent(new CustomEvent("fot10-profile-changed"));
     } catch {
       setActive(!next);
     } finally {
