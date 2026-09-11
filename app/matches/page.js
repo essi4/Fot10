@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock3, Radio, RefreshCw, Star, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -12,7 +12,7 @@ function iranDate(offset = 0) { const now = new Date(); const parts = new Intl.D
 function toTime(value) { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Tehran" }); }
 function mapGame(match) { const statusCode = String(match.statusShort || match.status || "").toUpperCase(); const live = ["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"].includes(statusCode); const finished = ["FT", "AET", "PEN"].includes(statusCode); return { ...match, league: match.league || "مسابقات فوتبال", home: match.home || "میزبان", away: match.away || "مهمان", minute: live && match.elapsed ? `${match.elapsed}'` : finished ? "پایان" : toTime(match.date), live, finished }; }
 
-export default function MatchesPage() {
+function MatchesContent() {
   const searchParams = useSearchParams();
   const liveOnly = searchParams.get("live") === "1";
   const [games, setGames] = useState([]); const [day, setDay] = useState(0); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [refreshing, setRefreshing] = useState(false); const [settings, setSettings] = useState({ autoRefresh: true, compactScores: true });
@@ -30,4 +30,8 @@ export default function MatchesPage() {
     {error && <div className="rounded-2xl border border-amber-400/15 bg-amber-400/5 px-4 py-3 text-[11px] text-amber-200">اتصال داده زنده برقرار نشد: {error}</div>}
     {loading ? <section className="glass card p-8 text-center text-sm text-slate-400">{liveOnly ? "در حال دریافت بازی‌های زنده واقعی…" : "در حال دریافت مسابقات واقعی…"}</section> : Object.keys(grouped).length ? <section className="space-y-4">{Object.entries(grouped).map(([league, list]) => <div key={league}><div className="px-1 mb-2 text-xs font-black text-slate-400">{league}</div><div className="space-y-3">{list.map(g => <Link key={g.id} href={g.detailAvailable === false ? `/matches?date=${date}` : `/matches/${g.id}`} className={`glass card block overflow-hidden active:scale-[.99] transition ${settings.compactScores ? "p-3" : "p-4"}`}><div className="flex justify-between items-center mb-4"><span className="text-[11px] text-slate-400">{g.league}</span>{g.live?<span className="flex items-center gap-1 text-[10px] text-emerald-400 font-black"><i className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/> LIVE · {g.minute}</span>:<span className="text-[10px] text-slate-500">{g.minute}</span>}</div><div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3"><div className="text-center"><div className="mx-auto h-11 w-11 rounded-2xl bg-white/5 grid place-items-center overflow-hidden">{g.homeLogo ? <img src={g.homeLogo} alt="" className="h-8 w-8 object-contain"/> : <span className="font-black">{g.home[0]}</span>}</div><div className="mt-2 font-bold text-sm">{g.home}</div></div><div className="text-center"><div className={`text-xl font-black ${g.live ? "text-white" : "text-slate-300"}`}>{g.homeScore != null ? `${g.homeScore} - ${g.awayScore}` : "—"}</div>{g.live && <div className="text-[10px] text-emerald-400 mt-1">در حال بازی</div>}</div><div className="text-center"><div className="mx-auto h-11 w-11 rounded-2xl bg-white/5 grid place-items-center overflow-hidden">{g.awayLogo ? <img src={g.awayLogo} alt="" className="h-8 w-8 object-contain"/> : <span className="font-black">{g.away[0]}</span>}</div><div className="mt-2 font-bold text-sm">{g.away}</div></div></div><div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-500"><span>{g.detailAvailable === false ? "اطلاعات خلاصه مسابقه" : g.live ? "گزارش زنده و آمار مسابقه" : "مرکز مسابقه"}</span><Star size={14}/></div></Link>)}</div></div>)}</section> : <div className="glass rounded-2xl p-8 text-center text-sm text-slate-500">{liveOnly ? "در حال حاضر مسابقه زنده‌ای پیدا نشد." : "برای این روز مسابقه‌ای پیدا نشد."}</div>}
   </div></main>;
+}
+
+export default function MatchesPage() {
+  return <Suspense fallback={<main className="fot-shell"><div className="fot-container py-12 text-center text-sm text-slate-400">در حال آماده‌سازی مرکز مسابقات…</div></main>}><MatchesContent /></Suspense>;
 }
