@@ -17,8 +17,7 @@ export default function BottomNav() {
   return (
     <nav className="fot-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#05070d]/92 px-2 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2 backdrop-blur-2xl shadow-[0_-12px_35px_rgba(0,0,0,.28)]">
       <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
-        {items.map(([label, Icon], index) => {
-          const href = ["/matches?live=1", "/leagues", "/news", "/favorites", "/settings"][index];
+        {items.map(([label, Icon, href]) => {
           const base = href.split("?")[0];
           const active = pathname === base || pathname?.startsWith(`${base}/`);
           return (
