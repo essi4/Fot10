@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Secrets must be configured in the GitHub Actions environment/repository:
 # CLOUDFLARE_API_TOKEN
 # CLOUDFLARE_ACCOUNT_ID
@@ -21,25 +24,26 @@ jobs:
     environment: cloudflare-preview
     steps:
       - name: Checkout B branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: cloudflare-b-config
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: OpenNext build
-        run: npx --yes opennextjs-cloudflare build
+        run: ./node_modules/.bin/opennextjs-cloudflare build
 
       - name: Deploy isolated Cloudflare preview Worker
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.68.0"
           command: deploy --name fot10-preview
