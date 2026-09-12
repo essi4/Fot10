@@ -1,6 +1,9 @@
 name: Cloudflare B deploy dry-run
 
 on:
+  push:
+    branches:
+      - cloudflare-b-config
   pull_request:
     branches:
       - main
