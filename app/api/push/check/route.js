@@ -17,12 +17,6 @@ const db = async (path, options = {}) => {
   });
 };
 
-const isPersepolis = (match) => {
-  const home = String(match.home || "").toLowerCase();
-  const away = String(match.away || "").toLowerCase();
-  return home.includes("persepolis") || away.includes("persepolis") || home.includes("پرسپولیس") || away.includes("پرسپولیس");
-};
-
 function eventFor(previous, current) {
   const currentLive = liveStatuses.includes(current.statusShort);
   const previousLive = previous && liveStatuses.includes(previous.status_short);
@@ -87,7 +81,7 @@ export async function GET(request) {
     const footballResponse = await fetch(`${url}/api/football/fixtures?date=${date}`, { cache: "no-store" });
     if (!footballResponse.ok) throw new Error(`Football API returned ${footballResponse.status}`);
     const data = await footballResponse.json();
-    const matches = Array.isArray(data.matches) ? data.matches.filter(isPersepolis) : [];
+    const matches = Array.isArray(data.matches) ? data.matches : [];
     const results = [];
     for (const match of matches) {
       const stateResponse = await db(`push_match_states?fixture_id=eq.${encodeURIComponent(match.id)}&select=*`);
