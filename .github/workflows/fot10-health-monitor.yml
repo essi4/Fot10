@@ -1,0 +1,56 @@
+name: FOT10 Health Monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FOT10_URL: https://b-preview-fot10.essi7688.workers.dev
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Homepage smoke test
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_URL}/?monitor=$(date +%s)" \
+            -o /tmp/home.html
+          grep -q 'FOT10' /tmp/home.html
+
+      - name: Health endpoint smoke test
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_URL}/api/health?monitor=$(date +%s)" \
+            -o /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+
+      - name: Live endpoint smoke test
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_URL}/api/football/live?monitor=$(date +%s)" \
+            -o /tmp/live.json
+          grep -Eq '"matches"[[:space:]]*:[[:space:]]*\[' /tmp/live.json
+
+      - name: Fixtures endpoint smoke test
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_URL}/api/football/fixtures?date=$(date -u +%F)&monitor=$(date +%s)" \
+            -o /tmp/fixtures.json
+          grep -Eq '"matches"[[:space:]]*:[[:space:]]*\[' /tmp/fixtures.json
+
+      - name: Report success
+        run: echo 'FOT10 automatic health checks passed.'
