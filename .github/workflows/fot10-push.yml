@@ -54,11 +54,14 @@ jobs:
           }
 
       - name: Trigger push check
-        if: ${{ secrets.PUSH_CRON_SECRET != '' }}
         env:
           PUSH_CRON_SECRET: ${{ secrets.PUSH_CRON_SECRET }}
         run: |
           set -euo pipefail
+          if [ -z "${PUSH_CRON_SECRET}" ]; then
+            echo 'PUSH_CRON_SECRET is not configured; push check skipped.'
+            exit 0
+          fi
           curl --fail-with-body --silent --show-error --max-time 30 \
             -H "x-push-secret: ${PUSH_CRON_SECRET}" \
             "https://fot10-dcuw.onrender.com/api/push/check"
