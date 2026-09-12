@@ -17,6 +17,7 @@ env:
 # CLOUDFLARE_ACCOUNT_ID
 # This workflow deploys a non-production Worker dedicated to the B preview.
 # It intentionally does NOT promote or modify the production `fot10` Worker.
+# One-time verification trigger: keep the preview deploy path validated.
 
 jobs:
   preview:
