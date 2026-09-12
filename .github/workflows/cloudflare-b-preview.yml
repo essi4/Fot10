@@ -46,4 +46,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.68.0"
-          command: deploy --name fot10-preview
+          command: opennextjs-cloudflare deploy --config=wrangler.preview.jsonc
