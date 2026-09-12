@@ -1,0 +1,41 @@
+name: Cloudflare B preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Secrets must be configured in the GitHub Actions environment/repository:
+# CLOUDFLARE_API_TOKEN
+# CLOUDFLARE_ACCOUNT_ID
+# This workflow is manual-only and uploads a non-production Worker version.
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    environment: cloudflare-preview
+    steps:
+      - name: Checkout B branch
+        uses: actions/checkout@v4
+        with:
+          ref: cloudflare-b-config
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: OpenNext build
+        run: npx --yes opennextjs-cloudflare build
+
+      - name: Upload Cloudflare preview version
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: versions upload
