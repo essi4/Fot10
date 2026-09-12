@@ -12,7 +12,8 @@ permissions:
 # Secrets must be configured in the GitHub Actions environment/repository:
 # CLOUDFLARE_API_TOKEN
 # CLOUDFLARE_ACCOUNT_ID
-# This workflow uploads a non-production Worker version for the B preview.
+# This workflow deploys a non-production Worker dedicated to the B preview.
+# It intentionally does NOT promote or modify the production `fot10` Worker.
 
 jobs:
   preview:
@@ -36,9 +37,9 @@ jobs:
       - name: OpenNext build
         run: npx --yes opennextjs-cloudflare build
 
-      - name: Upload Cloudflare preview version
+      - name: Deploy isolated Cloudflare preview Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: versions upload --preview-alias b-preview
+          command: deploy --name fot10-preview
