@@ -78,3 +78,5 @@ jobs:
       - name: Show preview log on failure
         if: failure()
         run: tail -n 120 /tmp/fot10-worker.log || true
+
+      # B-only readiness gate; no production deployment is performed here.
