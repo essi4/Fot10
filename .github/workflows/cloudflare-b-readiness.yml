@@ -61,7 +61,7 @@ jobs:
           NEXT_PUBLIC_FOT10_DEMO: "false"
         run: |
           set -euo pipefail
-          npx --yes opennextjs-cloudflare preview --port 8787 > /tmp/fot10-worker.log 2>&1 &
+          npx --yes opennextjs-cloudflare preview -- --port 8787 > /tmp/fot10-worker.log 2>&1 &
           echo $! > /tmp/fot10-worker.pid
           for i in {1..45}; do
             if curl -fsS http://127.0.0.1:8787/api/health >/tmp/health.json 2>/dev/null; then break; fi
