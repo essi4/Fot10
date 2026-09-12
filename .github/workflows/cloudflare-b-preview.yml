@@ -37,8 +37,11 @@ jobs:
       - name: OpenNext build
         run: ./node_modules/.bin/opennextjs-cloudflare build
 
+      - name: Select isolated preview Worker config
+        run: cp wrangler.preview.jsonc wrangler.jsonc
+
       - name: Deploy isolated Cloudflare preview Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: ./node_modules/.bin/opennextjs-cloudflare deploy --config=wrangler.preview.jsonc
+        run: ./node_modules/.bin/opennextjs-cloudflare deploy
