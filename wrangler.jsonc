@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "fot10",
+  "name": "fot10-preview",
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-09-27",
   "observability": {
