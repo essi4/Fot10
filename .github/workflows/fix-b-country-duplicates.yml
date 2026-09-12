@@ -1,0 +1,45 @@
+name: Fix Cloudflare B country-map warnings
+
+on:
+  push:
+    branches:
+      - cloudflare-b-config
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout B branch
+        uses: actions/checkout@v4
+        with:
+          ref: cloudflare-b-config
+
+      - name: Remove duplicate country keys
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path("app/golden10/page.js")
+          text = path.read_text(encoding="utf-8")
+          old = '  "کانادا": "ca", "آمریکا": "us", "اسپانیا": "es"\n'
+          new = '  "کانادا": "ca"\n'
+          if old not in text:
+              print("No duplicate tail found; nothing to change.")
+          else:
+              path.write_text(text.replace(old, new, 1), encoding="utf-8")
+              print("Removed duplicate آمریکا/اسپانیا keys from COUNTRY_CODES.")
+
+      - name: Commit B-only cleanup
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- app/golden10/page.js; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git add app/golden10/page.js
+          git commit -m "fix: remove duplicate Golden10 country codes"
+          git push origin HEAD:cloudflare-b-config
