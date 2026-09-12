@@ -34,6 +34,7 @@ jobs:
         run: npm install
 
       # B-only validation: build OpenNext before asking Wrangler to inspect the worker.
+      # Keep this workflow dry-run only; never deploy from PR validation.
       - name: OpenNext build
         run: npx --yes opennextjs-cloudflare build
 
