@@ -33,5 +33,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: OpenNext build
+        run: npx --yes opennextjs-cloudflare build
+
       - name: Cloudflare deploy dry-run
         run: npx --yes wrangler@4.68.0 deploy --dry-run
