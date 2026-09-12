@@ -1,6 +1,9 @@
 name: Cloudflare B preview
 
 on:
+  push:
+    branches:
+      - cloudflare-b-config
   workflow_dispatch:
 
 permissions:
@@ -9,7 +12,7 @@ permissions:
 # Secrets must be configured in the GitHub Actions environment/repository:
 # CLOUDFLARE_API_TOKEN
 # CLOUDFLARE_ACCOUNT_ID
-# This workflow is manual-only and uploads a non-production Worker version.
+# This workflow uploads a non-production Worker version for the B preview.
 
 jobs:
   preview:
@@ -38,4 +41,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: versions upload
+          command: versions upload --preview-alias b-preview
