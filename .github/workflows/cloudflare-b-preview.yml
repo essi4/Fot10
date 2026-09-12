@@ -13,10 +13,10 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # This workflow deploys the B branch to the LIVE `fot10` Worker.
-# It intentionally uses the production wrangler.jsonc configuration.
 # Secrets required in GitHub Actions environment/repository:
 # CLOUDFLARE_API_TOKEN
 # CLOUDFLARE_ACCOUNT_ID
+# SPORTS_API_KEY
 
 jobs:
   preview:
@@ -39,6 +39,18 @@ jobs:
 
       - name: OpenNext build
         run: ./node_modules/.bin/opennextjs-cloudflare build
+
+      - name: Sync live sports API secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SPORTS_API_KEY: ${{ secrets.SPORTS_API_KEY }}
+        run: |
+          if [ -z "$SPORTS_API_KEY" ]; then
+            echo "SPORTS_API_KEY is not configured in the cloudflare-preview GitHub environment."
+            exit 1
+          fi
+          printf '%s' "$SPORTS_API_KEY" | ./node_modules/.bin/wrangler secret put SPORTS_API_KEY
 
       - name: Deploy LIVE Cloudflare Worker
         env:
