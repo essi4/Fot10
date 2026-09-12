@@ -44,6 +44,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: ./node_modules/.bin/opennextjs-cloudflare deploy --config=wrangler.preview.jsonc
+        run: ./node_modules/.bin/opennextjs-cloudflare deploy
 
 # Trigger a single validation run after switching from versions upload to OpenNext deploy.
