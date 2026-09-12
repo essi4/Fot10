@@ -33,6 +33,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # B-only validation: build OpenNext before asking Wrangler to inspect the worker.
       - name: OpenNext build
         run: npx --yes opennextjs-cloudflare build
 
