@@ -5,15 +5,60 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  FOT10_PREVIEW_URL: https://b-preview-fot10.essi7688.workers.dev
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - name: Check FOT10 preview homepage
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_PREVIEW_URL}/?healthcheck=$(date +%s)" \
+            -o /tmp/fot10-home.html
+          grep -q 'FOT10' /tmp/fot10-home.html || {
+            echo 'FOT10 marker was not found in the preview homepage'
+            exit 1
+          }
+
+      - name: Check FOT10 health API
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_PREVIEW_URL}/api/health?healthcheck=$(date +%s)" \
+            -o /tmp/fot10-health.json
+          grep -q '"ok":true' /tmp/fot10-health.json || {
+            echo 'FOT10 health API did not report ok=true'
+            cat /tmp/fot10-health.json
+            exit 1
+          }
+
+      - name: Check FOT10 live API
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            -H 'Cache-Control: no-cache' \
+            "${FOT10_PREVIEW_URL}/api/football/live?healthcheck=$(date +%s)" \
+            -o /tmp/fot10-live.json
+          grep -Eq '"matches"\s*:\s*\[' /tmp/fot10-live.json || {
+            echo 'FOT10 live API did not return a matches array'
+            cat /tmp/fot10-live.json
+            exit 1
+          }
+
       - name: Trigger push check
+        if: ${{ secrets.PUSH_CRON_SECRET != '' }}
         env:
           PUSH_CRON_SECRET: ${{ secrets.PUSH_CRON_SECRET }}
         run: |
-          set -e
-          curl --fail-with-body --silent --show-error \
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 30 \
             -H "x-push-secret: ${PUSH_CRON_SECRET}" \
             "https://fot10-dcuw.onrender.com/api/push/check"
