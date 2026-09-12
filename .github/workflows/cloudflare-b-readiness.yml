@@ -1,0 +1,94 @@
+name: Cloudflare B readiness
+
+on:
+  push:
+    branches:
+      - cloudflare-b-config
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout B branch
+        uses: actions/checkout@v4
+        with:
+          ref: cloudflare-b-config
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: OpenNext build
+        run: npx --yes opennextjs-cloudflare build
+
+      - name: Wrangler deploy dry-run
+        run: npx --yes wrangler@4.68.0 deploy --dry-run
+
+      - name: Secret exposure scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          tracked=$(git ls-files -z | tr '\0' '\n' | grep -Ev '^(\.env\.example|\.github/workflows/cloudflare-b-readiness\.yml)$' || true)
+          if [ -n "$tracked" ]; then
+            if printf '%s\n' "$tracked" | xargs -r grep -nEI '(sk-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*[^$[:space:]]+|SUPABASE_SECRET_KEY[[:space:]]*=[[:space:]]*[^$[:space:]]+|DATABASE_URL[[:space:]]*=[[:space:]]*(postgres|postgresql|mysql|mongodb)://|SPORTS_API_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{16,}|API_SPORTS_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{16,}|FOOTBALL_API_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{16,})' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.open-next; then
+              echo 'Potential hard-coded secret value found in tracked source.'
+              exit 1
+            fi
+          fi
+          echo 'Tracked source contains no obvious hard-coded secret values.'
+
+          if grep -RInE '(sk-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .open-next 2>/dev/null; then
+            echo 'Potential secret value found in the generated Worker bundle.'
+            exit 1
+          fi
+          echo 'Generated Worker bundle contains no obvious token/private-key material.'
+
+      - name: Start Worker preview
+        shell: bash
+        env:
+          NEXT_PUBLIC_FOT10_DEMO: "false"
+        run: |
+          set -euo pipefail
+          npx --yes opennextjs-cloudflare preview -- --port 8787 > /tmp/fot10-worker.log 2>&1 &
+          echo $! > /tmp/fot10-worker.pid
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:8787/api/health >/tmp/health.json 2>/dev/null; then break; fi
+            sleep 2
+          done
+          test -s /tmp/health.json
+
+      - name: Smoke test Worker route handlers
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            path="$1"
+            expected="$2"
+            code=$(curl -sS -o /tmp/response.json -w '%{http_code}' "http://127.0.0.1:8787${path}")
+            echo "${path} -> ${code}"
+            test "$code" = "$expected"
+          }
+          check /api/health 200
+          check /api/football/config 200
+          check /api/football/status 503
+          check /api/football/live 200
+          check /api/football/fixtures?date=2026-09-11 200
+          echo 'Core Worker route handlers passed.'
+
+      - name: Show preview log on failure
+        if: failure()
+        run: tail -n 120 /tmp/fot10-worker.log || true
+
+      # B-only readiness gate; no production deployment is performed here.

@@ -1,0 +1,45 @@
+name: Cloudflare B deploy dry-run
+
+on:
+  push:
+    branches:
+      - cloudflare-b-config
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - 'wrangler.jsonc'
+      - 'next.config.*'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'open-next.config.*'
+      - '.github/workflows/cloudflare-b-deploy-dry-run.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      # B-only validation: build OpenNext before asking Wrangler to inspect the worker.
+      # Keep this workflow dry-run only; never deploy from PR validation.
+      - name: OpenNext build
+        run: npx --yes opennextjs-cloudflare build
+
+      - name: Cloudflare deploy dry-run
+        run: npx --yes wrangler@4.68.0 deploy --dry-run

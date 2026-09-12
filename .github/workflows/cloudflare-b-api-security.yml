@@ -1,0 +1,92 @@
+name: Cloudflare B API and security checks
+
+on:
+  push:
+    branches:
+      - cloudflare-b-config
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout B branch
+        uses: actions/checkout@v4
+        with:
+          ref: cloudflare-b-config
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build with secret sentinels
+        env:
+          SPORTS_API_KEY: FOT10_SENTINEL_SERVER_SECRET_123456789
+          API_SPORTS_KEY: FOT10_SENTINEL_API_SECRET_123456789
+          FOOTBALL_API_KEY: FOT10_SENTINEL_FOOTBALL_SECRET_123456789
+          SUPABASE_SERVICE_ROLE_KEY: FOT10_SENTINEL_SUPABASE_SECRET_123456789
+          SUPABASE_SECRET_KEY: FOT10_SENTINEL_SUPABASE_SECRET_987654321
+          DATABASE_URL: postgresql://FOT10_SENTINEL_USER:FOT10_SENTINEL_PASS@example.invalid:5432/fot10
+        run: npx --yes opennextjs-cloudflare build
+
+      - name: Verify secret sentinels never enter Worker bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'FOT10_SENTINEL_(SERVER_SECRET|API_SECRET|FOOTBALL_SECRET|SUPABASE_SECRET|USER|PASS)|postgresql://FOT10_' .open-next .next 2>/dev/null; then
+            echo 'A secret sentinel was embedded into generated output.'
+            exit 1
+          fi
+          echo 'No secret sentinel was embedded into generated output.'
+
+      - name: Start Worker preview
+        env:
+          NEXT_PUBLIC_FOT10_DEMO: "false"
+        run: |
+          set -euo pipefail
+          npx --yes opennextjs-cloudflare preview -- --port 8787 > /tmp/fot10-worker.log 2>&1 &
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:8787/api/health >/tmp/health.json 2>/dev/null; then break; fi
+            sleep 2
+          done
+          test -s /tmp/health.json
+
+      - name: API contract and Worker smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            path="$1"
+            expected="$2"
+            code=$(curl -sS -o /tmp/response.json -w '%{http_code}' "http://127.0.0.1:8787${path}")
+            echo "${path} -> ${code}"
+            test "$code" = "$expected"
+          }
+          check /api/health 200
+          check /api/football/config 200
+          check /api/football/status 503
+          check /api/football/live 200
+          check '/api/football/fixtures?date=2026-09-11' 200
+          check /api/football/teams 400
+          check /api/football/players 400
+          check /api/football/standings 400
+          check '/api/football/search?q=a' 200
+          check '/api/football/search?q=' 200
+          echo 'Expanded API contract checks passed.'
+
+      - name: Show preview log on failure
+        if: failure()
+        run: tail -n 160 /tmp/fot10-worker.log || true
+
+      # B-only checks. No production deployment is performed here.
