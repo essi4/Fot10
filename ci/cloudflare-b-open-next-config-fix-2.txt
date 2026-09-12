@@ -1,0 +1,1 @@
+B-only validation trigger. No deployment.
