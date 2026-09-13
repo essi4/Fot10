@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, ChevronLeft, Medal, Search, Settings, Shield, Trophy, Users } from "lucide-react";
+import { BarChart3, ChevronLeft, Medal, Search, Settings, Shield, Trophy, Users, Zap } from "lucide-react";
 import Link from "next/link";
 import HomeMatchdayHub from "./components/HomeMatchdayHub";
 import HomeNews from "./components/HomeNews";
@@ -43,6 +43,23 @@ export default function HomePage() {
               <p className="mt-2 text-[10px] font-bold leading-5 text-slate-400">خبر، نتیجه، بازی زنده، لیگ، آمار و بازیکن؛ سریع و ساده، با تمرکز روی چیزی که برای هوادار مهم است.</p>
             </div>
             <div className="hidden select-none text-[92px] font-black italic leading-none text-white/[.035] sm:block">360</div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-[430px]">
+            <Link href="/matches?live=1" className="group flex items-center justify-between rounded-2xl border border-emerald-300/15 bg-emerald-400/[.06] px-3 py-2.5 transition hover:border-emerald-300/30 hover:bg-emerald-400/[.1]">
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300"><Zap size={15} /></span>
+                <div><div className="text-[10px] font-black text-emerald-200">LIVE CENTER</div><div className="mt-0.5 text-[7px] font-bold text-emerald-300/55">بازی‌های زنده</div></div>
+              </div>
+              <ChevronLeft size={14} className="text-emerald-300/50 transition-transform group-hover:-translate-x-1" />
+            </Link>
+            <Link href="/leagues" className="group flex items-center justify-between rounded-2xl border border-cyan-300/10 bg-cyan-400/[.045] px-3 py-2.5 transition hover:border-cyan-300/25 hover:bg-cyan-400/[.08]">
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Trophy size={15} /></span>
+                <div><div className="text-[10px] font-black text-cyan-200">COMPETITIONS</div><div className="mt-0.5 text-[7px] font-bold text-cyan-300/45">لیگ و جدول</div></div>
+              </div>
+              <ChevronLeft size={14} className="text-cyan-300/45 transition-transform group-hover:-translate-x-1" />
+            </Link>
           </div>
         </div>
 
