@@ -10,6 +10,7 @@ export default function LeagueDetailPage({ params, searchParams }) {
   const entry = LEAGUE_ENTRIES.find(item => item.slug === params.slug);
   const cup = CLUB_CUPS.find(item => item.slug === params.slug);
   const league = entry || cup;
+  const competitionId = league?.leagueId ?? league?.id;
 
   return (
     <div className={styles.page}>
@@ -19,12 +20,12 @@ export default function LeagueDetailPage({ params, searchParams }) {
             <LeagueNews leagueName={league.leagueName || league.name} country={league.apiCountry || league.country} />
           </div>
         </main>
-      ) : searchParams?.tab === "table" && league?.leagueId ? (
+      ) : searchParams?.tab === "table" && competitionId ? (
         <LeagueStandingsLive
-          leagueId={league.leagueId}
+          leagueId={competitionId}
           leagueName={league.leagueName || league.name}
           country={league.apiCountry || league.country}
-          season={Number(league.leagueId) === 195 ? 2026 : undefined}
+          season={Number(competitionId) === 195 ? 2026 : 2026}
         />
       ) : (
         <League360PageV2 params={params} searchParams={searchParams} />
