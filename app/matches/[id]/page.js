@@ -67,10 +67,7 @@ export default function MatchDetailPage({ params }) {
   const live = isLive(match?.fixture?.status?.short);
   useEffect(() => {
     if (!match || !live) return undefined;
-    const timer = setInterval(() => {
-      load("details", true);
-      if (section !== "details") load(section, true);
-    }, 15000);
+    const timer = setInterval(() => { load("details", true); if (section !== "details") load(section, true); }, 15000);
     return () => clearInterval(timer);
   }, [match, live, section, load]);
 
@@ -99,10 +96,44 @@ function Empty({ text }) { return <div className="glass rounded-2xl p-8 text-cen
 function Events({ data }) {
   if (!Array.isArray(data) || !data.length) return <Empty text="هنوز رویدادی برای این مسابقه ثبت نشده است." />;
   const events = [...data].sort((a, b) => (Number(a?.time?.elapsed || 0) * 100 + Number(a?.time?.extra || 0)) - (Number(b?.time?.elapsed || 0) * 100 + Number(b?.time?.extra || 0)));
-  return <div className="space-y-2">{events.map((e, index) => { const meta = eventMeta(e); const Icon = meta.icon; return <div key={`${e?.time?.elapsed}-${e?.team?.id}-${index}`} className={`rounded-2xl border p-3 ${meta.box}`}><div className="flex items-center gap-3"><div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-black/10 ${meta.tone}`}><Icon size={16}/></div><div className="min-w-0 flex-1"><div className={`text-[10px] font-black ${meta.tone}`}>{meta.label}</div><div className="mt-1 truncate text-[11px] font-bold text-slate-300">{e?.player?.name || e?.assist?.name || e?.detail || "رویداد مسابقه"}</div></div><div className="text-[11px] font-black tabular-nums text-slate-500">{eventMinute(e)}</div></div></div>; })}</div>;
+  let homeScore = 0; let awayScore = 0;
+  const timeline = [];
+  events.forEach((e, index) => {
+    const meta = eventMeta(e);
+    timeline.push({ kind: "event", event: e, meta, minute: eventMinute(e), index });
+    if (e?.type === "Goal" && !isCancelledGoal(e)) {
+      if (e?.team?.id === events[0]?.team?.id) homeScore += 1;
+      else if (e?.team?.id) awayScore += 1;
+      timeline.push({ kind: "score", score: `${homeScore} - ${awayScore}`, minute: eventMinute(e), index: `${index}-score` });
+    }
+  });
+  return <div className="glass rounded-2xl p-3 md:p-5">
+    <div className="flex items-center justify-between gap-3 mb-4"><div><h2 className="font-black text-sm">Timeline زنده</h2><p className="text-[9px] text-slate-500 mt-1">گل، VAR، پنالتی، کارت و تعویض به ترتیب دقیقه</p></div><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[8px] font-black text-emerald-300">LIVE CENTER</span></div>
+    <div className="relative">
+      <div className="absolute right-[22px] top-2 bottom-2 w-px bg-white/8" />
+      <div className="space-y-2">
+        {timeline.map((item) => item.kind === "score" ? <div key={item.index} className="relative pr-11 py-1"><div className="rounded-xl border border-emerald-400/15 bg-emerald-400/[.035] px-3 py-2 text-center"><span className="text-[8px] text-slate-500">{item.minute}</span><div className="mt-0.5 text-[11px] font-black text-emerald-300">🔄 نتیجه عوض شد · {item.score}</div></div></div> : <TimelineEvent key={`${item.index}-${item.event?.type}-${item.event?.detail || ""}`} {...item} />)}
+      </div>
+    </div>
+  </div>;
 }
 
-function Statistics({ data }) { if (!Array.isArray(data) || !data.length) return <Empty text="آمار لحظه‌ای این مسابقه هنوز از منبع داده دریافت نشده است." />; return <div className="space-y-3">{data.map((team, index) => <div key={team?.team?.id || index} className="glass rounded-2xl p-4"><div className="mb-3 flex items-center gap-2"><img src={team?.team?.logo || ""} alt="" className="h-7 w-7 object-contain"/><b className="text-xs">{team?.team?.name || `تیم ${index + 1}`}</b></div><div className="space-y-2">{(team?.statistics || []).map((stat) => <div key={stat?.type} className="flex items-center justify-between gap-3 text-[10px]"><span className="text-slate-500">{stat?.type || "—"}</span><b className="text-slate-200 tabular-nums">{stat?.value ?? "—"}</b></div>)}</div></div>)}</div>; }
-function Lineups({ data }) { if (!Array.isArray(data) || !data.length) return <Empty text="ترکیب این مسابقه هنوز در دسترس نیست." />; return <div className="grid gap-3 md:grid-cols-2">{data.map((team, index) => <div key={team?.team?.id || index} className="glass rounded-2xl p-4"><div className="flex items-center gap-2 mb-3"><img src={team?.team?.logo || ""} alt="" className="h-7 w-7 object-contain"/><b className="text-xs">{team?.team?.name || `تیم ${index + 1}`}</b></div><div className="space-y-1">{(team?.startXI || []).slice(0, 11).map((p, i) => <div key={p?.player?.id || i} className="flex justify-between rounded-lg bg-white/[.02] px-2 py-1.5 text-[9px]"><span>{p?.player?.name || "بازیکن"}</span><span className="text-slate-600">{p?.player?.number ?? "—"}</span></div>)}</div></div>)}</div>; }
-function Players({ data }) { if (!Array.isArray(data) || !data.length) return <Empty text="اطلاعات بازیکنان این مسابقه هنوز در دسترس نیست." />; return <div className="space-y-2">{data.map((team, index) => <div key={team?.team?.id || index} className="glass rounded-2xl p-4"><b className="text-xs">{team?.team?.name || `تیم ${index + 1}`}</b><div className="mt-3 grid grid-cols-2 gap-2">{(team?.players || []).map((p, i) => <div key={p?.player?.id || i} className="rounded-xl bg-white/[.025] p-2 text-[9px]"><div className="font-bold">{p?.player?.name || "بازیکن"}</div><div className="mt-1 text-slate-600">{p?.statistics?.[0]?.games?.minutes ? `${p.statistics[0].games.minutes} دقیقه` : ""}</div></div>)}</div></div>)}</div>; }
-function Details({ data }) { const fixture = data?.fixture; if (!fixture) return <Empty text="جزئیات مسابقه در دسترس نیست." />; return <div className="glass rounded-2xl p-4 space-y-2 text-[10px] text-slate-400"><div className="flex justify-between"><span>ورزشگاه</span><b className="text-slate-200">{fixture?.venue?.name || "—"}</b></div><div className="flex justify-between"><span>شهر</span><b className="text-slate-200">{fixture?.venue?.city || "—"}</b></div><div className="flex justify-between"><span>داور</span><b className="text-slate-200">{fixture?.referee || "—"}</b></div><div className="flex justify-between"><span>زمان</span><b className="text-slate-200">{formatDate(fixture?.date)}</b></div></div>; }
+function TimelineEvent({ event, meta, minute }) {
+  const Icon = meta.icon;
+  const incoming = isSubstitution(event) ? event?.player?.name : "";
+  const outgoing = isSubstitution(event) ? (event?.assist?.name || event?.assist?.player || "") : "";
+  const player = event?.player?.name || "";
+  return <div className="relative pr-11">
+    <div className={`absolute right-2.5 top-3 h-6 w-6 rounded-lg border grid place-items-center ${meta.box} ${meta.tone}`}><Icon size={13} /></div>
+    <div className={`rounded-2xl border px-3 py-2.5 ${meta.box}`}>
+      <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 min-w-0"><span className={`text-[10px] font-black ${meta.tone}`}>{meta.label}</span>{event?.team?.name && <span className="text-[8px] text-slate-500 truncate">· {event.team.name}</span>}</div><span className="shrink-0 text-[10px] font-black text-slate-400 tabular-nums">{minute}</span></div>
+      {isCancelledGoal(event) ? <p className="mt-1.5 text-[10px] font-bold text-slate-300">گل {player ? `توسط ${player} ` : ""}پس از بررسی VAR مردود شد.</p> : isSubstitution(event) ? <p className="mt-1.5 text-[10px] text-slate-300">ورود: <b>{incoming || "—"}</b>{outgoing ? ` · خروج: ${outgoing}` : ""}</p> : player ? <p className="mt-1.5 text-[10px] text-slate-300"><b>{player}</b>{event?.assist?.name ? ` · پاس گل: ${event.assist.name}` : ""}</p> : null}
+      {event?.detail && !isCancelledGoal(event) && <p className="mt-1 text-[9px] text-slate-500">{event.detail}</p>}
+    </div>
+  </div>;
+}
+
+function Statistics({ data }) { if (!Array.isArray(data) || !data.length) return <Empty text="آمار این مسابقه هنوز در دسترس نیست." />; const home = data[0]?.statistics || []; const away = data[1]?.statistics || []; const awayMap = new Map(away.map((item) => [String(item.type).toLowerCase(), item.value])); return <div className="glass rounded-2xl p-4 md:p-5 space-y-1">{home.map((item, i) => { const left = item.value ?? "—"; const right = awayMap.get(String(item.type).toLowerCase()) ?? "—"; return <div key={item.type || i} className="py-3 border-b border-white/5 last:border-0"><div className="grid grid-cols-[1fr_100px_1fr] items-center gap-2"><span className="text-center font-black text-xs">{left}</span><span className="text-center text-[10px] text-slate-500">{item.type}</span><span className="text-center font-black text-xs">{right}</span></div></div>; })}</div>; }
+function Lineups({ data }) { if (!Array.isArray(data) || !data.length) return <Empty text="ترکیب رسمی هنوز اعلام نشده است." />; return <div className="grid gap-3 md:grid-cols-2">{data.map((team, i) => <div key={team.team?.id || i} className="glass rounded-2xl p-4"><div className="flex items-center gap-2 mb-4"><img src={team.team?.logo} alt="" className="h-8 w-8 object-contain" /><b>{team.team?.name}</b><span className="mr-auto rounded-lg bg-white/5 px-2 py-1 text-[10px] text-slate-500">{team.formation || "—"}</span></div><div className="text-[10px] font-black text-emerald-300 mb-2">ترکیب اصلی</div><div className="grid grid-cols-2 gap-2">{(team.startXI || []).map((p, j) => <div key={p.player?.id || j} className="rounded-xl bg-white/5 p-2.5 text-[10px] flex justify-between gap-2"><span className="truncate">{p.player?.name}</span><span className="shrink-0 text-slate-500">{p.player?.number ?? ""}</span></div>)}</div></div>)}</div>; }
+function Players({ data }) { if (!Array.isArray(data) || !data.length) return <Empty text="اطلاعات بازیکنان این مسابقه هنوز در دسترس نیست." />; return <div className="grid gap-3 md:grid-cols-2">{data.map((team, i) => <div key={team.team?.id || i} className="glass rounded-2xl p-4"><div className="flex items-center gap-2 mb-4"><img src={team.team?.logo} alt="" className="h-8 w-8 object-contain" /><b>{team.team?.name || "تیم"}</b></div><div className="space-y-2">{(team.players || []).map((row, j) => <div key={row.player?.id || j} className="rounded-xl bg-white/5 p-2.5 text-[10px] flex justify-between"><span>{row.player?.name || "بازیکن"}</span><span className="text-slate-500">{row.statistics?.[0]?.games?.minutes ?? "—"} دقیقه</span></div>)}</div></div>)}</div>; }
+function Details({ data }) { const match = data?.fixture ? data : null; if (!match) return <Empty text="جزئیات مسابقه فعلاً در دسترس نیست." />; return <div className="glass rounded-2xl p-5 space-y-3 text-xs"><div className="flex justify-between gap-4"><span className="text-slate-500">ورزشگاه</span><b>{match.fixture?.venue?.name || "—"}</b></div><div className="flex justify-between gap-4"><span className="text-slate-500">شهر</span><b>{match.fixture?.venue?.city || "—"}</b></div><div className="flex justify-between gap-4"><span className="text-slate-500">داور</span><b>{match.fixture?.referee || "—"}</b></div><div className="flex justify-between gap-4"><span className="text-slate-500">زمان</span><b>{formatDate(match.fixture?.date)}</b></div></div>; }
