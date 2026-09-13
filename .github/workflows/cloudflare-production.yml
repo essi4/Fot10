@@ -66,3 +66,5 @@ jobs:
             cat /tmp/live.json
             exit 1
           }
+
+# Production-only deployment path; keep main/Render untouched.
