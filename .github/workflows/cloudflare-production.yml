@@ -68,3 +68,4 @@ jobs:
           }
 
 # Production-only deployment path; keep main/Render untouched.
+# OpenNext config is validated before deployment.
