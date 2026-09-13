@@ -2,15 +2,26 @@ import League360PageV2 from "./League360PageV2";
 import LeagueStandingsLive from "./LeagueStandingsLive";
 import LeagueNews from "../../../components/LeagueNews";
 import { CLUB_CUPS, LEAGUE_ENTRIES } from "../../../lib/fot10-universe";
+import { getLeagueCurrentSeason } from "../../../lib/sports-data";
 import styles from "./league.module.css";
 
 export const dynamic = "force-dynamic";
 
-export default function LeagueDetailPage({ params, searchParams }) {
+export default async function LeagueDetailPage({ params, searchParams }) {
   const entry = LEAGUE_ENTRIES.find(item => item.slug === params.slug);
   const cup = CLUB_CUPS.find(item => item.slug === params.slug);
   const league = entry || cup;
   const competitionId = league?.leagueId ?? league?.id;
+
+  let liveSeason = 2026;
+  if (competitionId) {
+    try {
+      const resolvedSeason = await getLeagueCurrentSeason(competitionId);
+      if (resolvedSeason) liveSeason = Number(resolvedSeason);
+    } catch {
+      liveSeason = 2026;
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -25,7 +36,7 @@ export default function LeagueDetailPage({ params, searchParams }) {
           leagueId={competitionId}
           leagueName={league.leagueName || league.name}
           country={league.apiCountry || league.country}
-          season={Number(competitionId) === 195 ? 2026 : 2026}
+          season={liveSeason}
         />
       ) : (
         <League360PageV2 params={params} searchParams={searchParams} />
