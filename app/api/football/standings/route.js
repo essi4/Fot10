@@ -9,6 +9,27 @@ const FINAL_STATUSES = new Set(["FT", "AET", "PEN"]);
 const IRAN_LEAGUE = "195";
 const IRAN_SEASON = "2026";
 
+// FOT10's 12 selected competitions. Do not require 18 rows for every competition:
+// Qatar has 12 teams, while the UEFA and AFC Champions League league stages use 36 and 32.
+const EXPECTED_TEAM_COUNTS = {
+  "195": 18,
+  "140": 20,
+  "39": 20,
+  "61": 18,
+  "135": 20,
+  "78": 18,
+  "88": 18,
+  "307": 18,
+  "305": 12,
+  "203": 18,
+  "2": 36,
+  "17": 32,
+};
+
+function expectedTeamCount(league) {
+  return EXPECTED_TEAM_COUNTS[String(league)] || 18;
+}
+
 function normalizeTeamName(name = "") {
   return String(name)
     .toLowerCase()
@@ -52,23 +73,23 @@ export async function GET(request) {
   const season = searchParams.get("season");
   if (!league || !season) return NextResponse.json({ ok: false, error: "league and season are required" }, { status: 400, headers: noStoreHeaders() });
 
-  try {
-    // For the current Persian Gulf Pro League, always prefer the live API-Football table.
-    // This prevents the old hardcoded snapshot from becoming the visible source.
-    if (league === IRAN_LEAGUE && season === IRAN_SEASON) {
-      try {
-        const live = await getStandings(league, season);
-        if (Array.isArray(live) && live.length >= 18) {
-          return jsonWithCache(NextResponse, { ok: true, provider: "api-football-live", fallback: false, cached: false, league, season, data: live, errors: [] }, "standings-live");
-        }
-      } catch (error) {
-        // Continue to the fixture-derived fallback below.
-      }
+  const expected = expectedTeamCount(league);
 
+  try {
+    try {
+      const live = await getStandings(league, season);
+      if (Array.isArray(live) && live.length >= expected) {
+        return jsonWithCache(NextResponse, { ok: true, provider: "api-football-live", fallback: false, cached: false, league, season, data: live, errors: [] }, "standings-live");
+      }
+    } catch (error) {
+      // Continue to resilient fallback providers.
+    }
+
+    if (league === IRAN_LEAGUE && season === IRAN_SEASON) {
       try {
         const fixtures = await getMatches({ league, season });
         const derived = deriveFromFixtures(fixtures);
-        if (derived.length >= 18) {
+        if (derived.length >= expected) {
           return jsonWithCache(NextResponse, { ok: true, provider: "api-football-fixtures-derived", fallback: true, cached: false, league, season, data: derived, errors: [] }, "standings-derived");
         }
       } catch (error) {
