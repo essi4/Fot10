@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock3, Radio, RefreshCw, Star, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -21,9 +21,15 @@ function MatchesContent() {
   const searchParams = useSearchParams();
   const liveOnly = searchParams.get("live") === "1";
   const [games, setGames] = useState([]); const [day, setDay] = useState(0); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [refreshing, setRefreshing] = useState(false); const [settings, setSettings] = useState({ autoRefresh: true, compactScores: true }); const [updatedAt, setUpdatedAt] = useState(null); const [source, setSource] = useState("");
+  const requestInFlight = useRef(false);
   const date = useMemo(() => iranDate(day), [day]);
   useEffect(() => { const sync = () => setSettings(readSettings()); sync(); window.addEventListener("storage", sync); window.addEventListener("fot10-settings-changed", sync); return () => { window.removeEventListener("storage", sync); window.removeEventListener("fot10-settings-changed", sync); }; }, []);
-  const loadMatches = useCallback(async ({ manual = false } = {}) => { if (manual) setRefreshing(true); setLoading(true); setError(""); try { const endpoint = liveOnly ? "/api/football/live" : `/api/football/fixtures?date=${date}`; const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 12000); let response; try { response = await fetch(`${endpoint}${liveOnly ? `?t=${Date.now()}` : ""}`, { cache: "no-store", signal: controller.signal }); } finally { clearTimeout(timeout); } const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "دریافت مسابقات ناموفق بود"); const sourceMatches = Array.isArray(payload.matches) ? payload.matches : []; const mapped = sourceMatches.map(mapGame).filter((g) => liveOnly ? g.live : true).sort(sortLive); setGames(mapped); setSource(payload.source || ""); setUpdatedAt(payload.checkedAt ? new Date(payload.checkedAt) : new Date()); if (!mapped.length && liveOnly) setError("فعلاً بازی زنده‌ای از منابع معتبر دریافت نشد؛ بررسی خودکار ادامه دارد."); } catch (err) { setError(err?.name === "AbortError" ? "پاسخ سرویس زنده دیر رسید؛ بررسی خودکار ادامه دارد." : err?.message || "اتصال داده زنده برقرار نشد."); } finally { setLoading(false); setRefreshing(false); } }, [date, liveOnly]);
+  const loadMatches = useCallback(async ({ manual = false } = {}) => {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    if (manual) setRefreshing(true); setLoading(true); setError("");
+    try { const endpoint = liveOnly ? "/api/football/live" : `/api/football/fixtures?date=${date}`; const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), liveOnly ? 18000 : 12000); let response; try { response = await fetch(`${endpoint}${liveOnly ? `?t=${Date.now()}` : ""}`, { cache: "no-store", signal: controller.signal }); } finally { clearTimeout(timeout); } const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "دریافت مسابقات ناموفق بود"); const sourceMatches = Array.isArray(payload.matches) ? payload.matches : []; const mapped = sourceMatches.map(mapGame).filter((g) => liveOnly ? g.live : true).sort(sortLive); setGames(mapped); setSource(payload.source || ""); setUpdatedAt(payload.checkedAt ? new Date(payload.checkedAt) : new Date()); if (!mapped.length && liveOnly) setError("فعلاً بازی زنده‌ای از منابع معتبر دریافت نشد؛ بررسی خودکار ادامه دارد."); } catch (err) { setError(err?.name === "AbortError" ? "پاسخ سرویس زنده دیر رسید؛ بررسی خودکار ادامه دارد." : err?.message || "اتصال داده زنده برقرار نشد."); } finally { requestInFlight.current = false; setLoading(false); setRefreshing(false); }
+  }, [date, liveOnly]);
   useEffect(() => { loadMatches(); }, [loadMatches]);
   useEffect(() => { if (!settings.autoRefresh || !liveOnly) return; const timer = setInterval(() => loadMatches(), 15000); return () => clearInterval(timer); }, [loadMatches, settings.autoRefresh, liveOnly]);
   useEffect(() => { if (!settings.autoRefresh || liveOnly) return; const timer = setInterval(() => loadMatches(), 30000); return () => clearInterval(timer); }, [loadMatches, settings.autoRefresh, liveOnly]);
