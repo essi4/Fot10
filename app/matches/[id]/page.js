@@ -22,7 +22,7 @@ function eventMeta(e) {
   if (e?.type === "Goal" && isPenalty(e)) return { icon: Goal, label: "گل از روی پنالتی", tone: "text-emerald-300", box: "border-emerald-400/20 bg-emerald-400/[.06]" };
   if (e?.type === "Goal") return { icon: Goal, label: "گل", tone: "text-emerald-300", box: "border-emerald-400/20 bg-emerald-400/[.06]" };
   if (isMissedPenalty(e)) return { icon: Goal, label: "پنالتی از دست رفت", tone: "text-amber-300", box: "border-amber-400/20 bg-amber-400/[.05]" };
-  if (isPenalty(e)) return { icon: Goal, label: "پنالتی", tone: "text-amber-300", box: "border-amber-400/20 bg-amber-400/[.05]" };
+  if (isPenalty(e)) return { icon: Goal, label: "پنالتی", tone: "text-amber-300", box: "border-amber-400/20 bg-amber-300/[.05]" };
   if (isRedCard(e)) return { icon: CircleAlert, label: "کارت قرمز", tone: "text-rose-300", box: "border-rose-400/20 bg-rose-400/[.05]" };
   if (isYellowCard(e)) return { icon: CircleAlert, label: "کارت زرد", tone: "text-yellow-300", box: "border-yellow-400/20 bg-yellow-400/[.04]" };
   if (isSubstitution(e)) return { icon: Repeat2, label: "تعویض", tone: "text-sky-300", box: "border-sky-400/20 bg-sky-400/[.05]" };
@@ -77,7 +77,7 @@ export default function MatchDetailPage({ params }) {
     <MatchHeader match={match} loading={loading && !match} />
     <nav className="glass rounded-2xl p-1.5 grid grid-cols-5 gap-1 overflow-x-auto" aria-label="بخش‌های مسابقه">{tabs.map(([key, label, Icon]) => <button key={key} onClick={() => setSection(key)} className={`rounded-xl px-2 py-3 text-[10px] font-bold whitespace-nowrap transition ${section === key ? "bg-emerald-400 text-slate-950 shadow-lg" : "text-slate-400 hover:bg-white/5"}`}><Icon size={15} className="mx-auto mb-1" />{label}</button>)}</nav>
     {error && !degraded && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-xs text-amber-200">{error}</div>}
-    <section className="space-y-3">{loading ? <div className="glass rounded-2xl p-8 text-center text-sm text-slate-400"><Activity className="mx-auto mb-2 animate-pulse" size={20} />در حال بارگذاری…</div> : section === "events" ? <Events data={data} /> : section === "statistics" ? <Statistics data={data} /> : section === "lineups" ? <Lineups data={data} /> : section === "players" ? <Players data={data} /> : <Details data={fixture} />}</section>
+    <section className="space-y-3">{loading ? <div className="glass rounded-2xl p-8 text-center text-sm text-slate-400"><Activity className="mx-auto mb-2 animate-pulse" size={20} />در حال بارگذاری…</div> : section === "events" ? <Events data={data} homeTeamId={match?.teams?.home?.id} awayTeamId={match?.teams?.away?.id} /> : section === "statistics" ? <Statistics data={data} /> : section === "lineups" ? <Lineups data={data} /> : section === "players" ? <Players data={data} /> : <Details data={fixture} />}</section>
   </div></main>;
 }
 
@@ -93,7 +93,7 @@ function MatchHeader({ match, loading }) {
 function TeamHero({ team }) { if (!team) return <div className="text-center text-slate-500">—</div>; return <div className="text-center min-w-0"><Link href={`/teams/${team.id}`} className="inline-flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-3xl bg-white/5 border border-white/5"><img src={team.logo} alt="" className="h-14 w-14 md:h-16 md:w-16 object-contain" /></Link><Link href={`/teams/${team.id}`} className="block mt-3 font-black text-sm md:text-base truncate hover:text-emerald-300">{team.name || "تیم"}</Link></div>; }
 function Empty({ text }) { return <div className="glass rounded-2xl p-8 text-center"><div className="mx-auto h-11 w-11 rounded-xl bg-white/5 grid place-items-center"><WifiOff size={18} className="text-slate-600" /></div><p className="mt-3 text-xs text-slate-500">{text}</p></div>; }
 
-function Events({ data }) {
+function Events({ data, homeTeamId, awayTeamId }) {
   if (!Array.isArray(data) || !data.length) return <Empty text="هنوز رویدادی برای این مسابقه ثبت نشده است." />;
   const events = [...data].sort((a, b) => (Number(a?.time?.elapsed || 0) * 100 + Number(a?.time?.extra || 0)) - (Number(b?.time?.elapsed || 0) * 100 + Number(b?.time?.extra || 0)));
   let homeScore = 0; let awayScore = 0;
@@ -102,8 +102,8 @@ function Events({ data }) {
     const meta = eventMeta(e);
     timeline.push({ kind: "event", event: e, meta, minute: eventMinute(e), index });
     if (e?.type === "Goal" && !isCancelledGoal(e)) {
-      if (e?.team?.id === events[0]?.team?.id) homeScore += 1;
-      else if (e?.team?.id) awayScore += 1;
+      if (e?.team?.id === homeTeamId) homeScore += 1;
+      else if (e?.team?.id === awayTeamId) awayScore += 1;
       timeline.push({ kind: "score", score: `${homeScore} - ${awayScore}`, minute: eventMinute(e), index: `${index}-score` });
     }
   });
