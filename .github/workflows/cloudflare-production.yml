@@ -1,0 +1,65 @@
+name: Cloudflare Production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: cloudflare-production
+    steps:
+      - name: Checkout production branch
+        uses: actions/checkout@v6
+        with:
+          ref: cloudflare-production
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: OpenNext build
+        run: ./node_modules/.bin/opennextjs-cloudflare build
+
+      - name: Validate production Worker config
+        run: ./node_modules/.bin/wrangler deploy --dry-run
+
+      - name: Deploy production Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ./node_modules/.bin/opennextjs-cloudflare deploy
+
+      - name: Smoke test production health
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            -H 'Cache-Control: no-cache' \
+            "https://fot10.essi7688.workers.dev/api/health?healthcheck=$(date +%s)" \
+            -o /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json || {
+            cat /tmp/health.json
+            exit 1
+          }
+
+      - name: Smoke test production live API
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 30 \
+            -H 'Cache-Control: no-cache' \
+            "https://fot10.essi7688.workers.dev/api/football/live?healthcheck=$(date +%s)" \
+            -o /tmp/live.json
+          grep -Eq '"matches"[[:space:]]*:[[:space:]]*\[' /tmp/live.json || {
+            cat /tmp/live.json
+            exit 1
+          }
