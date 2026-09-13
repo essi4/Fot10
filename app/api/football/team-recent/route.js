@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMatches } from "../../../../../lib/sports-data";
+import { getMatches } from "../../../../lib/sports-data";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,6 @@ function normalizeSportsDbEvent(event, teamId) {
   const homeScore = event?.intHomeScore == null || event?.intHomeScore === "" ? null : Number(event.intHomeScore);
   const awayScore = event?.intAwayScore == null || event?.intAwayScore === "" ? null : Number(event.intAwayScore);
   if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) return null;
-  const isHome = String(event.idHomeTeam) === String(teamId) || event.strHomeTeam;
   const home = String(event.idHomeTeam) === String(teamId);
   return {
     id: Number(event.idEvent || 0),
