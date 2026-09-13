@@ -32,16 +32,16 @@ jobs:
         run: npm ci
 
       - name: OpenNext build
-        run: ./node_modules/.bin/opennextjs-cloudflare build
+        run: npx --yes @opennextjs/cloudflare@1.3.0 build
 
       - name: Validate production Worker config
-        run: ./node_modules/.bin/wrangler deploy --dry-run
+        run: npx --yes wrangler@4.68.0 deploy --dry-run
 
       - name: Deploy production Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: ./node_modules/.bin/opennextjs-cloudflare deploy
+        run: npx --yes @opennextjs/cloudflare@1.3.0 deploy
 
       - name: Smoke test production health
         run: |
