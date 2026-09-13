@@ -4,6 +4,8 @@ import { getSportsDbLiveMatches } from "../../../../lib/thesportsdb-day";
 
 export const dynamic = "force-dynamic";
 
+const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
+
 function iranToday(offset = 0) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tehran",
@@ -18,6 +20,12 @@ function iranToday(offset = 0) {
   return base.toISOString().slice(0, 10);
 }
 
+function isActuallyLive(match) {
+  const status = String(match?.statusShort || match?.status || "").trim().toUpperCase();
+  if (LIVE_CODES.has(status)) return true;
+  return /LIVE|IN PLAY|HALF/i.test(status);
+}
+
 async function fallbackLiveMatches() {
   const dates = [iranToday(0), iranToday(-1), iranToday(1)];
   const batches = await Promise.allSettled(dates.map((date) => getSportsDbLiveMatches(date)));
@@ -28,7 +36,7 @@ async function fallbackLiveMatches() {
       if (match?.id) byId.set(String(match.id), match);
     }
   }
-  return [...byId.values()];
+  return [...byId.values()].filter(isActuallyLive);
 }
 
 export async function GET() {
@@ -36,9 +44,10 @@ export async function GET() {
   try {
     const result = await getMatchesResilient({ live: "all" });
     const matches = Array.isArray(result?.data) ? result.data : [];
-    if (matches.length) {
+    const liveMatches = matches.filter(isActuallyLive);
+    if (liveMatches.length) {
       return NextResponse.json(
-        { matches, source: result?.source || "api-football", checkedAt },
+        { matches: liveMatches, source: result?.source || "api-football", checkedAt },
         { headers: { "Cache-Control": "no-store, max-age=0" } },
       );
     }
