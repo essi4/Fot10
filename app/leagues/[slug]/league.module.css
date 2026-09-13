@@ -42,8 +42,8 @@
 .page :global(.fot-container > nav a:hover:after),.page :global(.fot-container > nav a[class*="bg-cyan"]:after){opacity:.8;transform:scaleX(1)}
 .page :global(.fot-container > section:not(.relative)){border-radius:26px!important;overflow:hidden}
 .page :global(.fot-container > section:not(.relative) table tbody tr:first-child){background:linear-gradient(90deg,rgba(34,211,238,.045),transparent)}
-.page :global(.fot-container > section:not(.relative) table tbody tr:first-child td:nth-child(2){font-weight:900}
-.page :global(.fot-container > section:not(.relative) table tbody tr td:nth-last-child(1){font-variant-numeric:tabular-nums}
+.page :global(.fot-container > section:not(.relative) table tbody tr:first-child td:nth-child(2)){font-weight:900}
+.page :global(.fot-container > section:not(.relative) table tbody tr td:nth-last-child(1)){font-variant-numeric:tabular-nums}
 .page :global(.fot-container > section:not(.relative) .divide-y > a > div){background:linear-gradient(90deg,transparent,rgba(255,255,255,.012),transparent)}
 .page :global(.fot-container > section:not(.relative) .divide-y > a > div:hover){background:linear-gradient(90deg,rgba(34,211,238,.035),rgba(255,255,255,.025),rgba(34,211,238,.035))}
 .page :global(.fot-container > section:not(.relative) .text-rose-300){text-shadow:0 0 16px rgba(251,113,133,.25)}
