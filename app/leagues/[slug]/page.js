@@ -1,4 +1,5 @@
 import League360PageV2 from "./League360PageV2";
+import LeagueStandingsLive from "./LeagueStandingsLive";
 import LeagueNews from "../../../components/LeagueNews";
 import { CLUB_CUPS, LEAGUE_ENTRIES } from "../../../lib/fot10-universe";
 import styles from "./league.module.css";
@@ -18,6 +19,13 @@ export default function LeagueDetailPage({ params, searchParams }) {
             <LeagueNews leagueName={league.leagueName || league.name} country={league.apiCountry || league.country} />
           </div>
         </main>
+      ) : searchParams?.tab === "table" && league?.leagueId ? (
+        <LeagueStandingsLive
+          leagueId={league.leagueId}
+          leagueName={league.leagueName || league.name}
+          country={league.apiCountry || league.country}
+          season={Number(league.leagueId) === 195 ? 2026 : undefined}
+        />
       ) : (
         <League360PageV2 params={params} searchParams={searchParams} />
       )}
