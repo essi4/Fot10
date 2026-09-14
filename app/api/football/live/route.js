@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getMatchesResilient } from "../../../../lib/football-resilient";
 import { getSportsDbLiveMatches } from "../../../../lib/thesportsdb-day";
+import { runWithApiFootballCircuit } from "../../../../lib/api-football-circuit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,14 +43,17 @@ async function fallbackLiveMatches() {
 export async function GET() {
   const checkedAt = new Date().toISOString();
   try {
-    const result = await getMatchesResilient({ live: "all" });
-    const matches = Array.isArray(result?.data) ? result.data : [];
-    const liveMatches = matches.filter(isActuallyLive);
-    if (liveMatches.length) {
-      return NextResponse.json(
-        { matches: liveMatches, source: result?.source || "api-football", checkedAt },
-        { headers: { "Cache-Control": "no-store, max-age=0" } },
-      );
+    const guarded = await runWithApiFootballCircuit(() => getMatchesResilient({ live: "all" }));
+    if (!guarded.skipped && !guarded.error) {
+      const result = guarded.result;
+      const matches = Array.isArray(result?.data) ? result.data : [];
+      const liveMatches = matches.filter(isActuallyLive);
+      if (liveMatches.length) {
+        return NextResponse.json(
+          { matches: liveMatches, source: result?.source || "api-football", checkedAt },
+          { headers: { "Cache-Control": "no-store, max-age=0" } },
+        );
+      }
     }
   } catch {}
 
