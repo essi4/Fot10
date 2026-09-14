@@ -6,6 +6,7 @@ import { getSportsDbDayMatches } from "../../../../../lib/thesportsdb-day";
 export const dynamic = "force-dynamic";
 
 const CACHE_TTL = 60_000;
+const EMPTY_RESULT_GRACE = 10 * 60_000;
 const cache = new Map();
 
 function key(date, live = false) { return `${live ? "live" : "day"}:${date || "now"}`; }
@@ -34,6 +35,11 @@ async function getDay(date) {
     matches = dedupe([...(sportsDb.status === "fulfilled" ? sportsDb.value || [] : []), ...(openFootball.status === "fulfilled" ? openFootball.value || [] : [])]);
   }
   const value = { date, count: matches.length, leagues: new Set(matches.map((m) => m.league).filter(Boolean)).size, finished: matches.filter((m) => ["FT", "AET", "PEN"].includes(String(m.statusShort || "").toUpperCase())).length, goals: matches.reduce((sum, m) => sum + Number(m.homeScore ?? 0) + Number(m.awayScore ?? 0), 0), provider };
+  const previous = hit?.value;
+  const previousAge = hit ? Date.now() - hit.time : Infinity;
+  if (!matches.length && previous?.count > 0 && previousAge < EMPTY_RESULT_GRACE) {
+    return { ...previous, provider: `${previous.provider || provider}-stable` };
+  }
   cache.set(cacheKey, { time: Date.now(), value });
   return value;
 }
