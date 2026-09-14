@@ -1,6 +1,9 @@
 name: FOT10 Cloudflare Production
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -14,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: cloudflare-production
     steps:
-      - name: Checkout synced production branch
+      - name: Checkout main production branch
         uses: actions/checkout@v6
         with:
-          ref: cloudflare-production-sync
+          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v5
