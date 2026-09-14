@@ -27,8 +27,17 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: Install application dependencies
         run: npm ci
 
+      - name: Install OpenNext Cloudflare adapter
+        run: npm install --no-save @opennextjs/cloudflare@1.20.6
+
       - name: Build OpenNext for Cloudflare
-        run: npx --yes opennextjs-cloudflare build
+        run: npx opennextjs-cloudflare build
+
+      - name: Verify OpenNext output
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          echo "OpenNext output verified"
