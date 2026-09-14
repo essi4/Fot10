@@ -22,7 +22,7 @@ function eventMeta(e) {
   if (e?.type === "Goal" && isPenalty(e)) return { icon: Goal, label: "گل از روی پنالتی", tone: "text-emerald-300", box: "border-emerald-400/20 bg-emerald-400/[.06]" };
   if (e?.type === "Goal") return { icon: Goal, label: "گل", tone: "text-emerald-300", box: "border-emerald-400/20 bg-emerald-400/[.06]" };
   if (isMissedPenalty(e)) return { icon: Goal, label: "پنالتی از دست رفت", tone: "text-amber-300", box: "border-amber-400/20 bg-amber-400/[.05]" };
-  if (isPenalty(e)) return { icon: Goal, label: "پنالتی", tone: "text-amber-300", box: "border-amber-400/20 bg-amber-300/[.05]" };
+  if (isPenalty(e)) return { icon: Goal, label: "پنالتی", tone: "text-amber-300", box: "border-amber-400/20 bg-amber-400/[.05]" };
   if (isRedCard(e)) return { icon: CircleAlert, label: "کارت قرمز", tone: "text-rose-300", box: "border-rose-400/20 bg-rose-400/[.05]" };
   if (isYellowCard(e)) return { icon: CircleAlert, label: "کارت زرد", tone: "text-yellow-300", box: "border-yellow-400/20 bg-yellow-400/[.04]" };
   if (isSubstitution(e)) return { icon: Repeat2, label: "تعویض", tone: "text-sky-300", box: "border-sky-400/20 bg-sky-400/[.05]" };
