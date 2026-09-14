@@ -8,7 +8,25 @@ import { jsonWithCache, noStoreHeaders } from "../../../../lib/http-cache";
 export const dynamic = "force-dynamic";
 
 const FALLBACK_COUNTRIES = new Set([
-  "iran", "england", "spain", "italy", "france", "germany", "netherlands", "turkey", "saudi arabia", "qatar",
+  "iran", "ایران",
+  "england", "انگلیس", "انگلستان",
+  "spain", "اسپانیا",
+  "italy", "ایتالیا",
+  "france", "فرانسه",
+  "germany", "آلمان",
+  "netherlands", "هلند",
+  "turkey", "ترکیه",
+  "saudi arabia", "عربستان سعودی",
+  "qatar", "قطر",
+  "portugal", "پرتغال",
+  "belgium", "بلژیک",
+  "austria", "اتریش",
+  "denmark", "دانمارک",
+  "scotland", "اسکاتلند",
+  "czech republic", "چک",
+  "sweden", "سوئد",
+  "croatia", "کرواسی",
+  "greece", "یونان",
 ]);
 
 function normalizeKey(value) {
@@ -17,6 +35,17 @@ function normalizeKey(value) {
     .replace(/\b(fc|sc|cf|club)\b/g, "")
     .replace(/[^a-z0-9آ-ی]+/g, "")
     .trim();
+}
+
+function normalizeCountry(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isFallbackMatchInScope(match) {
+  const country = normalizeCountry(match?.country);
+  const league = normalizeCountry(match?.league);
+  const continental = /champions league|champions league elite|afc champions|uefa champions|لیگ قهرمانان/.test(league);
+  return FALLBACK_COUNTRIES.has(country) || continental || !country;
 }
 
 function dedupeMatches(matches = []) {
@@ -37,17 +66,13 @@ function enrichFallbackMatches(matches, sportsDbMatches) {
     if (homeKey && match.homeLogo) logos.set(homeKey, match.homeLogo);
     if (awayKey && match.awayLogo) logos.set(awayKey, match.awayLogo);
   }
-  return matches.map((match) => {
-    const homeKey = normalizeKey(match.home);
-    const awayKey = normalizeKey(match.away);
-    return {
-      ...match,
-      home: teamName(match.home),
-      away: teamName(match.away),
-      homeLogo: match.homeLogo || logos.get(homeKey) || null,
-      awayLogo: match.awayLogo || logos.get(awayKey) || null,
-    };
-  });
+  return matches.map((match) => ({
+    ...match,
+    home: teamName(match.home),
+    away: teamName(match.away),
+    homeLogo: match.homeLogo || logos.get(normalizeKey(match.home)) || null,
+    awayLogo: match.awayLogo || logos.get(normalizeKey(match.away)) || null,
+  }));
 }
 
 async function getTodayFallback(date) {
@@ -59,12 +84,7 @@ async function getTodayFallback(date) {
   const openFootballMatches = openFootball.status === "fulfilled" ? openFootball.value || [] : [];
   const merged = dedupeMatches([...sportsDbMatches, ...openFootballMatches]);
   const enriched = enrichFallbackMatches(merged, sportsDbMatches);
-  return enriched.filter((match) => {
-    const country = String(match.country || "").trim().toLowerCase();
-    const league = String(match.league || "").toLowerCase();
-    const continental = /champions league|champions league elite|afc champions|uefa champions/.test(league);
-    return FALLBACK_COUNTRIES.has(country) || continental || !country;
-  });
+  return enriched.filter(isFallbackMatchInScope);
 }
 
 async function fallbackResponse(date, primaryError = null, cacheProfile = "fixtures") {
@@ -75,7 +95,7 @@ async function fallbackResponse(date, primaryError = null, cacheProfile = "fixtu
       ok: true,
       provider: "fallback-merged",
       sources: ["thesportsdb-day", "openfootball"],
-      scope: ["iran", "england", "spain", "italy", "france", "germany", "netherlands", "turkey", "saudi-arabia", "qatar", "champions-leagues"],
+      scope: ["iran", "england", "spain", "italy", "france", "germany", "netherlands", "turkey", "saudi-arabia", "qatar", "portugal", "belgium", "austria", "denmark", "scotland", "czech-republic", "sweden", "croatia", "greece", "champions-leagues"],
       count: fallbackMatches.length,
       matches: fallbackMatches,
       degraded: true,
@@ -102,9 +122,6 @@ export async function GET(request) {
 
   try {
     const matches = await getMatches({ date, live, league, season });
-    // A successful HTTP response containing zero matches is not proof that the
-    // primary provider had usable data. For day feeds, immediately verify the
-    // secondary sources instead of exposing a false empty state.
     if (matches.length || live || !date) {
       return jsonWithCache(
         NextResponse,
