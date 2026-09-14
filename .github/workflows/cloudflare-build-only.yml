@@ -1,0 +1,46 @@
+name: FOT10 Cloudflare Build Audit
+
+on:
+  push:
+    branches:
+      - cloudflare-production-sync
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sync branch
+        uses: actions/checkout@v4
+        with:
+          ref: cloudflare-production-sync
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install OpenNext Cloudflare adapter
+        run: npm install --no-save @opennextjs/cloudflare@1.15.1
+
+      - name: Build OpenNext for Cloudflare
+        run: npx opennextjs-cloudflare build
+
+      - name: Verify OpenNext output
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          echo "OpenNext output verified"
