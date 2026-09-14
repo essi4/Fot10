@@ -6,6 +6,14 @@ import { runWithApiFootballCircuit } from "../../../../lib/api-football-circuit"
 export const dynamic = "force-dynamic";
 
 const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
+const LIVE_CACHE_SECONDS = 15;
+const LIVE_STALE_SECONDS = 15;
+
+function liveHeaders() {
+  return {
+    "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}`,
+  };
+}
 
 function iranToday(offset = 0) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -51,7 +59,7 @@ export async function GET() {
       if (liveMatches.length) {
         return NextResponse.json(
           { matches: liveMatches, source: result?.source || "api-football", checkedAt },
-          { headers: { "Cache-Control": "no-store, max-age=0" } },
+          { headers: liveHeaders() },
         );
       }
     }
@@ -61,12 +69,12 @@ export async function GET() {
     const fallback = await fallbackLiveMatches();
     return NextResponse.json(
       { matches: fallback, source: fallback.length ? "thesportsdb-live" : "none", checkedAt },
-      { headers: { "Cache-Control": "no-store, max-age=0" } },
+      { headers: liveHeaders() },
     );
   } catch {
     return NextResponse.json(
       { matches: [], source: "none", checkedAt },
-      { status: 200, headers: { "Cache-Control": "no-store, max-age=0" } },
+      { status: 200, headers: liveHeaders() },
     );
   }
 }
