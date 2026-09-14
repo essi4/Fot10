@@ -3,7 +3,7 @@ import { getMatches } from "../../../../../lib/sports-data";
 import { getOpenFootballMatches } from "../../../../../lib/openfootball";
 import { getSportsDbDayMatches } from "../../../../../lib/thesportsdb-day";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const CACHE_TTL = 60_000;
 const EMPTY_RESULT_GRACE = 10 * 60_000;
@@ -38,8 +38,6 @@ async function getDay(date) {
   let provider = "api-football";
   try {
     matches = await getMatches({ date });
-    // A transient empty primary response is not a valid reason to erase a
-    // previously populated card. Ask the lightweight fallback sources too.
     if (!matches.length) {
       const fallback = await getFallbackDay(date);
       if (fallback.length) {
@@ -90,5 +88,5 @@ export async function GET(request) {
   const tomorrow = searchParams.get("tomorrow");
   if (!today || !yesterday || !tomorrow) return NextResponse.json({ ok: false, error: "today, yesterday and tomorrow are required" }, { status: 400 });
   const [live, yesterdayData, todayData, tomorrowData] = await Promise.all([getLive(), getDay(yesterday), getDay(today), getDay(tomorrow)]);
-  return NextResponse.json({ ok: true, checkedAt: new Date().toISOString(), live, yesterday: yesterdayData, today: todayData, tomorrow: tomorrowData }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" } });
+  return NextResponse.json({ ok: true, checkedAt: new Date().toISOString(), live, yesterday: yesterdayData, today: todayData, tomorrow: tomorrowData }, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
 }
