@@ -2,9 +2,31 @@ import { NextResponse } from "next/server";
 import { getMatches } from "../../../../lib/sports-data";
 import { getOpenFootballMatches } from "../../../../lib/openfootball";
 import { getSportsDbDayMatches } from "../../../../lib/thesportsdb-day";
+import { teamName } from "../../../../lib/team-identity";
 import { jsonWithCache, noStoreHeaders } from "../../../../lib/http-cache";
 
 export const dynamic = "force-dynamic";
+
+const FALLBACK_COUNTRIES = new Set([
+  "iran",
+  "england",
+  "spain",
+  "italy",
+  "france",
+  "germany",
+  "netherlands",
+  "turkey",
+  "saudi arabia",
+  "qatar",
+]);
+
+function normalizeKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b(fc|sc|cf|club)\b/g, "")
+    .replace(/[^a-z0-9آ-ی]+/g, "")
+    .trim();
+}
 
 function dedupeMatches(matches = []) {
   const byKey = new Map();
@@ -12,12 +34,34 @@ function dedupeMatches(matches = []) {
     if (!match?.home || !match?.away) continue;
     const key = [
       String(match.date || "").slice(0, 16),
-      String(match.home).trim().toLowerCase(),
-      String(match.away).trim().toLowerCase(),
+      normalizeKey(match.home),
+      normalizeKey(match.away),
     ].join("|");
     if (!byKey.has(key)) byKey.set(key, match);
   }
   return [...byKey.values()].sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+}
+
+function enrichFallbackMatches(matches, sportsDbMatches) {
+  const logos = new Map();
+  for (const match of sportsDbMatches || []) {
+    const homeKey = normalizeKey(match.home);
+    const awayKey = normalizeKey(match.away);
+    if (homeKey && match.homeLogo) logos.set(homeKey, match.homeLogo);
+    if (awayKey && match.awayLogo) logos.set(awayKey, match.awayLogo);
+  }
+
+  return matches.map((match) => {
+    const homeKey = normalizeKey(match.home);
+    const awayKey = normalizeKey(match.away);
+    return {
+      ...match,
+      home: teamName(match.home),
+      away: teamName(match.away),
+      homeLogo: match.homeLogo || logos.get(homeKey) || null,
+      awayLogo: match.awayLogo || logos.get(awayKey) || null,
+    };
+  });
 }
 
 async function getTodayFallback(date) {
@@ -25,11 +69,20 @@ async function getTodayFallback(date) {
     getSportsDbDayMatches(date),
     getOpenFootballMatches(date),
   ]);
-  const merged = [
-    ...(sportsDb.status === "fulfilled" ? sportsDb.value || [] : []),
-    ...(openFootball.status === "fulfilled" ? openFootball.value || [] : []),
-  ];
-  return dedupeMatches(merged);
+
+  const sportsDbMatches = sportsDb.status === "fulfilled" ? sportsDb.value || [] : [];
+  const openFootballMatches = openFootball.status === "fulfilled" ? openFootball.value || [] : [];
+  const merged = dedupeMatches([...sportsDbMatches, ...openFootballMatches]);
+  const enriched = enrichFallbackMatches(merged, sportsDbMatches);
+
+  // Keep the fallback useful for FOT10's primary football scope while retaining
+  // continental matches such as UEFA/AFC Champions League regardless of country.
+  return enriched.filter((match) => {
+    const country = String(match.country || "").trim().toLowerCase();
+    const league = String(match.league || "").toLowerCase();
+    const continental = /champions league|champions league elite|afc champions|uefa champions/.test(league);
+    return FALLBACK_COUNTRIES.has(country) || continental || !country;
+  });
 }
 
 export async function GET(request) {
@@ -66,6 +119,7 @@ export async function GET(request) {
             ok: true,
             provider: "fallback-merged",
             sources: ["thesportsdb-day", "openfootball"],
+            scope: ["iran", "england", "spain", "italy", "france", "germany", "netherlands", "turkey", "saudi-arabia", "qatar", "champions-leagues"],
             count: fallbackMatches.length,
             matches: fallbackMatches,
             degraded: true,
