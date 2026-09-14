@@ -9,6 +9,30 @@ const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"
 const LIVE_CACHE_SECONDS = 15;
 const LIVE_STALE_SECONDS = 15;
 
+// Keep Live/Fallback focused on the 10 priority countries plus the two continental Champions Leagues.
+const LIVE_COUNTRIES = new Set([
+  "iran",
+  "spain",
+  "england",
+  "italy",
+  "france",
+  "germany",
+  "netherlands",
+  "turkey",
+  "saudi arabia",
+  "qatar",
+]);
+
+const LIVE_LEAGUES = new Set([
+  "uefa champions league",
+  "afc champions league",
+  "afc champions league elite",
+  "afc champions league two",
+  "champions league",
+  "لیگ قهرمانان اروپا",
+  "لیگ قهرمانان آسیا",
+]);
+
 function liveHeaders() {
   return {
     "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}`,
@@ -35,6 +59,16 @@ function isActuallyLive(match) {
   return /LIVE|IN PLAY|HALF/i.test(status);
 }
 
+function normalizeScope(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isInLiveScope(match) {
+  const country = normalizeScope(match?.country);
+  const league = normalizeScope(match?.league);
+  return LIVE_COUNTRIES.has(country) || LIVE_LEAGUES.has(league);
+}
+
 async function fallbackLiveMatches() {
   const dates = [iranToday(0), iranToday(-1), iranToday(1)];
   const batches = await Promise.allSettled(dates.map((date) => getSportsDbLiveMatches(date)));
@@ -42,7 +76,7 @@ async function fallbackLiveMatches() {
   for (const batch of batches) {
     if (batch.status !== "fulfilled") continue;
     for (const match of batch.value || []) {
-      if (match?.id) byId.set(String(match.id), match);
+      if (match?.id && isInLiveScope(match)) byId.set(String(match.id), match);
     }
   }
   return [...byId.values()].filter(isActuallyLive);
@@ -55,7 +89,7 @@ export async function GET() {
     if (!guarded.skipped && !guarded.error) {
       const result = guarded.result;
       const matches = Array.isArray(result?.data) ? result.data : [];
-      const liveMatches = matches.filter(isActuallyLive);
+      const liveMatches = matches.filter(isActuallyLive).filter(isInLiveScope);
       if (liveMatches.length) {
         return NextResponse.json(
           { matches: liveMatches, source: result?.source || "api-football", checkedAt },
