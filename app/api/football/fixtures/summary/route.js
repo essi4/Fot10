@@ -7,9 +7,17 @@ export const dynamic = "force-dynamic";
 // Summary cards are presentation data. They must never compete with the
 // real match feed for API-Football quota. The match feed remains the only
 // path allowed to poll the primary provider.
-const CACHE_TTL = 5 * 60_000;
-const LIVE_CACHE_TTL = 30_000;
+const CACHE_TTL = 60 * 1000;
+const LIVE_CACHE_TTL = 30 * 1000;
 const cache = new Map();
+
+const FALLBACK_COUNTRIES = new Set([
+  "iran", "ایران", "england", "انگلیس", "انگلستان", "spain", "اسپانیا", "italy", "ایتالیا",
+  "france", "فرانسه", "germany", "آلمان", "netherlands", "هلند", "turkey", "ترکیه",
+  "saudi arabia", "عربستان سعودی", "qatar", "قطر", "portugal", "پرتغال", "belgium", "بلژیک",
+  "austria", "اتریش", "denmark", "دانمارک", "scotland", "اسکاتلند", "czech republic", "چک",
+  "sweden", "سوئد", "croatia", "کرواسی", "greece", "یونان",
+]);
 
 function key(date, live = false) {
   return `${live ? "live" : "day"}:${date || "now"}`;
@@ -23,15 +31,19 @@ function normalize(value) {
     .trim();
 }
 
+function inScope(match) {
+  const country = String(match?.country || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const league = String(match?.league || "").trim().toLowerCase();
+  return FALLBACK_COUNTRIES.has(country)
+    || /champions league|champions league elite|afc champions|uefa champions|لیگ قهرمانان/.test(league)
+    || !country;
+}
+
 function dedupe(matches = []) {
   const map = new Map();
   for (const match of matches) {
-    if (!match?.home || !match?.away) continue;
-    const id = [
-      String(match.date || "").slice(0, 16),
-      normalize(match.home),
-      normalize(match.away),
-    ].join("|");
+    if (!match?.home || !match?.away || !inScope(match)) continue;
+    const id = [String(match.date || "").slice(0, 16), normalize(match.home), normalize(match.away)].join("|");
     if (!map.has(id)) map.set(id, match);
   }
   return [...map.values()];
@@ -78,7 +90,7 @@ async function getLive() {
 
   let matches = [];
   try {
-    matches = await getSportsDbLiveMatches(new Date().toISOString().slice(0, 10));
+    matches = (await getSportsDbLiveMatches(new Date().toISOString().slice(0, 10))).filter(inScope);
   } catch {}
 
   const value = {
@@ -121,7 +133,7 @@ export async function GET(request) {
     },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
       },
     },
   );
