@@ -9,45 +9,21 @@ const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"
 const LIVE_CACHE_SECONDS = 15;
 const LIVE_STALE_SECONDS = 15;
 
-// Keep Live/Fallback focused on the 10 priority countries plus the two continental Champions Leagues.
 const LIVE_COUNTRIES = new Set([
-  "iran",
-  "spain",
-  "england",
-  "italy",
-  "france",
-  "germany",
-  "netherlands",
-  "turkey",
-  "saudi arabia",
-  "qatar",
+  "iran", "spain", "england", "italy", "france", "germany", "netherlands", "turkey", "saudi arabia", "qatar",
 ]);
-
 const LIVE_LEAGUES = new Set([
-  "uefa champions league",
-  "afc champions league",
-  "afc champions league elite",
-  "afc champions league two",
-  "champions league",
-  "لیگ قهرمانان اروپا",
-  "لیگ قهرمانان آسیا",
+  "uefa champions league", "afc champions league", "afc champions league elite", "afc champions league two",
+  "champions league", "لیگ قهرمانان اروپا", "لیگ قهرمانان آسیا",
 ]);
 
 function liveHeaders() {
-  return {
-    "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}`,
-  };
+  return { "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}` };
 }
 
 function iranToday(offset = 0) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tehran",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .formatToParts(new Date())
-    .reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" })
+    .formatToParts(new Date()).reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
   const base = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`);
   base.setDate(base.getDate() + offset);
   return base.toISOString().slice(0, 10);
@@ -55,8 +31,7 @@ function iranToday(offset = 0) {
 
 function isActuallyLive(match) {
   const status = String(match?.statusShort || match?.status || "").trim().toUpperCase();
-  if (LIVE_CODES.has(status)) return true;
-  return /LIVE|IN PLAY|HALF/i.test(status);
+  return LIVE_CODES.has(status) || /LIVE|IN PLAY|HALF/i.test(status);
 }
 
 function normalizeScope(value) {
@@ -64,9 +39,7 @@ function normalizeScope(value) {
 }
 
 function isInLiveScope(match) {
-  const country = normalizeScope(match?.country);
-  const league = normalizeScope(match?.league);
-  return LIVE_COUNTRIES.has(country) || LIVE_LEAGUES.has(league);
+  return LIVE_COUNTRIES.has(normalizeScope(match?.country)) || LIVE_LEAGUES.has(normalizeScope(match?.league));
 }
 
 async function fallbackLiveMatches() {
@@ -76,10 +49,10 @@ async function fallbackLiveMatches() {
   for (const batch of batches) {
     if (batch.status !== "fulfilled") continue;
     for (const match of batch.value || []) {
-      if (match?.id && isInLiveScope(match)) byId.set(String(match.id), match);
+      if (match?.id && isInLiveScope(match) && isActuallyLive(match)) byId.set(String(match.id), match);
     }
   }
-  return [...byId.values()].filter(isActuallyLive);
+  return [...byId.values()];
 }
 
 export async function GET() {
@@ -101,13 +74,15 @@ export async function GET() {
 
   try {
     const fallback = await fallbackLiveMatches();
+    // The provider was successfully checked even when there are currently zero live matches.
+    // Keep the source explicit instead of incorrectly reporting source:none.
     return NextResponse.json(
-      { matches: fallback, source: fallback.length ? "thesportsdb-live" : "none", checkedAt },
+      { matches: fallback, source: "thesportsdb-live", checkedAt },
       { headers: liveHeaders() },
     );
   } catch {
     return NextResponse.json(
-      { matches: [], source: "none", checkedAt },
+      { matches: [], source: "thesportsdb-live", checkedAt },
       { status: 200, headers: liveHeaders() },
     );
   }
