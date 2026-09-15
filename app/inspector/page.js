@@ -29,7 +29,8 @@ async function probe(check) {
     const response = await fetch(url, { cache: "no-store", signal: controller.signal });
     const payload = check.key === "app" ? null : await response.json().catch(() => null);
     const matches = Array.isArray(payload?.matches) ? payload.matches : null;
-    return { ...check, ok: response.ok, status: response.status, ms: Math.round(performance.now() - started), count: matches?.length ?? null, source: payload?.source || payload?.provider || "Production" };
+    const ok = response.status >= 200 && response.status < 300;
+    return { ...check, ok, status: response.status, ms: Math.round(performance.now() - started), count: matches?.length ?? null, source: payload?.source || payload?.provider || "Production" };
   } catch (error) {
     return { ...check, ok: false, status: 0, ms: Math.round(performance.now() - started), error: error?.name === "AbortError" ? "پاسخ دیر رسید" : "اتصال برقرار نشد" };
   } finally {
@@ -44,6 +45,8 @@ export default function InspectorPage() {
 
   const runAudit = useCallback(async () => {
     setRunning(true);
+    setResults([]);
+    setCheckedAt(null);
     const next = [];
     for (const check of CHECKS) next.push(await probe(check));
     setResults(next);
@@ -53,7 +56,7 @@ export default function InspectorPage() {
 
   useEffect(() => { runAudit(); }, [runAudit]);
 
-  const passed = results.filter((item) => item.ok).length;
+  const passed = results.filter((item) => item.ok === true).length;
   const complete = results.length === CHECKS.length;
   const healthy = complete && passed === CHECKS.length;
 
@@ -80,7 +83,7 @@ export default function InspectorPage() {
       <section className="mt-4 space-y-2.5">
         {CHECKS.map((check) => {
           const result = results.find((item) => item.key === check.key);
-          return <article key={check.key} className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><div className="flex items-center gap-3"><div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border ${result?.ok ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-300" : result ? "border-rose-300/20 bg-rose-400/10 text-rose-300" : "border-white/10 bg-white/5 text-slate-500"}`}>{result?.ok ? <CheckCircle2 size={18} /> : result ? <XCircle size={18} /> : <Clock3 size={18} />}</div><div className="min-w-0 flex-1 text-right"><h2 className="text-[11px] font-black text-slate-100">{check.title}</h2><p className="mt-1 text-[8px] font-bold leading-4 text-slate-600">{check.detail}</p></div><div className="text-left text-[8px] font-black text-slate-500">{result ? `${result.ms}ms` : "…"}</div></div>{result && <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[8px] font-bold"><span className={result.ok ? "text-emerald-300" : "text-rose-300"}>{result.ok ? "معتبر" : result.error || `HTTP ${result.status}`}</span><span className="text-slate-600">{result.count !== null ? `${result.count} بازی · ${result.source}` : "Production"}</span></div>}</article>;
+          return <article key={check.key} className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><div className="flex items-center gap-3"><div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border ${result?.ok === true ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-300" : result ? "border-rose-300/20 bg-rose-400/10 text-rose-300" : "border-white/10 bg-white/5 text-slate-500"}`}>{result?.ok === true ? <CheckCircle2 size={18} /> : result ? <XCircle size={18} /> : <Clock3 size={18} />}</div><div className="min-w-0 flex-1 text-right"><h2 className="text-[11px] font-black text-slate-100">{check.title}</h2><p className="mt-1 text-[8px] font-bold leading-4 text-slate-600">{check.detail}</p></div><div className="text-left text-[8px] font-black text-slate-500">{result ? `${result.ms}ms` : "…"}</div></div>{result && <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2 text-[8px] font-bold"><span className={result.ok === true ? "text-emerald-300" : "text-rose-300"}>{result.ok === true ? "معتبر" : result.error || `HTTP ${result.status}`}</span><span className="text-slate-600">{result.count !== null ? `${result.count} بازی · ${result.source}` : "Production"}</span></div>}</article>;
         })}
       </section>
 
