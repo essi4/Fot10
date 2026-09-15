@@ -1,0 +1,73 @@
+/* Senior-audit presentation layer: isolated to Match Center. */
+.fot-container {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+/* Team names: readable Persian/Latin, stable height, clean wrapping. */
+.fot-container > section:nth-of-type(3) .card .text-\[12px\],
+.fot-container > section:nth-of-type(3) .card .text-\[11px\],
+.fot-container > section:nth-of-type(3) .card .text-\[10px\] {
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Consistent logo frame: prevents stretched/squeezed crests. */
+.fot-container > section:nth-of-type(3) .card img {
+  width: 42px;
+  height: 42px;
+  padding: 4px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  margin-inline: auto;
+  image-rendering: auto;
+}
+
+.fot-container > section:nth-of-type(3) .card .h-11 {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+}
+
+/* Keep long club names from pushing the score column around. */
+.fot-container > section:nth-of-type(3) .card .grid-cols-\[1fr_auto_1fr\] > div {
+  min-width: 0;
+}
+
+.fot-container > section:nth-of-type(3) .card .grid-cols-\[1fr_auto_1fr\] > div > div {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .fot-container > section:nth-of-type(3) .card {
+    padding: 13px !important;
+  }
+
+  .fot-container > section:nth-of-type(3) .card .grid-cols-\[1fr_auto_1fr\] {
+    gap: 8px;
+  }
+
+  .fot-container > section:nth-of-type(3) .card img,
+  .fot-container > section:nth-of-type(3) .card .h-11 {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .fot-container > section:nth-of-type(3) .card .text-\[12px\] {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+/* Avoid broken/empty image artifacts while preserving the existing fallback. */
+.fot-container > section:nth-of-type(3) .card img[src=""],
+.fot-container > section:nth-of-type(3) .card img:not([src]) {
+  visibility: hidden;
+}
