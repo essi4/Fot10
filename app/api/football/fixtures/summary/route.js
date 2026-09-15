@@ -133,7 +133,10 @@ export async function GET(request) {
     },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        // The summary must never serve a stale zero while the real match
+        // feed has already recovered. Keep the tiny in-process cache above,
+        // but prevent Vercel/CDN from freezing an old presentation result.
+        "Cache-Control": "private, no-store, max-age=0",
       },
     },
   );
