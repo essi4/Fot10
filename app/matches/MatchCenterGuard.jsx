@@ -10,6 +10,19 @@ function dateFromLink(href) {
   }
 }
 
+function iranDate(offset = 0) {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now).reduce((a, p) => ({ ...a, [p.type]: p.value }), {});
+  const d = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`);
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
 function scoreOf(match) {
   const candidates = [
     match?.homeScore,
@@ -51,6 +64,38 @@ function applyCard(link, value, extra) {
   if (extraNode && extra) extraNode.textContent = extra;
 }
 
+function syncBottomStats({ live, today }) {
+  const grids = Array.from(document.querySelectorAll("div.grid-cols-3"));
+  const grid = grids.find((node) =>
+    Array.from(node.querySelectorAll("b")).some((item) => item.textContent?.trim() === "لیگ‌ها")
+  );
+  if (!grid) return;
+
+  const cards = Array.from(grid.children).filter((node) => node instanceof HTMLElement);
+  if (cards.length < 3) return;
+
+  const liveCount = Number(live?.count || 0);
+  const liveLeagues = Number(live?.leagues || 0);
+  const todayCount = Number(today?.count || 0);
+  const todayLeagues = Number(today?.leagues || 0);
+
+  const firstValue = cards[0].lastElementChild;
+  const secondValue = cards[1].lastElementChild;
+  const thirdValue = cards[2].lastElementChild;
+  if (firstValue) firstValue.textContent = `${liveCount} بازی`;
+  if (secondValue) secondValue.textContent = `${todayCount} بازی`;
+  if (thirdValue) thirdValue.textContent = `${todayLeagues}`;
+
+  // On the dedicated LIVE page the middle card is also a live count.
+  const middleLabel = cards[1].querySelector("b")?.textContent?.trim();
+  if (middleLabel === "لحظه‌ای" && secondValue) secondValue.textContent = `${liveCount} بازی`;
+
+  // Keep the live card internally consistent even when the main fixture list is still loading.
+  const firstLabel = cards[0].querySelector("b")?.textContent?.trim();
+  if (firstLabel === "زنده" && firstValue) firstValue.textContent = `${liveCount} بازی`;
+  void liveLeagues;
+}
+
 export default function MatchCenterGuard() {
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +108,8 @@ export default function MatchCenterGuard() {
         const links = Array.from(document.querySelectorAll('a[href^="/matches"]'));
         const cards = links.filter((link) => /(^|\?)date=/.test(link.getAttribute("href") || ""));
         const liveCard = links.find((link) => (link.getAttribute("href") || "").includes("live=1"));
+        const dayValues = new Map();
+        let liveValue = null;
 
         const jobs = cards.map(async (card) => {
           const date = dateFromLink(card.getAttribute("href"));
@@ -73,6 +120,7 @@ export default function MatchCenterGuard() {
             const payload = await response.json();
             if (cancelled) return;
             const value = stats(payload.matches);
+            dayValues.set(date, value);
             const label = card.querySelector("b")?.textContent?.trim() || "";
             const extra = label === "فردا"
               ? `${value.leagues} لیگ · برنامه`
@@ -88,17 +136,21 @@ export default function MatchCenterGuard() {
               if (!response.ok || cancelled) return;
               const payload = await response.json();
               if (cancelled) return;
-              const value = stats(payload.matches);
+              liveValue = stats(payload.matches);
               applyCard(
                 liveCard,
-                value.count ? `${value.count} بازی` : "بدون بازی",
-                `${value.leagues} لیگ`
+                liveValue.count ? `${liveValue.count} بازی` : "بدون بازی",
+                `${liveValue.leagues} لیگ`
               );
             } catch {}
           })());
         }
 
         await Promise.allSettled(jobs);
+        if (cancelled) return;
+
+        const todayValue = dayValues.get(iranDate(0)) || null;
+        syncBottomStats({ live: liveValue, today: todayValue });
       } finally {
         running = false;
       }
