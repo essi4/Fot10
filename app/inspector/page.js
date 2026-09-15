@@ -39,24 +39,18 @@ async function probe(check) {
 }
 
 export default function InspectorPage() {
-  const [results, setResults] = useState([]);
-  const [running, setRunning] = useState(false);
-  const [checkedAt, setCheckedAt] = useState(null);
+  const [audit, setAudit] = useState({ results: [], running: false, checkedAt: null });
 
   const runAudit = useCallback(async () => {
-    setRunning(true);
-    setResults([]);
-    setCheckedAt(null);
-    const next = [];
-    for (const check of CHECKS) next.push(await probe(check));
-    setResults(next);
-    setCheckedAt(new Date());
-    setRunning(false);
+    setAudit({ results: [], running: true, checkedAt: null });
+    const next = await Promise.all(CHECKS.map(probe));
+    setAudit({ results: next, running: false, checkedAt: new Date() });
   }, []);
 
   useEffect(() => { runAudit(); }, [runAudit]);
 
-  const passed = results.filter((item) => item.ok === true).length;
+  const { results, running, checkedAt } = audit;
+  const passed = results.filter((item) => item?.ok === true).length;
   const complete = results.length === CHECKS.length;
   const healthy = complete && passed === CHECKS.length;
 
