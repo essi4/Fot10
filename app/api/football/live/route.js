@@ -10,7 +10,10 @@ const LIVE_CACHE_SECONDS = 15;
 const LIVE_STALE_SECONDS = 15;
 
 const LIVE_COUNTRIES = new Set([
-  "iran", "spain", "england", "italy", "france", "germany", "netherlands", "turkey", "saudi arabia", "qatar",
+  "iran", "ایران", "spain", "اسپانیا", "england", "انگلیس", "italy", "ایتالیا", "france", "فرانسه",
+  "germany", "آلمان", "netherlands", "هلند", "turkey", "ترکیه", "saudi arabia", "عربستان سعودی",
+  "qatar", "قطر", "portugal", "پرتغال", "belgium", "بلژیک", "austria", "اتریش", "denmark", "دانمارک",
+  "scotland", "اسکاتلند", "czech republic", "جمهوری چک", "sweden", "سوئد", "croatia", "کرواسی", "greece", "یونان",
 ]);
 const LIVE_LEAGUES = new Set([
   "uefa champions league", "afc champions league", "afc champions league elite", "afc champions league two",
@@ -39,7 +42,9 @@ function normalizeScope(value) {
 }
 
 function isInLiveScope(match) {
-  return LIVE_COUNTRIES.has(normalizeScope(match?.country)) || LIVE_LEAGUES.has(normalizeScope(match?.league));
+  const country = normalizeScope(match?.country);
+  const league = normalizeScope(match?.league);
+  return LIVE_COUNTRIES.has(country) || LIVE_LEAGUES.has(league) || /champions league|لیگ قهرمانان/i.test(league);
 }
 
 async function fallbackLiveMatches() {
@@ -74,8 +79,6 @@ export async function GET() {
 
   try {
     const fallback = await fallbackLiveMatches();
-    // The provider was successfully checked even when there are currently zero live matches.
-    // Keep the source explicit instead of incorrectly reporting source:none.
     return NextResponse.json(
       { matches: fallback, source: "thesportsdb-live", checkedAt },
       { headers: liveHeaders() },
