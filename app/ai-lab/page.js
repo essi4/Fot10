@@ -3,15 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const fallbackModels = [
-  "gpt-6-astra",
-  "gpt-5.6-luna",
-  "gpt-5.6-sol",
-  "claude-sonnet-5",
-  "gemini-3.1-Pro",
-  "deepseek-v4-pro",
-  "glm-5.3-flash",
-];
+const fallbackModels = [];
 
 const SECRET_KEY = "fot10_ashna_lab_secret";
 const HISTORY_KEY = "fot10_ashna_compare_history";
@@ -46,7 +38,7 @@ function formatDate(value) {
 export default function AiLabPage() {
   const [secret, setSecret] = useState("");
   const [models, setModels] = useState(fallbackModels);
-  const [model, setModel] = useState("gpt-6-astra");
+  const [model, setModel] = useState("");
   const [compareModels, setCompareModels] = useState([]);
   const [message, setMessage] = useState("برای FOT10 یک قابلیت جدید فوتبال پیشنهاد بده و معماری فنی آن را مرحله‌به‌مرحله توضیح بده.");
   const [answer, setAnswer] = useState("");
@@ -87,7 +79,7 @@ export default function AiLabPage() {
     if (!ids.length) throw new Error("فهرست مدل‌های قابل استفاده خالی است.");
 
     setModels(ids);
-    setModel((current) => (ids.includes(current) ? current : ids.includes("gpt-6-astra") ? "gpt-6-astra" : ids[0]));
+    setModel((current) => (ids.includes(current) ? current : ids[0]));
     setConnectionState("connected");
   }
 
@@ -272,6 +264,29 @@ export default function AiLabPage() {
     }
   }
 
+  function exportHistory() {
+    if (!history.length) {
+      setError("هنوز سابقه‌ای برای خروجی گرفتن وجود ندارد.");
+      return;
+    }
+
+    const payload = {
+      exported_at: new Date().toISOString(),
+      count: history.length,
+      benchmarks: history,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "fot10-ai-benchmark-history.json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function clearHistory() {
     setHistory([]);
     try {
@@ -310,7 +325,8 @@ export default function AiLabPage() {
           </div>
 
           <label className="mb-2 mt-4 block text-xs font-black text-slate-300">مدل اصلی</label>
-          <select value={model} onChange={(e) => setModel(e.target.value)} disabled={connectionState !== "connected" || loading} className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none disabled:opacity-50">
+          <select value={model} onChange={(e) => setModel(e.target.value)} disabled={connectionState !== "connected" || loading || !models.length} className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none disabled:opacity-50">
+            {!models.length && <option value="">پس از اتصال، مدل‌ها دریافت می‌شوند</option>}
             {models.map((id) => <option key={id} value={id}>{id}</option>)}
           </select>
 
@@ -424,7 +440,10 @@ export default function AiLabPage() {
               <div className="text-xs font-black text-cyan-300">سوابق Benchmark</div>
               <div className="mt-1 text-[9px] text-slate-600">تا ۸ تست در همین نشست روی همین دستگاه</div>
             </div>
-            <button onClick={clearHistory} disabled={!history.length} className="rounded-xl border border-white/10 px-3 py-2 text-[9px] font-black text-slate-500 disabled:opacity-30">پاک‌کردن</button>
+            <div className="flex gap-2">
+              <button onClick={exportHistory} disabled={!history.length} className="rounded-xl border border-cyan-300/10 px-3 py-2 text-[9px] font-black text-cyan-200 disabled:opacity-30">خروجی همه</button>
+              <button onClick={clearHistory} disabled={!history.length} className="rounded-xl border border-white/10 px-3 py-2 text-[9px] font-black text-slate-500 disabled:opacity-30">پاک‌کردن</button>
+            </div>
           </div>
 
           {history.length ? (
