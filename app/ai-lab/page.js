@@ -19,6 +19,10 @@ function getErrorMessage(data, fallback) {
   return data?.error?.message || data?.error || fallback;
 }
 
+function formatMetric(value, suffix = "") {
+  return value == null ? "—" : `${value.toLocaleString("fa-IR")}${suffix}`;
+}
+
 export default function AiLabPage() {
   const [secret, setSecret] = useState("");
   const [models, setModels] = useState(fallbackModels);
@@ -28,6 +32,7 @@ export default function AiLabPage() {
   const [answer, setAnswer] = useState("");
   const [usage, setUsage] = useState(null);
   const [comparison, setComparison] = useState([]);
+  const [compareMeta, setCompareMeta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connectionState, setConnectionState] = useState("idle");
@@ -103,6 +108,7 @@ export default function AiLabPage() {
     setAnswer("");
     setUsage(null);
     setComparison([]);
+    setCompareMeta(null);
     setError("");
 
     try {
@@ -135,6 +141,7 @@ export default function AiLabPage() {
     setAnswer("");
     setUsage(null);
     setComparison([]);
+    setCompareMeta(null);
     setError("");
 
     try {
@@ -146,7 +153,14 @@ export default function AiLabPage() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(getErrorMessage(data, "مقایسه ناموفق بود."));
+
       setComparison(Array.isArray(data?.results) ? data.results : []);
+      setCompareMeta({
+        requested: data?.requested ?? selected.length,
+        completed: data?.completed ?? 0,
+        compare_latency_ms: data?.compare_latency_ms ?? null,
+        message_chars: data?.message_chars ?? message.length,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطای مقایسه");
     } finally {
@@ -211,22 +225,63 @@ export default function AiLabPage() {
         </section>
 
         <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
-          <div className="mb-3 text-xs font-black text-cyan-300">خروجی آزمایشگاه</div>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-xs font-black text-cyan-300">خروجی آزمایشگاه</div>
+            {compareMeta && (
+              <div className="text-[9px] font-bold text-slate-500">
+                {formatMetric(compareMeta.completed)} از {formatMetric(compareMeta.requested)} پاسخ · {formatMetric(compareMeta.compare_latency_ms, "ms")}
+              </div>
+            )}
+          </div>
 
           {comparison.length > 0 ? (
             <div className="space-y-3">
-              {comparison.map((item) => (
-                <article key={item.model} className="rounded-2xl border border-white/10 bg-white/[.025] p-3">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-xs font-black text-cyan-200">{item.model}</span>
-                    <span className="text-[9px] text-slate-500">{item.ok ? "پاسخ دریافت شد" : "خطا"}</span>
+              {comparison.map((item) => {
+                const totalTokens = item?.usage?.total_tokens ?? null;
+
+                return (
+                  <article key={item.model} className="rounded-2xl border border-white/10 bg-white/[.025] p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-cyan-200">{item.model}</span>
+                      <span className="text-[9px] text-slate-500">{item.ok ? "پاسخ دریافت شد" : "خطا"}</span>
+                    </div>
+
+                    <div className={item.ok ? "whitespace-pre-wrap text-sm leading-7 text-slate-200" : "text-sm leading-7 text-red-200"}>
+                      {item.ok ? item.text : item.error}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/5 pt-3 sm:grid-cols-4">
+                      <div className="rounded-xl bg-white/[.025] px-2.5 py-2">
+                        <div className="text-[8px] text-slate-600">زمان پاسخ</div>
+                        <div className="mt-1 text-[10px] font-black text-slate-300">{formatMetric(item.latency_ms, "ms")}</div>
+                      </div>
+                      <div className="rounded-xl bg-white/[.025] px-2.5 py-2">
+                        <div className="text-[8px] text-slate-600">حروف خروجی</div>
+                        <div className="mt-1 text-[10px] font-black text-slate-300">{formatMetric(item.response_chars)}</div>
+                      </div>
+                      <div className="rounded-xl bg-white/[.025] px-2.5 py-2">
+                        <div className="text-[8px] text-slate-600">توکن کل</div>
+                        <div className="mt-1 text-[10px] font-black text-slate-300">{formatMetric(totalTokens)}</div>
+                      </div>
+                      <div className="rounded-xl bg-white/[.025] px-2.5 py-2">
+                        <div className="text-[8px] text-slate-600">توکن خروجی</div>
+                        <div className="mt-1 text-[10px] font-black text-slate-300">{formatMetric(item?.usage?.completion_tokens ?? null)}</div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+
+              {compareMeta && (
+                <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[.035] p-3">
+                  <div className="mb-2 text-[9px] font-black text-cyan-200">متادیتای همین تست</div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div className="text-[9px] text-slate-500">طول درخواست: <span className="font-black text-slate-300">{formatMetric(compareMeta.message_chars)} حرف</span></div>
+                    <div className="text-[9px] text-slate-500">مدل‌های درخواستی: <span className="font-black text-slate-300">{formatMetric(compareMeta.requested)}</span></div>
+                    <div className="text-[9px] text-slate-500">پاسخ‌های موفق: <span className="font-black text-slate-300">{formatMetric(compareMeta.completed)}</span></div>
                   </div>
-                  <div className={item.ok ? "whitespace-pre-wrap text-sm leading-7 text-slate-200" : "text-sm leading-7 text-red-200"}>
-                    {item.ok ? item.text : item.error}
-                  </div>
-                  {item.usage && <div className="mt-3 border-t border-white/5 pt-2 text-[10px] text-slate-500">توکن: {item.usage.total_tokens ?? "—"}</div>}
-                </article>
-              ))}
+                </div>
+              )}
             </div>
           ) : error ? (
             <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-3 text-sm leading-7 text-red-200">{error}</div>
