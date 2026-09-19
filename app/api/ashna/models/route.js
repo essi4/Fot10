@@ -1,6 +1,10 @@
-import { ashnaFetch } from "../../../../lib/ashnaai";
+import { ashnaFetch, verifyLabSecret } from "../../../../lib/ashnaai";
 
-export async function GET() {
+export async function GET(request) {
+  if (!verifyLabSecret(request)) {
+    return Response.json({ error: "AI Lab access denied" }, { status: 401 });
+  }
+
   try {
     const response = await ashnaFetch("/models");
     const data = await response.json();
