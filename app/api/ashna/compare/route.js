@@ -9,39 +9,68 @@ function getProviderError(data, fallback) {
 }
 
 async function runModel(model, message) {
-  const response = await ashnaFetch("/chat/completions", {
-    method: "POST",
-    body: JSON.stringify({
+  const startedAt = performance.now();
+
+  try {
+    const response = await ashnaFetch("/chat/completions", {
+      method: "POST",
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are the FOT10 AI lab assistant. Help analyze football product ideas, UX, code, and data flows. Do not invent live match facts; clearly label assumptions.",
+          },
+          { role: "user", content: message },
+        ],
+        temperature: 0.2,
+        max_tokens: 800,
+      }),
+    });
+
+    const data = await readAshnaJson(response);
+    const latencyMs = Math.round(performance.now() - startedAt);
+
+    if (!response.ok) {
+      return {
+        model,
+        ok: false,
+        latency_ms: latencyMs,
+        error: getProviderError(data, "AshnaAI request failed"),
+      };
+    }
+
+    const text = data?.choices?.[0]?.message?.content;
+    if (typeof text !== "string" || !text.trim()) {
+      return {
+        model,
+        ok: false,
+        latency_ms: latencyMs,
+        error: "مدل پاسخ متنی معتبری برنگرداند.",
+      };
+    }
+
+    const cleanText = text.trim();
+
+    return {
       model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are the FOT10 AI lab assistant. Help analyze football product ideas, UX, code, and data flows. Do not invent live match facts; clearly label assumptions.",
-        },
-        { role: "user", content: message },
-      ],
-      temperature: 0.2,
-      max_tokens: 800,
-    }),
-  });
-
-  const data = await readAshnaJson(response);
-
-  if (!response.ok) {
+      ok: true,
+      text: cleanText,
+      response_chars: cleanText.length,
+      input_chars: message.length,
+      latency_ms: latencyMs,
+      usage: data?.usage || null,
+    };
+  } catch (error) {
     return {
       model,
       ok: false,
-      error: getProviderError(data, "AshnaAI request failed"),
+      latency_ms: Math.round(performance.now() - startedAt),
+      error:
+        error instanceof Error ? error.message : "خطای ارتباط با AshnaAI",
     };
   }
-
-  const text = data?.choices?.[0]?.message?.content;
-  if (typeof text !== "string" || !text.trim()) {
-    return { model, ok: false, error: "مدل پاسخ متنی معتبری برنگرداند." };
-  }
-
-  return { model, ok: true, text: text.trim(), usage: data?.usage || null };
 }
 
 export async function POST(request) {
@@ -77,12 +106,16 @@ export async function POST(request) {
       return Response.json({ error: "model is too long" }, { status: 400 });
     }
 
+    const startedAt = performance.now();
     const results = await Promise.all(models.map((model) => runModel(model, message)));
+    const compareLatencyMs = Math.round(performance.now() - startedAt);
 
     return Response.json({
       results,
       requested: models.length,
       completed: results.filter((item) => item.ok).length,
+      compare_latency_ms: compareLatencyMs,
+      message_chars: message.length,
     });
   } catch (error) {
     console.error("AshnaAI compare request failed:", error);
