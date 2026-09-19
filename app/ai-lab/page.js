@@ -15,6 +15,10 @@ const fallbackModels = [
 
 const SECRET_KEY = "fot10_ashna_lab_secret";
 
+function getErrorMessage(data, fallback) {
+  return data?.error?.message || data?.error || fallback;
+}
+
 export default function AiLabPage() {
   const [secret, setSecret] = useState("");
   const [models, setModels] = useState(fallbackModels);
@@ -23,11 +27,15 @@ export default function AiLabPage() {
   const [answer, setAnswer] = useState("");
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connectionState, setConnectionState] = useState("idle");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = sessionStorage.getItem(SECRET_KEY) || "";
-    setSecret(saved);
+    try {
+      const saved = sessionStorage.getItem(SECRET_KEY) || "";
+      if (saved) setSecret(saved);
+    } catch {}
   }, []);
 
   async function loadModels(currentSecret) {
@@ -35,37 +43,60 @@ export default function AiLabPage() {
       cache: "no-store",
       headers: { "x-ashna-lab-secret": currentSecret },
     });
-    if (!response.ok) throw new Error("دسترسی آزمایشگاه رد شد یا کلید تنظیم نشده است");
-    const data = await response.json();
-    const ids = Array.isArray(data?.data) ? data.data.map((item) => item?.id).filter(Boolean) : [];
-    if (ids.length) {
-      setModels(ids);
-      if (!ids.includes(model)) setModel(ids.includes("gpt-6-astra") ? "gpt-6-astra" : ids[0]);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(getErrorMessage(data, "دسترسی آزمایشگاه رد شد."));
     }
+
+    const ids = Array.isArray(data?.data)
+      ? data.data.map((item) => item?.id).filter(Boolean)
+      : [];
+
+    if (!ids.length) {
+      throw new Error("فهرست مدل‌های قابل استفاده خالی است.");
+    }
+
+    setModels(ids);
+    setModel((current) => (ids.includes(current) ? current : ids.includes("gpt-6-astra") ? "gpt-6-astra" : ids[0]));
+    setConnectionState("connected");
   }
 
-  async function saveAndLoadSecret() {
+  async function connect() {
     const value = secret.trim();
-    if (!value) return;
-    sessionStorage.setItem(SECRET_KEY, value);
+    if (!value) {
+      setConnectionState("idle");
+      setError("رمز آزمایشگاه را وارد کن.");
+      return;
+    }
+
+    setConnecting(true);
+    setConnectionState("connecting");
     setError("");
+    setAnswer("");
+
     try {
+      sessionStorage.setItem(SECRET_KEY, value);
       await loadModels(value);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "خطای دسترسی");
+      setConnectionState("error");
+      setError(e instanceof Error ? e.message : "خطای اتصال");
+    } finally {
+      setConnecting(false);
     }
   }
 
-  useEffect(() => {
-    if (!secret) return;
-    loadModels(secret).catch(() => {});
-  }, [secret]);
-
   async function runTest() {
+    if (connectionState !== "connected") {
+      setError("اول روی «اتصال» بزن تا فهرست مدل‌های واقعی بارگذاری شود.");
+      return;
+    }
+
     setLoading(true);
     setAnswer("");
     setUsage(null);
     setError("");
+
     try {
       const response = await fetch("/api/ashna/chat", {
         method: "POST",
@@ -75,8 +106,12 @@ export default function AiLabPage() {
         },
         body: JSON.stringify({ model, message }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error?.message || data?.error || "درخواست ناموفق بود");
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(getErrorMessage(data, "درخواست ناموفق بود."));
+      }
+
       setAnswer(data.text || "پاسخی دریافت نشد.");
       setUsage(data.usage || null);
     } catch (e) {
@@ -85,6 +120,15 @@ export default function AiLabPage() {
       setLoading(false);
     }
   }
+
+  const statusText =
+    connectionState === "connected"
+      ? "متصل · فهرست واقعی مدل‌ها"
+      : connectionState === "connecting"
+        ? "در حال اتصال…"
+        : connectionState === "error"
+          ? "اتصال ناموفق"
+          : "اتصال نشده";
 
   return (
     <main className="min-h-screen bg-[#060810] px-4 py-6 text-white" dir="rtl">
@@ -99,20 +143,38 @@ export default function AiLabPage() {
         </div>
 
         <section className="rounded-3xl border border-white/10 bg-[#0a1422] p-4 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <span className="text-xs font-black text-slate-300">وضعیت آزمایشگاه</span>
+            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${
+              connectionState === "connected"
+                ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200"
+                : connectionState === "error"
+                  ? "border-red-300/20 bg-red-300/10 text-red-200"
+                  : "border-white/10 bg-white/5 text-slate-500"
+            }`}>
+              {statusText}
+            </span>
+          </div>
+
           <label className="mb-2 block text-xs font-black text-slate-300">رمز آزمایشگاه</label>
           <div className="flex gap-2">
             <input
               type="password"
               value={secret}
-              onChange={(e) => setSecret(e.target.value)}
+              onChange={(e) => {
+                setSecret(e.target.value);
+                if (connectionState !== "idle") setConnectionState("idle");
+              }}
               placeholder="ASHNAAI_LAB_SECRET"
+              autoComplete="off"
               className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none"
             />
             <button
-              onClick={saveAndLoadSecret}
-              className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 text-xs font-black text-cyan-200"
+              onClick={connect}
+              disabled={connecting || !secret.trim()}
+              className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 text-xs font-black text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              اتصال
+              {connecting ? "اتصال…" : "اتصال"}
             </button>
           </div>
 
@@ -120,7 +182,8 @@ export default function AiLabPage() {
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none"
+            disabled={connectionState !== "connected" || loading}
+            className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none disabled:opacity-50"
           >
             {models.map((id) => <option key={id} value={id}>{id}</option>)}
           </select>
@@ -136,7 +199,7 @@ export default function AiLabPage() {
 
           <button
             onClick={runTest}
-            disabled={loading || !message.trim() || !secret}
+            disabled={loading || connecting || !message.trim() || connectionState !== "connected"}
             className="mt-3 w-full rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? "در حال تحلیل…" : "اجرای تست با AshnaAI"}
