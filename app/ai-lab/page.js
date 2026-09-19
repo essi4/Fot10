@@ -25,6 +25,24 @@ function formatMetric(value, suffix = "") {
   return value == null ? "—" : `${value.toLocaleString("fa-IR")}${suffix}`;
 }
 
+function createBenchmarkId() {
+  const now = new Date();
+  const stamp = now.toISOString().replace(/[-:TZ.]/g, "").slice(2, 14);
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `FOT10-AI-${stamp}-${random}`;
+}
+
+function formatDate(value) {
+  try {
+    return new Intl.DateTimeFormat("fa-IR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return "—";
+  }
+}
+
 export default function AiLabPage() {
   const [secret, setSecret] = useState("");
   const [models, setModels] = useState(fallbackModels);
@@ -36,6 +54,8 @@ export default function AiLabPage() {
   const [comparison, setComparison] = useState([]);
   const [compareMeta, setCompareMeta] = useState(null);
   const [history, setHistory] = useState([]);
+  const [benchmarkId, setBenchmarkId] = useState("");
+  const [copiedModel, setCopiedModel] = useState("");
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connectionState, setConnectionState] = useState("idle");
@@ -115,6 +135,7 @@ export default function AiLabPage() {
     setUsage(null);
     setComparison([]);
     setCompareMeta(null);
+    setBenchmarkId("");
     setError("");
 
     try {
@@ -148,6 +169,8 @@ export default function AiLabPage() {
     setUsage(null);
     setComparison([]);
     setCompareMeta(null);
+    setBenchmarkId("");
+    setCopiedModel("");
     setError("");
 
     try {
@@ -167,13 +190,16 @@ export default function AiLabPage() {
         compare_latency_ms: data?.compare_latency_ms ?? null,
         message_chars: data?.message_chars ?? message.length,
       };
+      const nextBenchmarkId = createBenchmarkId();
 
       setComparison(results);
       setCompareMeta(meta);
+      setBenchmarkId(nextBenchmarkId);
 
       setHistory((current) => {
         const entry = {
           id: Date.now(),
+          benchmark_id: nextBenchmarkId,
           created_at: new Date().toISOString(),
           message,
           models: selected,
@@ -190,6 +216,59 @@ export default function AiLabPage() {
       setError(e instanceof Error ? e.message : "خطای مقایسه");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function copyText(modelId, text) {
+    try {
+      if (!text) return;
+      await navigator.clipboard.writeText(text);
+      setCopiedModel(modelId);
+      window.setTimeout(() => setCopiedModel(""), 1400);
+    } catch {
+      setError("کپی مستقیم در این مرورگر در دسترس نیست.");
+    }
+  }
+
+  function exportCurrent() {
+    if (!comparison.length) {
+      setError("ابتدا یک Benchmark اجرا کن.");
+      return;
+    }
+
+    const payload = {
+      benchmark_id: benchmarkId || createBenchmarkId(),
+      created_at: new Date().toISOString(),
+      message,
+      models: compareModels.length ? compareModels : [model],
+      meta: compareMeta,
+      results: comparison,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${payload.benchmark_id}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function restoreHistory(item) {
+    setMessage(item.message || "");
+    setComparison(Array.isArray(item.results) ? item.results : []);
+    setCompareMeta(item.meta || null);
+    setBenchmarkId(item.benchmark_id || "");
+    setAnswer("");
+    setUsage(null);
+    setError("");
+
+    const restoredModels = Array.isArray(item.models) ? item.models : [];
+    if (restoredModels.length) {
+      setCompareModels(restoredModels.slice(0, 3));
+      setModel(restoredModels[0]);
     }
   }
 
@@ -257,14 +336,19 @@ export default function AiLabPage() {
         </section>
 
         <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-black text-cyan-300">خروجی آزمایشگاه</div>
-            {compareMeta && (
-              <div className="text-[9px] font-bold text-slate-500">
-                {formatMetric(compareMeta.completed)} از {formatMetric(compareMeta.requested)} پاسخ · {formatMetric(compareMeta.compare_latency_ms, "ms")}
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {benchmarkId && <span className="rounded-lg border border-white/10 bg-white/[.03] px-2 py-1 text-[8px] font-black text-slate-500">{benchmarkId}</span>}
+              {comparison.length > 0 && <button onClick={exportCurrent} className="rounded-lg border border-cyan-300/15 bg-cyan-300/[.05] px-2.5 py-1.5 text-[9px] font-black text-cyan-200">خروجی JSON</button>}
+            </div>
           </div>
+
+          {compareMeta && (
+            <div className="mb-3 text-[9px] font-bold text-slate-500">
+              {formatMetric(compareMeta.completed)} از {formatMetric(compareMeta.requested)} پاسخ · {formatMetric(compareMeta.compare_latency_ms, "ms")}
+            </div>
+          )}
 
           {comparison.length > 0 ? (
             <div className="space-y-3">
@@ -275,7 +359,17 @@ export default function AiLabPage() {
                   <article key={item.model} className="rounded-2xl border border-white/10 bg-white/[.025] p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-xs font-black text-cyan-200">{item.model}</span>
-                      <span className="text-[9px] text-slate-500">{item.ok ? "پاسخ دریافت شد" : "خطا"}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] text-slate-500">{item.ok ? "پاسخ دریافت شد" : "خطا"}</span>
+                        {item.ok && (
+                          <button
+                            onClick={() => copyText(item.model, item.text)}
+                            className="rounded-lg border border-white/10 px-2 py-1 text-[8px] font-black text-slate-500"
+                          >
+                            {copiedModel === item.model ? "کپی شد" : "کپی"}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className={item.ok ? "whitespace-pre-wrap text-sm leading-7 text-slate-200" : "text-sm leading-7 text-red-200"}>
@@ -327,7 +421,7 @@ export default function AiLabPage() {
         <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black text-cyan-300">سوابق مقایسه</div>
+              <div className="text-xs font-black text-cyan-300">سوابق Benchmark</div>
               <div className="mt-1 text-[9px] text-slate-600">تا ۸ تست در همین نشست روی همین دستگاه</div>
             </div>
             <button onClick={clearHistory} disabled={!history.length} className="rounded-xl border border-white/10 px-3 py-2 text-[9px] font-black text-slate-500 disabled:opacity-30">پاک‌کردن</button>
@@ -340,7 +434,7 @@ export default function AiLabPage() {
                   <summary className="cursor-pointer list-none">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate text-[10px] font-black text-slate-300">{item.models?.join(" · ") || "مدل‌ها"}</div>
+                        <div className="truncate text-[10px] font-black text-slate-300">{item.benchmark_id || "Benchmark قدیمی"} · {item.models?.join(" · ") || "مدل‌ها"}</div>
                         <div className="mt-1 truncate text-[9px] text-slate-600">{item.message}</div>
                       </div>
                       <div className="shrink-0 text-left text-[9px] text-slate-600">
@@ -351,6 +445,11 @@ export default function AiLabPage() {
                   </summary>
 
                   <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
+                    <div className="flex items-center justify-between gap-2 text-[8px] text-slate-600">
+                      <span>{formatDate(item.created_at)}</span>
+                      <button onClick={(event) => { event.preventDefault(); restoreHistory(item); }} className="rounded-lg border border-cyan-300/10 px-2 py-1 text-cyan-200">بازیابی این تست</button>
+                    </div>
+
                     {item.results?.map((result) => (
                       <div key={result.model} className="rounded-xl bg-white/[.02] p-2.5">
                         <div className="flex items-center justify-between gap-2">
