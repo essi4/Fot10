@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Check, ChevronLeft, Copy, Download, Search, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 
 const fallbackModels = [];
 
@@ -40,6 +41,7 @@ export default function AiLabPage() {
   const [models, setModels] = useState(fallbackModels);
   const [model, setModel] = useState("");
   const [compareModels, setCompareModels] = useState([]);
+  const [modelFilter, setModelFilter] = useState("");
   const [message, setMessage] = useState("برای FOT10 یک قابلیت جدید فوتبال پیشنهاد بده و معماری فنی آن را مرحله‌به‌مرحله توضیح بده.");
   const [answer, setAnswer] = useState("");
   const [usage, setUsage] = useState(null);
@@ -80,6 +82,8 @@ export default function AiLabPage() {
 
     setModels(ids);
     setModel((current) => (ids.includes(current) ? current : ids[0]));
+    setCompareModels((current) => current.filter((id) => ids.includes(id)).slice(0, 3));
+    setModelFilter("");
     setConnectionState("connected");
   }
 
@@ -107,15 +111,15 @@ export default function AiLabPage() {
   }
 
   function toggleCompare(id) {
-    setCompareModels((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : current.length < 3
-          ? [...current, id]
-          : current
-    );
+    setCompareModels((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id);
+      if (current.length >= 3) {
+        setError("حداکثر ۳ مدل برای مقایسه مجاز است.");
+        return current;
+      }
+      return [...current, id];
+    });
   }
-
   async function runTest() {
     if (connectionState !== "connected") {
       setError("اول روی «اتصال» بزن.");
@@ -303,24 +307,36 @@ export default function AiLabPage() {
   return (
     <main className="min-h-screen bg-[#060810] px-4 py-6 text-white" dir="rtl">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <div className="text-[9px] font-black tracking-[.2em] text-cyan-300">FOT10 · AI LAB</div>
-            <h1 className="mt-1 text-2xl font-black">آزمایشگاه AshnaAI</h1>
-            <p className="mt-1 text-xs text-slate-500">چندمدلی، آزمایشی و قفل‌شده؛ کلید AshnaAI فقط روی سرور می‌ماند.</p>
+        <header className="relative mb-4 overflow-hidden rounded-[28px] border border-cyan-300/10 bg-gradient-to-br from-[#0c1727] via-[#0a1422] to-[#07101d] p-4 shadow-2xl sm:p-5">
+          <div className="absolute -left-16 -top-20 h-44 w-44 rounded-full bg-cyan-300/[.08] blur-3xl" />
+          <div className="absolute -bottom-20 -right-10 h-40 w-40 rounded-full bg-emerald-400/[.06] blur-3xl" />
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200"><Sparkles size={20}/></div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-black tracking-[.2em] text-cyan-300">FOT10 · AI LAB</div>
+                <h1 className="mt-1 text-xl font-black sm:text-2xl">آزمایشگاه AshnaAI</h1>
+                <p className="mt-1 max-w-2xl text-[10px] font-bold leading-5 text-slate-500">محیط کنترل‌شده برای تست، مقایسه و اندازه‌گیری پاسخ مدل‌های هوش مصنوعی.</p>
+              </div>
+            </div>
+            <Link href="/" aria-label="بازگشت به خانه" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-slate-400 transition hover:bg-white/[.08] hover:text-white"><ChevronLeft size={17}/></Link>
           </div>
-          <Link href="/" className="rounded-xl border border-white/10 px-3 py-2 text-xs text-slate-300">خانه</Link>
-        </div>
+          <div className="relative mt-4 flex flex-wrap gap-2 text-[8px] font-black">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/15 bg-emerald-400/[.06] px-2.5 py-1.5 text-emerald-200"><ShieldCheck size={11}/>کلید در سرور</span>
+            <span className="rounded-full border border-cyan-300/15 bg-cyan-400/[.06] px-2.5 py-1.5 text-cyan-200">حداکثر ۳ مدل</span>
+            <span className="rounded-full border border-white/10 bg-white/[.03] px-2.5 py-1.5 text-slate-400">Benchmark محلی</span>
+          </div>
+        </header>
 
         <section className="rounded-3xl border border-white/10 bg-[#0a1422] p-4 shadow-2xl">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <span className="text-xs font-black text-slate-300">وضعیت آزمایشگاه</span>
+            <span className="text-xs font-black text-slate-300">اتصال به آزمایشگاه</span>
             <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black text-slate-300">{statusText}</span>
           </div>
 
           <label className="mb-2 block text-xs font-black text-slate-300">رمز آزمایشگاه</label>
           <div className="flex gap-2">
-            <input type="password" value={secret} onChange={(e) => { setSecret(e.target.value); setConnectionState("idle"); }} placeholder="ASHNAAI_LAB_SECRET" autoComplete="off" className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none" />
+            <input type="password" value={secret} onChange={(e) => { setSecret(e.target.value); setConnectionState("idle"); }} placeholder="ASHNAAI_LAB_SECRET" autoComplete="off" className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none transition focus:border-cyan-300/30 focus:ring-2 focus:ring-cyan-300/10" dir="ltr" />
             <button onClick={connect} disabled={connecting || !secret.trim()} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 text-xs font-black text-cyan-200 disabled:opacity-40">{connecting ? "اتصال…" : "اتصال"}</button>
           </div>
 
@@ -330,16 +346,45 @@ export default function AiLabPage() {
             {models.map((id) => <option key={id} value={id}>{id}</option>)}
           </select>
 
-          <label className="mb-2 mt-4 block text-xs font-black text-slate-300">مدل‌های مقایسه <span className="font-normal text-slate-500">(حداکثر ۳)</span></label>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {models.map((id) => (
-              <label key={id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${
-                compareModels.includes(id) ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100" : "border-white/10 bg-white/[.02] text-slate-400"
-              }`}>
-                <input type="checkbox" checked={compareModels.includes(id)} onChange={() => toggleCompare(id)} className="accent-cyan-300" />
-                <span className="truncate">{id}</span>
-              </label>
-            ))}
+          <div className="mb-2 mt-4 flex items-center justify-between gap-2">
+            <label className="text-xs font-black text-slate-300">مدل‌های مقایسه</label>
+            <span className="text-[9px] font-black text-slate-600">{compareModels.length}/۳ انتخاب</span>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[.018] p-3">
+            <div className="mb-2 flex items-center gap-2 rounded-xl border border-white/10 bg-[#07101d] px-3 py-2.5">
+              <Search size={14} className="shrink-0 text-slate-600" />
+              <input value={modelFilter} onChange={(e) => setModelFilter(e.target.value)} dir="ltr" placeholder="جستجوی مدل..." className="min-w-0 flex-1 bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-700" />
+            </div>
+
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {compareModels.map((id) => (
+                <button key={id} type="button" onClick={() => toggleCompare(id)} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1.5 text-[9px] font-black text-cyan-100">
+                  <span className="max-w-[190px] truncate" dir="ltr">{id}</span><span aria-hidden="true">×</span>
+                </button>
+              ))}
+              {!compareModels.length && <span className="text-[9px] text-slate-600">برای مقایسه، مدل‌ها را از جستجو انتخاب کن.</span>}
+            </div>
+
+            {models.length ? (
+              <div className="grid max-h-56 grid-cols-1 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">
+                {models
+                  .filter((id) => id.toLowerCase().includes(modelFilter.trim().toLowerCase()))
+                  .slice(0, 12)
+                  .map((id) => (
+                    <label key={id} className={"flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-[10px] transition " + (compareModels.includes(id) ? "border-cyan-300/25 bg-cyan-300/[.08] text-cyan-100" : "border-white/10 bg-white/[.015] text-slate-500 hover:border-white/15 hover:text-slate-300")}>
+                      <input type="checkbox" checked={compareModels.includes(id)} onChange={() => toggleCompare(id)} className="accent-cyan-300" />
+                      <span className="truncate" dir="ltr">{id}</span>
+                    </label>
+                  ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-white/10 p-3 text-center text-[9px] text-slate-600">ابتدا به آزمایشگاه متصل شو.</div>
+            )}
+
+            {models.filter((id) => id.toLowerCase().includes(modelFilter.trim().toLowerCase())).length > 12 && (
+              <div className="mt-2 text-[8px] text-slate-600">برای دیدن مدل‌های بیشتر، عبارت جستجو را دقیق‌تر کن.</div>
+            )}
           </div>
 
           <label className="mb-2 mt-4 block text-xs font-black text-slate-300">درخواست آزمایشی</label>
@@ -367,22 +412,22 @@ export default function AiLabPage() {
           )}
 
           {comparison.length > 0 ? (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
               {comparison.map((item) => {
                 const totalTokens = item?.usage?.total_tokens ?? null;
 
                 return (
-                  <article key={item.model} className="rounded-2xl border border-white/10 bg-white/[.025] p-3">
+                  <article key={item.model} className="rounded-2xl border border-white/10 bg-white/[.025] p-3 shadow-lg shadow-black/10">
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-xs font-black text-cyan-200">{item.model}</span>
+                      <span className="max-w-[68%] truncate text-[10px] font-black text-cyan-200" dir="ltr">{item.model}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] text-slate-500">{item.ok ? "پاسخ دریافت شد" : "خطا"}</span>
                         {item.ok && (
                           <button
                             onClick={() => copyText(item.model, item.text)}
-                            className="rounded-lg border border-white/10 px-2 py-1 text-[8px] font-black text-slate-500"
+                            className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-[8px] font-black text-slate-500 transition hover:border-cyan-300/20 hover:text-cyan-200"
                           >
-                            {copiedModel === item.model ? "کپی شد" : "کپی"}
+                            <Copy size={10}/>{copiedModel === item.model ? "کپی شد" : "کپی"}
                           </button>
                         )}
                       </div>
@@ -415,7 +460,7 @@ export default function AiLabPage() {
               })}
 
               {compareMeta && (
-                <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[.035] p-3">
+                <div className="rounded-2xl border border-cyan-300/10 bg-cyan-300/[.035] p-3 lg:col-span-3">
                   <div className="mb-2 text-[9px] font-black text-cyan-200">متادیتای همین تست</div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     <div className="text-[9px] text-slate-500">طول درخواست: <span className="font-black text-slate-300">{formatMetric(compareMeta.message_chars)} حرف</span></div>
@@ -437,12 +482,12 @@ export default function AiLabPage() {
         <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black text-cyan-300">سوابق Benchmark</div>
+              <div className="flex items-center gap-1.5 text-xs font-black text-cyan-300"><Check size={13}/>سوابق Benchmark</div>
               <div className="mt-1 text-[9px] text-slate-600">تا ۸ تست در همین نشست روی همین دستگاه</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={exportHistory} disabled={!history.length} className="rounded-xl border border-cyan-300/10 px-3 py-2 text-[9px] font-black text-cyan-200 disabled:opacity-30">خروجی همه</button>
-              <button onClick={clearHistory} disabled={!history.length} className="rounded-xl border border-white/10 px-3 py-2 text-[9px] font-black text-slate-500 disabled:opacity-30">پاک‌کردن</button>
+              <button onClick={exportHistory} disabled={!history.length} className="inline-flex items-center gap-1 rounded-xl border border-cyan-300/10 px-3 py-2 text-[9px] font-black text-cyan-200 disabled:opacity-30"><Download size={11}/>خروجی</button>
+              <button onClick={clearHistory} disabled={!history.length} className="inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-2 text-[9px] font-black text-slate-500 disabled:opacity-30"><Trash2 size={11}/>پاک‌کردن</button>
             </div>
           </div>
 
