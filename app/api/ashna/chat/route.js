@@ -1,8 +1,12 @@
-import { ashnaFetch } from "../../../../lib/ashnaai";
+import { ashnaFetch, verifyLabSecret } from "../../../../lib/ashnaai";
 
 const MAX_MESSAGE_LENGTH = 4000;
 
 export async function POST(request) {
+  if (!verifyLabSecret(request)) {
+    return Response.json({ error: "AI Lab access denied" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const model = typeof body?.model === "string" ? body.model.trim() : "";
