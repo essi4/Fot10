@@ -27,7 +27,25 @@ function readSettings() { try { return { autoRefresh: true, compactScores: true,
 function iranDate(offset = 0) { const now = new Date(); const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now).reduce((a, p) => ({ ...a, [p.type]: p.value }), {}); const d = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); }
 function toTime(value) { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Tehran" }); }
 function toFaDate(value) { return new Date(`${value}T12:00:00+03:30`).toLocaleDateString("fa-IR", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Tehran" }); }
-function mapGame(match) { const statusCode = String(match.statusShort || match.status || "").toUpperCase(); const live = LIVE_CODES.has(statusCode) || /LIVE|IN PLAY|HALF/i.test(statusCode); const finished = FINISHED_CODES.has(statusCode); return { ...match, league: match.league || "مسابقات فوتبال", country: match.country || "", home: faTeam(match.home || "میزبان"), away: faTeam(match.away || "مهمان"), statusCode, statusLabel: live ? (LIVE_LABELS[statusCode] || "در جریان") : finished ? "پایان" : toTime(match.date), minute: live && match.elapsed != null ? `${match.elapsed}'` : finished ? "پایان" : toTime(match.date), live, finished }; }
+function mapGame(match) {
+  const statusCode = String(match.statusShort || match.status || "").toUpperCase();
+  const live = LIVE_CODES.has(statusCode) || /LIVE|IN PLAY|HALF/i.test(statusCode);
+  const finished = FINISHED_CODES.has(statusCode);
+  return {
+    ...match,
+    league: match.league || "مسابقات فوتبال",
+    country: match.country || "",
+    home: faTeam(match.home || "میزبان"),
+    away: faTeam(match.away || "مهمان"),
+    homeLogo: match.homeLogo || match.home_logo || match.homeTeamLogo || match.teams?.home?.logo || match.homeTeam?.logo || "",
+    awayLogo: match.awayLogo || match.away_logo || match.awayTeamLogo || match.teams?.away?.logo || match.awayTeam?.logo || "",
+    statusCode,
+    statusLabel: live ? (LIVE_LABELS[statusCode] || "در جریان") : finished ? "پایان" : toTime(match.date),
+    minute: live && match.elapsed != null ? String(match.elapsed) + "'" : finished ? "پایان" : toTime(match.date),
+    live,
+    finished
+  };
+}
 function sortLive(a, b) { return Number(b.live) - Number(a.live) || String(a.league).localeCompare(String(b.league)); }
 function sourceStatus(source, liveOnly) { if (!liveOnly) return null; const value = String(source || "").toLowerCase(); if (value === "thesportsdb-live" || value.includes("fallback")) return { tone: "amber", label: "مسیر پشتیبان فعال" }; if (value === "api-football") return { tone: "emerald", label: "داده زنده فعال" }; return { tone: "slate", label: "در حال بررسی منابع" }; }
 
@@ -82,7 +100,7 @@ function MatchCard({ game, date }) {
     </div>
     <div className="grid grid-cols-[minmax(0,1fr)_76px_minmax(0,1fr)] items-center gap-2">
       <div className="min-w-0 text-center">
-        <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl border border-white/7 bg-white/[.035]"><Shield size={18} className="text-slate-600"/></div>
+        <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl border border-white/7 bg-white/[.035]">{game.homeLogo ? <img src={game.homeLogo} alt="" className="h-9 w-9 object-contain" loading="lazy" /> : <Shield size={18} className="text-slate-600"/>}</div>
         <div className="mx-auto mt-2 max-w-[125px] truncate text-[11px] font-black text-slate-100">{game.home}</div>
         <div className="mt-1 text-[7px] font-bold text-slate-600">میزبان</div>
       </div>
@@ -91,7 +109,7 @@ function MatchCard({ game, date }) {
         {game.live ? <div className="mt-1 text-[8px] font-black text-red-300">{game.elapsed != null ? `${game.elapsed}'` : "LIVE"}</div> : <div className="mt-1 text-[8px] text-slate-600">{game.finished ? "سوت پایان" : "زمان شروع"}</div>}
       </div>
       <div className="min-w-0 text-center">
-        <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl border border-white/7 bg-white/[.035]"><Shield size={18} className="text-slate-600"/></div>
+        <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl border border-white/7 bg-white/[.035]">{game.awayLogo ? <img src={game.awayLogo} alt="" className="h-9 w-9 object-contain" loading="lazy" /> : <Shield size={18} className="text-slate-600"/>}</div>
         <div className="mx-auto mt-2 max-w-[125px] truncate text-[11px] font-black text-slate-100">{game.away}</div>
         <div className="mt-1 text-[7px] font-bold text-slate-600">مهمان</div>
       </div>
