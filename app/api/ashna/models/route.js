@@ -1,4 +1,4 @@
-import { ashnaFetch, verifyLabSecret } from "../../../../lib/ashnaai";
+import { ashnaFetch, readAshnaJson, verifyLabSecret } from "../../../../lib/ashnaai";
 
 export async function GET(request) {
   if (!verifyLabSecret(request)) {
@@ -7,12 +7,18 @@ export async function GET(request) {
 
   try {
     const response = await ashnaFetch("/models");
-    const data = await response.json();
-    return Response.json(data, { status: response.status });
+    const data = await readAshnaJson(response);
+
+    if (!response.ok) {
+      return Response.json(data, { status: response.status });
+    }
+
+    return Response.json(data);
   } catch (error) {
+    console.error("AshnaAI models request failed:", error);
     return Response.json(
-      { error: error instanceof Error ? error.message : "AshnaAI request failed" },
-      { status: 500 }
+      { error: "ارتباط با AshnaAI برقرار نشد." },
+      { status: 502 }
     );
   }
 }
