@@ -56,6 +56,9 @@ export default function AiLabPage() {
   const [error, setError] = useState("");
   const [historyFilter, setHistoryFilter] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(null);
+  const [historyStatus, setHistoryStatus] = useState("all");
+  const [historySort, setHistorySort] = useState("newest");
+  const [selectedHistory, setSelectedHistory] = useState([]);
 
   useEffect(() => {
     try {
@@ -287,6 +290,24 @@ export default function AiLabPage() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "fot10-ai-benchmark-history.json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportSelectedHistory() {
+    const selected = history.filter((item) => selectedHistory.includes(item.id));
+    if (!selected.length) {
+      setError("حداقل یک Benchmark را انتخاب کن.");
+      return;
+    }
+    const payload = { exported_at: new Date().toISOString(), count: selected.length, benchmarks: selected };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "fot10-ai-selected-benchmarks.json";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -600,96 +621,83 @@ export default function AiLabPage() {
 
           {history.length ? (
             <>
-              <div className="mb-3 flex items-center gap-2 rounded-2xl border border-white/10 bg-[#07101d] px-3 py-2.5">
-                <Search size={13} className="shrink-0 text-slate-600" />
-                <input
-                  value={historyFilter}
-                  onChange={(e) => setHistoryFilter(e.target.value)}
-                  dir="rtl"
-                  placeholder="جستجوی Benchmark، مدل یا متن درخواست..."
-                  className="min-w-0 flex-1 bg-transparent text-[10px] text-slate-200 outline-none placeholder:text-slate-700"
-                />
-                {historyFilter && (
-                  <button onClick={() => setHistoryFilter("")} aria-label="پاک‌کردن جستجو" className="text-slate-600 hover:text-white">
-                    <X size={13} />
-                  </button>
-                )}
+              <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto]">
+                <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#07101d] px-3 py-2.5">
+                  <Search size={13} className="shrink-0 text-slate-600" />
+                  <input value={historyFilter} onChange={(e) => setHistoryFilter(e.target.value)} dir="rtl" placeholder="جستجوی Benchmark، مدل یا درخواست..." className="min-w-0 flex-1 bg-transparent text-[10px] text-slate-200 outline-none placeholder:text-slate-700" />
+                  {historyFilter && <button onClick={() => setHistoryFilter("")} aria-label="پاک‌کردن جستجو" className="text-slate-600 hover:text-white"><X size={13}/></button>}
+                </div>
+                <select value={historyStatus} onChange={(e) => setHistoryStatus(e.target.value)} className="rounded-2xl border border-white/10 bg-[#07101d] px-3 py-2.5 text-[9px] font-black text-slate-400 outline-none">
+                  <option value="all">همه وضعیت‌ها</option><option value="success">موفق</option><option value="failed">دارای خطا</option>
+                </select>
+                <select value={historySort} onChange={(e) => setHistorySort(e.target.value)} className="rounded-2xl border border-white/10 bg-[#07101d] px-3 py-2.5 text-[9px] font-black text-slate-400 outline-none">
+                  <option value="newest">جدیدترین</option><option value="oldest">قدیمی‌ترین</option><option value="latency">بیشترین زمان</option>
+                </select>
               </div>
 
-              <div className="mb-2 grid grid-cols-[1fr_auto_auto] gap-2 px-3 text-[8px] font-black text-slate-700 sm:grid-cols-[1fr_120px_70px]">
-                <span>Benchmark / درخواست</span><span>مدل‌ها</span><span className="text-left">نتیجه</span>
-              </div>
-
-              <div className="space-y-1.5">
-                {history
-                  .filter((item) => {
-                    const q = historyFilter.trim().toLowerCase();
-                    if (!q) return true;
-                    return [item.benchmark_id, item.message, ...(item.models || [])].join(" ").toLowerCase().includes(q);
-                  })
-                  .map((item) => {
-                    const successCount = (item.results || []).filter((result) => result?.ok).length;
-                    const isExpanded = historyExpanded === item.id;
-                    return (
-                      <div key={item.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.018]">
-                        <button type="button" onClick={() => setHistoryExpanded(isExpanded ? null : item.id)} className="w-full px-3 py-3 text-right transition hover:bg-white/[.025]">
-                          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 sm:grid-cols-[1fr_120px_70px]">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="shrink-0 rounded-md border border-cyan-300/10 bg-cyan-300/[.04] px-1.5 py-0.5 text-[7px] font-black text-cyan-300">{item.benchmark_id || "BENCHMARK"}</span>
-                                <span className="text-[8px] text-slate-700">{formatDate(item.created_at)}</span>
-                              </div>
-                              <div className="mt-1 truncate text-[10px] font-black text-slate-300">{item.message}</div>
-                            </div>
-                            <div className="hidden min-w-0 sm:block">
-                              <div className="truncate text-[8px] font-bold text-slate-500" dir="ltr">{(item.models || []).join(" · ")}</div>
-                              <div className="mt-1 text-[8px] text-slate-700">{item.models?.length || 0} مدل</div>
-                            </div>
-                            <div className="text-left">
-                              <div className={successCount === (item.results || []).length ? "text-[9px] font-black text-emerald-200" : "text-[9px] font-black text-amber-200"}>{successCount}/{item.results?.length || 0}</div>
-                              <div className="mt-1 text-[8px] text-slate-700">{formatMetric(item.meta?.compare_latency_ms, "ms")}</div>
-                            </div>
-                          </div>
-                        </button>
-
-                        {isExpanded && (
-                          <div className="border-t border-white/5 bg-black/10 p-3">
-                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                              <div className="text-[8px] text-slate-600">{formatDate(item.created_at)} · {item.models?.length || 0} مدل · {formatMetric(item.meta?.message_chars)} حرف درخواست</div>
-                              <div className="flex gap-1.5">
-                                <button onClick={() => restoreHistory(item)} className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/15 bg-cyan-300/[.05] px-2.5 py-1.5 text-[8px] font-black text-cyan-200"><RotateCcw size={10}/>بازیابی</button>
-                                <button onClick={() => { setBenchmarkId(item.benchmark_id || ""); exportCurrent(); }} className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-[8px] font-black text-slate-400"><Download size={10}/>خروجی</button>
-                              </div>
-                            </div>
-                            <div className="space-y-1.5">
-                              {(item.results || []).map((result) => (
-                                <div key={result.model} className="flex items-center justify-between gap-3 rounded-xl bg-white/[.025] px-3 py-2">
-                                  <div className="min-w-0">
-                                    <div className="truncate text-[9px] font-black text-cyan-200" dir="ltr">{result.model}</div>
-                                    <div className="mt-1 text-[8px] text-slate-600">{result.ok ? `${formatMetric(result.response_chars)} حرف · ${formatMetric(result?.usage?.total_tokens)} توکن` : result.error}</div>
-                                  </div>
-                                  <div className="shrink-0 text-left text-[8px] text-slate-500">{formatMetric(result.latency_ms, "ms")}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-
-              {!history.filter((item) => {
+              {(() => {
                 const q = historyFilter.trim().toLowerCase();
-                return !q || [item.benchmark_id, item.message, ...(item.models || [])].join(" ").toLowerCase().includes(q);
-              }).length && (
-                <div className="rounded-2xl border border-dashed border-white/10 p-4 text-center text-[9px] text-slate-600">نتیجه‌ای با این جستجو پیدا نشد.</div>
-              )}
+                const filteredHistory = history
+                  .filter((item) => {
+                    const results = item.results || [];
+                    const okCount = results.filter((result) => result?.ok).length;
+                    const statusMatch = historyStatus === "all" || (historyStatus === "success" ? okCount === results.length : okCount < results.length);
+                    const textMatch = !q || [item.benchmark_id, item.message, ...(item.models || [])].join(" ").toLowerCase().includes(q);
+                    return statusMatch && textMatch;
+                  })
+                  .sort((a,b) => {
+                    if (historySort === "oldest") return new Date(a.created_at) - new Date(b.created_at);
+                    if (historySort === "latency") return (b.meta?.compare_latency_ms || 0) - (a.meta?.compare_latency_ms || 0);
+                    return new Date(b.created_at) - new Date(a.created_at);
+                  });
+
+                return <>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[8px] text-slate-600">
+                    <span>{filteredHistory.length.toLocaleString("fa-IR")} مورد نمایش داده می‌شود</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setSelectedHistory(selectedHistory.length === filteredHistory.length ? [] : filteredHistory.map((item) => item.id))} className="font-black text-cyan-300">{selectedHistory.length === filteredHistory.length && filteredHistory.length ? "لغو انتخاب" : "انتخاب همه"}</button>
+                      {selectedHistory.length > 0 && <button onClick={exportSelectedHistory} className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/15 px-2 py-1 font-black text-cyan-200"><Download size={10}/>خروجی انتخاب‌شده ({selectedHistory.length})</button>}
+                    </div>
+                  </div>
+
+                  <div className="mb-2 grid grid-cols-[auto_1fr_auto] gap-2 px-3 text-[8px] font-black text-slate-700 sm:grid-cols-[auto_1fr_120px_70px]">
+                    <span></span><span>Benchmark / درخواست</span><span className="hidden sm:block">مدل‌ها</span><span className="text-left">نتیجه</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {filteredHistory.map((item) => {
+                      const successCount = (item.results || []).filter((result) => result?.ok).length;
+                      const isExpanded = historyExpanded === item.id;
+                      const isSelected = selectedHistory.includes(item.id);
+                      return (
+                        <div key={item.id} className={"overflow-hidden rounded-2xl border " + (isSelected ? "border-cyan-300/25 bg-cyan-300/[.035]" : "border-white/10 bg-white/[.018]")}>
+                          <div className="flex items-stretch">
+                            <label className="flex w-10 shrink-0 cursor-pointer items-center justify-center border-l border-white/5">
+                              <input type="checkbox" checked={isSelected} onChange={() => setSelectedHistory((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id])} className="accent-cyan-300" />
+                            </label>
+                            <button type="button" onClick={() => setHistoryExpanded(isExpanded ? null : item.id)} className="min-w-0 flex-1 px-3 py-3 text-right transition hover:bg-white/[.025]">
+                              <div className="grid grid-cols-[1fr_auto] items-center gap-2 sm:grid-cols-[1fr_120px_70px]">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2"><span className="shrink-0 rounded-md border border-cyan-300/10 bg-cyan-300/[.04] px-1.5 py-0.5 text-[7px] font-black text-cyan-300">{item.benchmark_id || "BENCHMARK"}</span><span className="text-[8px] text-slate-700">{formatDate(item.created_at)}</span></div>
+                                  <div className="mt-1 truncate text-[10px] font-black text-slate-300">{item.message}</div>
+                                </div>
+                                <div className="text-left"><div className={successCount === (item.results || []).length ? "text-[9px] font-black text-emerald-200" : "text-[9px] font-black text-amber-200"}>{successCount}/{item.results?.length || 0}</div><div className="mt-1 text-[8px] text-slate-700">{formatMetric(item.meta?.compare_latency_ms,"ms")}</div></div>
+                              </div>
+                              <div className="mt-1 hidden truncate text-[8px] text-slate-600 sm:block" dir="ltr">{(item.models || []).join(" · ")}</div>
+                            </button>
+                          </div>
+                          {isExpanded && <div className="border-t border-white/5 bg-black/10 p-3"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="text-[8px] text-slate-600">{formatDate(item.created_at)} · {item.models?.length || 0} مدل · {formatMetric(item.meta?.message_chars)} حرف</div><button onClick={() => restoreHistory(item)} className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/15 bg-cyan-300/[.05] px-2.5 py-1.5 text-[8px] font-black text-cyan-200"><RotateCcw size={10}/>بازیابی</button></div><div className="space-y-1.5">{(item.results || []).map((result) => <div key={result.model} className="flex items-center justify-between gap-3 rounded-xl bg-white/[.025] px-3 py-2"><div className="min-w-0"><div className="truncate text-[9px] font-black text-cyan-200" dir="ltr">{result.model}</div><div className="mt-1 text-[8px] text-slate-600">{result.ok ? `${formatMetric(result.response_chars)} حرف · ${formatMetric(result?.usage?.total_tokens)} توکن` : result.error}</div></div><div className="shrink-0 text-left text-[8px] text-slate-500">{formatMetric(result.latency_ms,"ms")}</div></div>)}</div></div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!filteredHistory.length && <div className="rounded-2xl border border-dashed border-white/10 p-4 text-center text-[9px] text-slate-600">نتیجه‌ای با این فیلتر پیدا نشد.</div>}
+                </>;
+              })()}
             </>
           ) : (
             <div className="rounded-2xl border border-dashed border-white/10 p-4 text-center text-[10px] text-slate-600">هنوز سابقه‌ای ثبت نشده است.</div>
-          )}
-        </section>
+          )}        </section>
       </div>
     </main>
   );
