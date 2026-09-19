@@ -14,6 +14,8 @@ const fallbackModels = [
 ];
 
 const SECRET_KEY = "fot10_ashna_lab_secret";
+const HISTORY_KEY = "fot10_ashna_compare_history";
+const MAX_HISTORY = 8;
 
 function getErrorMessage(data, fallback) {
   return data?.error?.message || data?.error || fallback;
@@ -33,6 +35,7 @@ export default function AiLabPage() {
   const [usage, setUsage] = useState(null);
   const [comparison, setComparison] = useState([]);
   const [compareMeta, setCompareMeta] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connectionState, setConnectionState] = useState("idle");
@@ -42,6 +45,9 @@ export default function AiLabPage() {
     try {
       const saved = sessionStorage.getItem(SECRET_KEY) || "";
       if (saved) setSecret(saved);
+
+      const savedHistory = JSON.parse(sessionStorage.getItem(HISTORY_KEY) || "[]");
+      if (Array.isArray(savedHistory)) setHistory(savedHistory.slice(0, MAX_HISTORY));
     } catch {}
   }, []);
 
@@ -154,18 +160,44 @@ export default function AiLabPage() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(getErrorMessage(data, "مقایسه ناموفق بود."));
 
-      setComparison(Array.isArray(data?.results) ? data.results : []);
-      setCompareMeta({
+      const results = Array.isArray(data?.results) ? data.results : [];
+      const meta = {
         requested: data?.requested ?? selected.length,
         completed: data?.completed ?? 0,
         compare_latency_ms: data?.compare_latency_ms ?? null,
         message_chars: data?.message_chars ?? message.length,
+      };
+
+      setComparison(results);
+      setCompareMeta(meta);
+
+      setHistory((current) => {
+        const entry = {
+          id: Date.now(),
+          created_at: new Date().toISOString(),
+          message,
+          models: selected,
+          results,
+          meta,
+        };
+        const next = [entry, ...current].slice(0, MAX_HISTORY);
+        try {
+          sessionStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطای مقایسه");
     } finally {
       setLoading(false);
     }
+  }
+
+  function clearHistory() {
+    setHistory([]);
+    try {
+      sessionStorage.removeItem(HISTORY_KEY);
+    } catch {}
   }
 
   const statusText =
@@ -290,6 +322,55 @@ export default function AiLabPage() {
           )}
 
           {usage && <div className="mt-4 border-t border-white/5 pt-3 text-[10px] text-slate-500">توکن ورودی: {usage.prompt_tokens ?? "—"} · خروجی: {usage.completion_tokens ?? "—"} · مجموع: {usage.total_tokens ?? "—"}</div>}
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-black text-cyan-300">سوابق مقایسه</div>
+              <div className="mt-1 text-[9px] text-slate-600">تا ۸ تست در همین نشست روی همین دستگاه</div>
+            </div>
+            <button onClick={clearHistory} disabled={!history.length} className="rounded-xl border border-white/10 px-3 py-2 text-[9px] font-black text-slate-500 disabled:opacity-30">پاک‌کردن</button>
+          </div>
+
+          {history.length ? (
+            <div className="space-y-2">
+              {history.map((item) => (
+                <details key={item.id} className="rounded-2xl border border-white/10 bg-white/[.02] p-3">
+                  <summary className="cursor-pointer list-none">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-[10px] font-black text-slate-300">{item.models?.join(" · ") || "مدل‌ها"}</div>
+                        <div className="mt-1 truncate text-[9px] text-slate-600">{item.message}</div>
+                      </div>
+                      <div className="shrink-0 text-left text-[9px] text-slate-600">
+                        <div>{item.meta?.completed ?? 0}/{item.meta?.requested ?? 0}</div>
+                        <div className="mt-1">{formatMetric(item.meta?.compare_latency_ms, "ms")}</div>
+                      </div>
+                    </div>
+                  </summary>
+
+                  <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
+                    {item.results?.map((result) => (
+                      <div key={result.model} className="rounded-xl bg-white/[.02] p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[9px] font-black text-cyan-200">{result.model}</span>
+                          <span className="text-[8px] text-slate-600">{formatMetric(result.latency_ms, "ms")}</span>
+                        </div>
+                        <div className="mt-2 text-[9px] leading-5 text-slate-500">
+                          {result.ok
+                            ? `${formatMetric(result.response_chars)} حرف · ${formatMetric(result?.usage?.total_tokens)} توکن`
+                            : result.error}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/10 p-4 text-center text-[10px] text-slate-600">هنوز سابقه‌ای ثبت نشده است.</div>
+          )}
         </section>
       </div>
     </main>
