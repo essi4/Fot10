@@ -305,7 +305,7 @@ export default function AiLabPage() {
     : "اتصال نشده";
 
   return (
-    <main className="min-h-screen bg-[#060810] px-4 py-6 text-white" dir="rtl">
+    <main className="min-h-screen bg-[#060810] px-4 pb-32 pt-16 text-white sm:px-5 sm:pb-28 sm:pt-20" dir="rtl">
       <div className="mx-auto w-full max-w-3xl">
         <header className="relative mb-4 overflow-hidden rounded-[28px] border border-cyan-300/10 bg-gradient-to-br from-[#0c1727] via-[#0a1422] to-[#07101d] p-4 shadow-2xl sm:p-5">
           <div className="absolute -left-16 -top-20 h-44 w-44 rounded-full bg-cyan-300/[.08] blur-3xl" />
@@ -341,7 +341,7 @@ export default function AiLabPage() {
           </div>
 
           <label className="mb-2 mt-4 block text-xs font-black text-slate-300">مدل اصلی</label>
-          <select value={model} onChange={(e) => setModel(e.target.value)} disabled={connectionState !== "connected" || loading || !models.length} className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none disabled:opacity-50">
+          <select value={model} onChange={(e) => setModel(e.target.value)} disabled={connectionState !== "connected" || loading || !models.length} className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none transition focus:border-cyan-300/30 focus:ring-2 focus:ring-cyan-300/10 disabled:opacity-50" dir="ltr">
             {!models.length && <option value="">پس از اتصال، مدل‌ها دریافت می‌شوند</option>}
             {models.map((id) => <option key={id} value={id}>{id}</option>)}
           </select>
@@ -391,8 +391,8 @@ export default function AiLabPage() {
           <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={4000} rows={7} className="w-full resize-y rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm leading-7 outline-none" />
 
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button onClick={runTest} disabled={loading || !message.trim() || connectionState !== "connected"} className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 disabled:opacity-40">{loading ? "در حال تحلیل…" : "اجرای تست"}</button>
-            <button onClick={runCompare} disabled={loading || !message.trim() || connectionState !== "connected"} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 disabled:opacity-40">{loading ? "در حال مقایسه…" : `مقایسه ${compareModels.length || 1} مدل`}</button>
+            <button onClick={runTest} disabled={loading || !message.trim() || connectionState !== "connected"} className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200 active:scale-[.99] disabled:opacity-40">{loading ? "در حال تحلیل…" : "اجرای تست"}</button>
+            <button onClick={runCompare} disabled={loading || !message.trim() || connectionState !== "connected"} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-300/[.15] active:scale-[.99] disabled:opacity-40">{loading ? "در حال مقایسه…" : `مقایسه ${compareModels.length || 1} مدل`}</button>
           </div>
         </section>
 
@@ -471,7 +471,7 @@ export default function AiLabPage() {
               )}
             </div>
           ) : error ? (
-            <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-3 text-sm leading-7 text-red-200">{error}</div>
+            <div aria-live="polite" className="rounded-2xl border border-red-400/20 bg-red-400/5 p-3 text-sm leading-7 text-red-200">{error}</div>
           ) : (
             <pre className="whitespace-pre-wrap font-sans text-sm leading-8 text-slate-200">{answer || "هنوز تستی اجرا نشده است."}</pre>
           )}
