@@ -339,6 +339,10 @@ export default function AiLabPage() {
             <input type="password" value={secret} onChange={(e) => { setSecret(e.target.value); setConnectionState("idle"); }} placeholder="ASHNAAI_LAB_SECRET" autoComplete="off" className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none transition focus:border-cyan-300/30 focus:ring-2 focus:ring-cyan-300/10" dir="ltr" />
             <button onClick={connect} disabled={connecting || !secret.trim()} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 text-xs font-black text-cyan-200 disabled:opacity-40">{connecting ? "اتصال…" : "اتصال"}</button>
           </div>
+          <div className="mt-2 flex items-center gap-2 text-[8px] font-bold text-slate-600">
+            <span className={connectionState === "connected" ? "h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,.7)]" : "h-1.5 w-1.5 rounded-full bg-slate-700"} />
+            <span>{connectionState === "connected" ? `اتصال فعال · ${models.length.toLocaleString("fa-IR")} مدل در کاتالوگ` : "کلید فقط برای همین نشست استفاده می‌شود."}</span>
+          </div>
 
           <label className="mb-2 mt-4 block text-xs font-black text-slate-300">مدل اصلی</label>
           <select value={model} onChange={(e) => setModel(e.target.value)} disabled={connectionState !== "connected" || loading || !models.length} className="w-full rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm outline-none transition focus:border-cyan-300/30 focus:ring-2 focus:ring-cyan-300/10 disabled:opacity-50" dir="ltr">
@@ -387,8 +391,18 @@ export default function AiLabPage() {
             )}
           </div>
 
-          <label className="mb-2 mt-4 block text-xs font-black text-slate-300">درخواست آزمایشی</label>
-          <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={4000} rows={7} className="w-full resize-y rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm leading-7 outline-none" />
+          <div className="mb-2 mt-4 flex items-center justify-between gap-2">
+            <label className="text-xs font-black text-slate-300">درخواست آزمایشی</label>
+            <span className={`text-[9px] font-bold ${message.length > 3600 ? "text-amber-300" : "text-slate-600"}`}>{message.length.toLocaleString("fa-IR")} / ۴۰۰۰</span>
+          </div>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            maxLength={4000}
+            rows={7}
+            placeholder="سؤال یا سناریوی آزمایشی را اینجا بنویس…"
+            className="w-full resize-y rounded-2xl border border-white/10 bg-[#07101d] px-3 py-3 text-sm leading-7 outline-none transition focus:border-cyan-300/30 focus:ring-2 focus:ring-cyan-300/10"
+          />
 
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button onClick={runTest} disabled={loading || !message.trim() || connectionState !== "connected"} className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200 active:scale-[.99] disabled:opacity-40">{loading ? "در حال تحلیل…" : "اجرای تست"}</button>
@@ -398,7 +412,10 @@ export default function AiLabPage() {
 
         <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs font-black text-cyan-300">خروجی آزمایشگاه</div>
+            <div>
+              <div className="text-xs font-black text-cyan-300">خروجی آزمایشگاه</div>
+              <div className="mt-1 text-[8px] font-bold text-slate-600">پاسخ‌ها و متریک‌های همین اجرای آزمایشی</div>
+            </div>
             <div className="flex items-center gap-2">
               {benchmarkId && <span className="rounded-lg border border-white/10 bg-white/[.03] px-2 py-1 text-[8px] font-black text-slate-500">{benchmarkId}</span>}
               {comparison.length > 0 && <button onClick={exportCurrent} className="rounded-lg border border-cyan-300/15 bg-cyan-300/[.05] px-2.5 py-1.5 text-[9px] font-black text-cyan-200">خروجی JSON</button>}
