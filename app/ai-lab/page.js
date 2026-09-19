@@ -298,6 +298,26 @@ export default function AiLabPage() {
     } catch {}
   }
 
+  const dashboardStats = (() => {
+    const runs = history.flatMap((item) => Array.isArray(item.results) ? item.results : []);
+    const successful = runs.filter((item) => item?.ok).length;
+    const latencyValues = runs.map((item) => item?.latency_ms).filter((value) => Number.isFinite(value));
+    const tokenValues = runs.map((item) => item?.usage?.total_tokens).filter((value) => Number.isFinite(value));
+    const modelsUsed = new Set(history.flatMap((item) => Array.isArray(item.models) ? item.models : []));
+
+    return {
+      benchmarks: history.length,
+      modelRuns: runs.length,
+      successful,
+      failed: Math.max(0, runs.length - successful),
+      avgLatency: latencyValues.length ? Math.round(latencyValues.reduce((sum, value) => sum + value, 0) / latencyValues.length) : null,
+      totalTokens: tokenValues.length ? tokenValues.reduce((sum, value) => sum + value, 0) : null,
+      models: modelsUsed.size,
+    };
+  })();
+
+  const latestBenchmark = history[0] || null;
+
   const statusText =
     connectionState === "connected" ? "متصل · فهرست واقعی مدل‌ها"
     : connectionState === "connecting" ? "در حال اتصال…"
@@ -494,6 +514,74 @@ export default function AiLabPage() {
           )}
 
           {usage && <div className="mt-4 border-t border-white/5 pt-3 text-[10px] text-slate-500">توکن ورودی: {usage.prompt_tokens ?? "—"} · خروجی: {usage.completion_tokens ?? "—"} · مجموع: {usage.total_tokens ?? "—"}</div>}
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-xs font-black text-cyan-300">داشبورد Benchmark</div>
+              <div className="mt-1 text-[8px] font-bold text-slate-600">خلاصه آماری همین نشست؛ بدون رتبه‌بندی مدل‌ها</div>
+            </div>
+            {latestBenchmark && (
+              <span className="rounded-full border border-white/10 bg-white/[.03] px-2.5 py-1 text-[8px] font-black text-slate-500">
+                آخرین اجرا · {formatDate(latestBenchmark.created_at)}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3">
+              <div className="text-[8px] text-slate-600">تعداد تست</div>
+              <div className="mt-1 text-lg font-black text-slate-100">{formatMetric(dashboardStats.benchmarks)}</div>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3">
+              <div className="text-[8px] text-slate-600">اجرای مدل</div>
+              <div className="mt-1 text-lg font-black text-slate-100">{formatMetric(dashboardStats.modelRuns)}</div>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3">
+              <div className="text-[8px] text-slate-600">میانگین زمان پاسخ</div>
+              <div className="mt-1 text-lg font-black text-slate-100">{formatMetric(dashboardStats.avgLatency, "ms")}</div>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-white/[.025] p-3">
+              <div className="text-[8px] text-slate-600">توکن مصرف‌شده</div>
+              <div className="mt-1 text-lg font-black text-slate-100">{formatMetric(dashboardStats.totalTokens)}</div>
+            </div>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl bg-emerald-400/[.045] px-3 py-2">
+              <div className="text-[8px] text-slate-600">پاسخ موفق</div>
+              <div className="mt-1 text-[10px] font-black text-emerald-200">{formatMetric(dashboardStats.successful)}</div>
+            </div>
+            <div className="rounded-xl bg-red-400/[.035] px-3 py-2">
+              <div className="text-[8px] text-slate-600">پاسخ ناموفق</div>
+              <div className="mt-1 text-[10px] font-black text-red-200">{formatMetric(dashboardStats.failed)}</div>
+            </div>
+            <div className="rounded-xl bg-cyan-400/[.04] px-3 py-2">
+              <div className="text-[8px] text-slate-600">مدل‌های استفاده‌شده</div>
+              <div className="mt-1 text-[10px] font-black text-cyan-200">{formatMetric(dashboardStats.models)}</div>
+            </div>
+            <div className="rounded-xl bg-white/[.025] px-3 py-2">
+              <div className="text-[8px] text-slate-600">ظرفیت تاریخچه</div>
+              <div className="mt-1 text-[10px] font-black text-slate-300">{formatMetric(history.length)} / {formatMetric(MAX_HISTORY)}</div>
+            </div>
+          </div>
+
+          {latestBenchmark && (
+            <div className="mt-3 rounded-2xl border border-cyan-300/10 bg-cyan-300/[.025] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[8px] font-black text-cyan-200">آخرین Benchmark</div>
+                  <div className="mt-1 truncate text-[10px] font-black text-slate-300">{latestBenchmark.benchmark_id || "Benchmark"}</div>
+                  <div className="mt-1 truncate text-[9px] text-slate-600">{latestBenchmark.message}</div>
+                </div>
+                <div className="shrink-0 text-left text-[9px] text-slate-500">
+                  <div>{latestBenchmark.models?.length || 0} مدل</div>
+                  <div className="mt-1">{formatMetric(latestBenchmark.meta?.compare_latency_ms, "ms")}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="mt-4 rounded-3xl border border-white/10 bg-[#0a1422] p-4">
