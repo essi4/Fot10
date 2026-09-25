@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test test/project-date.test.js"
+    "test": "node --test test/project-date.test.mjs"
   },
   "dependencies": {
     "next": "14.2.35",
