@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getMatchesResilient } from "../../../../lib/football-resilient";
 import { getSportsDbLiveMatches } from "../../../../lib/thesportsdb-day";
 import { runWithApiFootballCircuit } from "../../../../lib/api-football-circuit";
-import { projectDate } from "../../../../lib/project-date";
+import { projectDate } from "../../../../lib/project-date.mjs";
 
 export const dynamic = "force-dynamic";
 
