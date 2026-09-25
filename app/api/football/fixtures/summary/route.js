@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOpenFootballMatches } from "../../../../../lib/openfootball";
 import { getSportsDbDayMatches, getSportsDbLiveMatches } from "../../../../../lib/thesportsdb-day";
-import { projectDate } from "../../../../../lib/project-date";
+import { projectDate } from "../../../../../lib/project-date.mjs";
 
 export const dynamic = "force-dynamic";
 
