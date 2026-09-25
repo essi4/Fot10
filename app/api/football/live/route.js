@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getMatchesResilient } from "../../../../lib/football-resilient";
 import { getSportsDbLiveMatches } from "../../../../lib/thesportsdb-day";
 import { runWithApiFootballCircuit } from "../../../../lib/api-football-circuit";
+import { projectDate } from "../../../../lib/project-date";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +25,6 @@ function liveHeaders() {
   return { "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}` };
 }
 
-function iranToday(offset = 0) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" })
-    .formatToParts(new Date()).reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
-  const base = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`);
-  base.setDate(base.getDate() + offset);
-  return base.toISOString().slice(0, 10);
-}
-
 function isActuallyLive(match) {
   const status = String(match?.statusShort || match?.status || "").trim().toUpperCase();
   return LIVE_CODES.has(status) || /LIVE|IN PLAY|HALF/i.test(status);
@@ -48,7 +41,7 @@ function isInLiveScope(match) {
 }
 
 async function fallbackLiveMatches() {
-  const dates = [iranToday(0), iranToday(-1), iranToday(1)];
+  const dates = [projectDate(0), projectDate(-1), projectDate(1)];
   const batches = await Promise.allSettled(dates.map((date) => getSportsDbLiveMatches(date)));
   const byId = new Map();
   for (const batch of batches) {
