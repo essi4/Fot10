@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOpenFootballMatches } from "../../../../../lib/openfootball";
 import { getSportsDbDayMatches, getSportsDbLiveMatches } from "../../../../../lib/thesportsdb-day";
+import { projectDate } from "../../../../../lib/project-date";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +91,7 @@ async function getLive() {
 
   let matches = [];
   try {
-    matches = (await getSportsDbLiveMatches(new Date().toISOString().slice(0, 10))).filter(inScope);
+    matches = (await getSportsDbLiveMatches(projectDate(0))).filter(inScope);
   } catch {}
 
   const value = {
