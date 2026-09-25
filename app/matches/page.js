@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Radio, RefreshCw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import HomeLiveMatches from "../components/HomeLiveMatches";
 import { PROJECT_TIMEZONE, formatProjectDate, projectDate } from "../../lib/project-date.mjs";
 
 const SETTINGS_KEY = "fot10-settings";
@@ -29,7 +28,7 @@ function mergeSummary(previous, next) {
   return merged;
 }
 
-function DayFilters({ liveOnly, day, summary }) {
+function DayFilters({ day, summary }) {
   const fallback = { count: 0, leagues: 0, finished: 0, goals: 0 };
   const stats = { live: summary?.live || fallback, yesterday: summary?.yesterday || fallback, today: summary?.today || fallback, tomorrow: summary?.tomorrow || fallback };
   const items = [
@@ -74,7 +73,7 @@ function MatchesContent() {
       } else if (lastGoodDataRef.current.key !== currentKey) {
         setGames([]);
       }
-      if (!mapped.length) setError(liveOnly ? "فعلاً بازی زنده‌ای پیدا نشد؛ بررسی خودکار ادامه دارد." : "داده‌های این روز فعلاً در دسترس نیست؛ بررسی خودکار ادامه دارد.");
+      if (!mapped.length) setError("");
     } catch (err) { setError("داده‌ها کمی قدیمی هستند؛ در حال تلاش برای به‌روزرسانی اطلاعات…"); }
     finally { requestInFlight.current = false; setLoading(false); setRefreshing(false); }
   }, [date, liveOnly]);
@@ -105,7 +104,7 @@ function MatchesContent() {
         </button>
       </header>
 
-      {!liveOnly && <DayFilters liveOnly={false} day={day} summary={summary} />}
+      {!liveOnly && <DayFilters day={day} summary={summary} />}
 
       {liveOnly && (
         <Link href={`/matches?date=${projectDate(0)}`} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[.025] px-4 py-3 text-xs">
