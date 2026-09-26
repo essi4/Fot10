@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, ChevronLeft, Medal, Search, Settings, Shield, Trophy, Users, Zap } from "lucide-react";
+import { ChevronLeft, Medal, Search, Settings, Shield, Trophy, Users, Zap } from "lucide-react";
 import Link from "next/link";
 import HomeMatchdayHub from "./components/HomeMatchdayHub";
 import HomeNews from "./components/HomeNews";
@@ -10,7 +10,6 @@ const quickNav = [
   ["لیگ‌ها", Trophy, "/leagues"],
   ["تیم ملی", Shield, "/national-teams"],
   ["بازیکنان", Users, "/players"],
-  ["آمار", BarChart3, "/stats"],
   ["برترین‌های ماه", Medal, "/players"],
   ["تنظیمات", Settings, "/settings"],
 ];
