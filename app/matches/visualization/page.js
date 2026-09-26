@@ -185,6 +185,25 @@ function Visualization() {
     {lastEvent.type === "goal" && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[9px] font-black text-emerald-200">⚽ گل {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name} — نتیجه به‌روزرسانی شد</div>}
     {stale && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] text-amber-200">داده تازه دریافت نشد؛ انیمیشن متوقف شد تا از نمایش وضعیت جعلی جلوگیری شود.</div>}
 
+    <div className="glass rounded-2xl p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Zap size={14} className="text-cyan-300"/>
+          <span className="text-[10px] font-black text-slate-200">رویدادهای اخیر</span>
+        </div>
+        <span className="text-[8px] text-slate-600">EVENT FEED</span>
+      </div>
+      <div className="space-y-1.5">
+        {EVENT_SEQUENCE.slice(0, eventIndex + 1).slice(-4).reverse().map((event, index) => (
+          <div key={event.at} className={`flex items-center gap-2 rounded-xl border px-2.5 py-2 ${index === 0 ? "border-cyan-400/15 bg-cyan-400/[.05]" : "border-white/5 bg-white/[.02]"}`}>
+            <span className="text-[12px]">{event.type === "goal" ? "⚽" : event.type === "card" ? "🟨" : event.type === "substitution" ? "🔄" : event.type === "shot" ? "🎯" : event.type === "attack" ? "⚡" : "•"}</span>
+            <span className="min-w-0 flex-1 truncate text-[9px] font-bold text-slate-300">{event.label}</span>
+            <span className="text-[8px] font-black text-slate-500">{event.minute}'</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
     <div className="flex flex-wrap items-center justify-center gap-2">
       <button onClick={() => { setRunning((v) => !v); setStale(false); setLastDataAt(Date.now()); }} className="glass rounded-xl px-3 py-2 text-[10px] font-black text-slate-200">{running ? <><Pause size={13} className="mr-1 inline"/> توقف</> : <><Play size={13} className="mr-1 inline"/> ادامه</>}</button>
       <button onClick={reset} className="glass rounded-xl px-3 py-2 text-[10px] font-black text-slate-200"><RotateCcw size={13} className="mr-1 inline"/> ریست</button>
