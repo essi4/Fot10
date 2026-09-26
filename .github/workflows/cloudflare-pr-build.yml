@@ -1,0 +1,41 @@
+name: FOT10 Cloudflare PR Build
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  cloudflare-pr-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install OpenNext Cloudflare adapter
+        run: npm install --no-save @opennextjs/cloudflare@1.15.1
+
+      - name: Build OpenNext for Cloudflare
+        run: npx opennextjs-cloudflare build
+
+      - name: Verify OpenNext output
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
