@@ -72,9 +72,12 @@ function MatchesContent() {
       const mapped = sourceMatches.map(mapGame).filter((g) => liveOnly ? g.live : true).sort(sortLive);
       const hasUsableData = mapped.length > 0;
       const currentKey = `${liveOnly ? "live" : "day"}:${date}`;
-      if (hasUsableData || !lastGoodDataRef.current.key || lastGoodDataRef.current.key !== currentKey) {
-        if (hasUsableData) lastGoodDataRef.current = { key: currentKey, time: Date.now() };
-        setGames((previous) => hasUsableData ? mapped : previous);
+      if (hasUsableData) {
+        lastGoodDataRef.current = { key: currentKey, time: Date.now() };
+        setGames(mapped);
+      } else if (lastGoodDataRef.current.key !== currentKey) {
+        lastGoodDataRef.current = { key: null, time: 0 };
+        setGames([]);
       }
       setSource(payload.source || payload.provider || "");
       setUpdatedAt(payload.checkedAt ? new Date(payload.checkedAt) : new Date());
@@ -83,6 +86,11 @@ function MatchesContent() {
     finally { requestInFlight.current = false; setLoading(false); setRefreshing(false); }
   }, [date, liveOnly]);
 
+  useEffect(() => {
+    setGames([]);
+    setError("");
+    lastGoodDataRef.current = { key: null, time: 0 };
+  }, [date, liveOnly]);
   useEffect(() => { loadMatches(); }, [loadMatches]);
   useEffect(() => { if (!settings.autoRefresh || !liveOnly) return; const timer = setInterval(() => loadMatches(), 15000); return () => clearInterval(timer); }, [loadMatches, settings.autoRefresh, liveOnly]);
   useEffect(() => { if (!settings.autoRefresh || liveOnly) return; const timer = setInterval(() => loadMatches(), 30000); return () => clearInterval(timer); }, [loadMatches, settings.autoRefresh, liveOnly]);
