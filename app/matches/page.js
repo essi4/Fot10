@@ -52,6 +52,7 @@ function MatchesContent() {
   const requestedDate = searchParams.get("date");
   const [games, setGames] = useState([]); const [day, setDay] = useState(0); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [refreshing, setRefreshing] = useState(false); const [settings, setSettings] = useState({ autoRefresh: true, compactScores: true }); const [updatedAt, setUpdatedAt] = useState(null); const [source, setSource] = useState(""); const [summary, setSummary] = useState(null);
   const requestInFlight = useRef(false);
+  const requestGeneration = useRef(0);
   const lastGoodDataRef = useRef({ key: null, time: 0 });
   const date = useMemo(() => requestedDate || iranDate(day), [requestedDate, day]);
   const status = sourceStatus(source, liveOnly);
@@ -62,13 +63,16 @@ function MatchesContent() {
 
   const loadMatches = useCallback(async ({ manual = false } = {}) => {
     if (requestInFlight.current) return;
+    const generation = requestGeneration.current;
     requestInFlight.current = true;
     if (manual) setRefreshing(true); setLoading(true); setError("");
     try {
       const endpoint = liveOnly ? "/api/football/live" : `/api/football/fixtures?date=${date}`;
       const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), liveOnly ? 18000 : 12000); let response;
       try { response = await fetch(`${endpoint}${liveOnly ? `?t=${Date.now()}` : ""}`, { cache: "no-store", signal: controller.signal }); } finally { clearTimeout(timeout); }
-      const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "دریافت مسابقات ناموفق بود");
+      const payload = await response.json();
+      if (generation !== requestGeneration.current) return;
+      if (!response.ok) throw new Error(payload.error || "دریافت مسابقات ناموفق بود");
       const sourceMatches = Array.isArray(payload.matches) ? payload.matches : [];
       const mapped = sourceMatches.map(mapGame).filter((g) => liveOnly ? g.live : true).sort(sortLive);
       const hasUsableData = mapped.length > 0;
@@ -88,10 +92,18 @@ function MatchesContent() {
       setUpdatedAt(payload.checkedAt ? new Date(payload.checkedAt) : new Date());
       if (!mapped.length) setError(liveOnly ? "پاسخ موقتاً خالی بود؛ داده قبلی حفظ شد و بررسی خودکار ادامه دارد." : "پاسخ موقتاً خالی بود؛ داده معتبر قبلی حفظ شد و بررسی خودکار ادامه دارد.");
     } catch (err) { setError(err?.name === "AbortError" ? "پاسخ سرویس دیر رسید؛ داده معتبر قبلی حفظ شد و بررسی خودکار ادامه دارد." : err?.message || "اتصال داده مسابقات برقرار نشد."); }
-    finally { requestInFlight.current = false; setLoading(false); setRefreshing(false); }
+    finally {
+      if (generation === requestGeneration.current) {
+        requestInFlight.current = false;
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
   }, [date, liveOnly]);
 
   useEffect(() => {
+    requestGeneration.current += 1;
+    requestInFlight.current = false;
     setGames([]);
     setError("");
     lastGoodDataRef.current = { key: null, time: 0 };
