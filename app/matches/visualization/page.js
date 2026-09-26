@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Pause, Play, RotateCcw, Radio, ShieldAlert } from "lucide-react";
+import { ArrowRight, Pause, Play, RotateCcw, Radio, ShieldAlert, Zap } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 const TEAM = {
@@ -25,6 +25,11 @@ const EVENT_SEQUENCE = [
   { at: 132, type: "finished", minute: 90, label: "پایان مسابقه" },
 ];
 
+const PLAYER_NAMES = {
+  home: ["Pickford", "Walker", "Stones", "Guehi", "Shaw", "Rice", "Bellingham", "Foden", "Saka", "Kane", "Grealish"],
+  away: ["Simon", "Carvajal", "Le Normand", "Laporte", "Cucurella", "Rodri", "Pedri", "Olmo", "Yamal", "Morata", "Williams"],
+};
+
 const BASE_HOME = [
   [9,50],[22,18],[22,38],[22,62],[22,82],[38,28],[38,48],[38,68],[57,22],[57,50],[57,78]
 ];
@@ -46,12 +51,12 @@ function buildPlayers(tick, ball, eventType) {
     ...BASE_HOME.map(([x,y], i) => {
       const o = seededOffset(i, tick, 1);
       const push = eventType === "attack" || eventType === "shot" || eventType === "goal" ? 4 : 0;
-      return { id: `h-${i}`, team: "home", x: Math.min(95, x + o.x + push), y: Math.max(7, Math.min(93, y + o.y)), state: eventType === "goal" ? "celebrate" : push ? "attack" : "run" };
+      return { id: `h-${i}`, team: "home", name: PLAYER_NAMES.home[i], x: Math.min(95, x + o.x + push), y: Math.max(7, Math.min(93, y + o.y)), state: eventType === "goal" ? "celebrate" : push ? "attack" : "run" };
     }),
     ...BASE_AWAY.map(([x,y], i) => {
       const o = seededOffset(i, tick, -1);
       const push = eventType === "attack" || eventType === "shot" || eventType === "goal" ? 4 : 0;
-      return { id: `a-${i}`, team: "away", x: Math.max(5, x + o.x - (eventType === "attack" && eventType !== "goal" ? push : 0)), y: Math.max(7, Math.min(93, y + o.y)), state: eventType === "goal" ? "celebrate" : push ? "attack" : "run" };
+      return { id: `a-${i}`, team: "away", name: PLAYER_NAMES.away[i], x: Math.max(5, x + o.x - (eventType === "attack" && eventType !== "goal" ? push : 0)), y: Math.max(7, Math.min(93, y + o.y)), state: eventType === "goal" ? "celebrate" : push ? "attack" : "run" };
     }),
   ].map((p) => ({ ...p, distance: Math.hypot(p.x - ball.x, p.y - ball.y) }));
 }
@@ -150,7 +155,6 @@ function Visualization() {
     return <section className="glass rounded-3xl p-6 text-center"><div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-500/10 text-slate-400">×</div><h2 className="font-black text-slate-200">مسابقه لغو شده</h2><p className="mt-2 text-xs text-slate-500">هیچ موقعیت یا رویداد جدیدی نمایش داده نمی‌شود.</p><button onClick={reset} className="mt-4 rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-slate-200">شروع مجدد دمو</button></section>;
   }
 
-  const motionLabel = reducedMotion ? "حرکت کمینه" : "حرکت نرم";
   return <section className="space-y-3">
     <div className="rounded-3xl border border-cyan-400/15 bg-gradient-to-br from-cyan-400/[.08] via-white/[.025] to-transparent p-4">
       <div className="flex items-start justify-between gap-3">
@@ -174,7 +178,7 @@ function Visualization() {
       <div className="pointer-events-none absolute right-[4%] top-[42%] h-[16%] w-[6%] border border-white/60"/>
       {players.map((player) => {
         const t = TEAM[player.team];
-        return <div key={player.id} className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${player.x}%`,top:`${player.y}%`}}><div className={`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg ${player.state === "celebrate" ? "scale-125" : player.state === "attack" ? "scale-110" : ""}`} style={{background:t.soft,borderColor:t.color}}><span className="text-[20px] leading-none">🏃‍♂️</span></div></div>;
+        return <div key={player.id} className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${player.x}%`,top:`${player.y}%`}}><span className="pointer-events-none absolute bottom-full left-1/2 mb-0.5 max-w-[64px] -translate-x-1/2 truncate rounded bg-black/65 px-1 py-0.5 text-center text-[7px] font-black leading-none shadow-sm sm:max-w-[72px] sm:text-[8px]" style={{color:t.text, border:`1px solid ${t.color}66`}}><span className="min-[360px]:hidden">{player.name.slice(0, 1)}</span><span className="hidden min-[360px]:inline">{player.name}</span></span><div className={`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg ${player.state === "celebrate" ? "scale-125" : player.state === "attack" ? "scale-110" : ""}`} style={{background:t.soft,borderColor:t.color}}><span className="text-[20px] leading-none">🏃‍♂️</span></div></div>;
       })}
       <div className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${ball.x}%`,top:`${ball.y}%`}}><span className="block text-[24px] leading-none drop-shadow-lg">⚽</span></div>
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/30 px-3 py-2 text-[8px] font-bold text-white/80"><span>{TEAM.home.name}</span><span>{lastEvent.label}</span><span>{TEAM.away.name}</span></div>
