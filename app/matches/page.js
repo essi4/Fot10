@@ -76,14 +76,14 @@ function MatchesContent() {
       const reconciled = reconcileMatchGames({
         currentKey,
         previousKey: lastGoodDataRef.current.key,
-        previousGames: games,
         incomingGames: mapped,
       });
       lastGoodDataRef.current = {
         key: reconciled.lastGoodKey,
-        time: reconciled.games.length ? Date.now() : 0,
+        time: mapped.length ? Date.now() : 0,
       };
-      setGames(reconciled.games);
+      if (mapped.length) setGames(mapped);
+      else if (reconciled.lastGoodKey !== currentKey) setGames([]);
       setSource(payload.source || payload.provider || "");
       setUpdatedAt(payload.checkedAt ? new Date(payload.checkedAt) : new Date());
       if (!mapped.length) setError(liveOnly ? "پاسخ موقتاً خالی بود؛ داده قبلی حفظ شد و بررسی خودکار ادامه دارد." : "پاسخ موقتاً خالی بود؛ داده معتبر قبلی حفظ شد و بررسی خودکار ادامه دارد.");
