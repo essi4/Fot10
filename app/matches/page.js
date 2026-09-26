@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock3, Radio, RefreshCw, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import HomeLiveMatches from "../components/HomeLiveMatches";
+import { reconcileMatchGames } from "../../lib/match-state.mjs";
 
 const SETTINGS_KEY = "fot10-settings";
 const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
@@ -72,13 +73,17 @@ function MatchesContent() {
       const mapped = sourceMatches.map(mapGame).filter((g) => liveOnly ? g.live : true).sort(sortLive);
       const hasUsableData = mapped.length > 0;
       const currentKey = `${liveOnly ? "live" : "day"}:${date}`;
-      if (hasUsableData) {
-        lastGoodDataRef.current = { key: currentKey, time: Date.now() };
-        setGames(mapped);
-      } else if (lastGoodDataRef.current.key !== currentKey) {
-        lastGoodDataRef.current = { key: null, time: 0 };
-        setGames([]);
-      }
+      const reconciled = reconcileMatchGames({
+        currentKey,
+        previousKey: lastGoodDataRef.current.key,
+        previousGames: games,
+        incomingGames: mapped,
+      });
+      lastGoodDataRef.current = {
+        key: reconciled.lastGoodKey,
+        time: reconciled.games.length ? Date.now() : 0,
+      };
+      setGames(reconciled.games);
       setSource(payload.source || payload.provider || "");
       setUpdatedAt(payload.checkedAt ? new Date(payload.checkedAt) : new Date());
       if (!mapped.length) setError(liveOnly ? "پاسخ موقتاً خالی بود؛ داده قبلی حفظ شد و بررسی خودکار ادامه دارد." : "پاسخ موقتاً خالی بود؛ داده معتبر قبلی حفظ شد و بررسی خودکار ادامه دارد.");
