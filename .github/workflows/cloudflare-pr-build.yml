@@ -1,6 +1,9 @@
 name: FOT10 Cloudflare PR Build
 
 on:
+  push:
+    branches:
+      - branch/p0-final-gate
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
