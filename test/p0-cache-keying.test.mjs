@@ -15,7 +15,7 @@ globalThis.fetch = async (input) => {
     ok: true,
     async json() {
       return {
-        events: [{
+        events: date === "2026-09-26" ? [] : [{
           idEvent: date === "2026-09-24" ? "24001" : "25001",
           strSport: "Soccer",
           strStatus: "1H",
