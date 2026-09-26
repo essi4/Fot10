@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock3, Radio, RefreshCw, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import HomeLiveMatches from "../components/HomeLiveMatches";
-import { PROJECT_TIMEZONE, formatProjectDate, projectDate } from "../../lib/project-date.mjs";
+import { projectDate } from "../../lib/project-date.mjs";
 
 const SETTINGS_KEY = "fot10-settings";
 const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
