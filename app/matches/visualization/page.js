@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Pause, Play, RotateCcw, Radio, ShieldAlert, Zap } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -220,6 +220,6 @@ function Visualization() {
 export default function MatchVisualizationPage() {
   return <main className="fot-shell"><div className="fot-container space-y-4">
     <header className="flex items-center justify-between"><div className="flex items-center gap-3"><Link href="/matches" className="glass grid h-10 w-10 place-items-center rounded-xl"><ArrowRight size={18}/></Link><div><h1 className="text-xl font-black text-slate-100">نمایش آتاری‌مانند مسابقه</h1><p className="text-[10px] text-slate-500">FOT10 · Match Visualization V1</p></div></div></header>
-    <Visualization />
+    <Suspense fallback={<section className="glass rounded-3xl p-6 text-center"><div className="mx-auto mb-3 h-8 w-8 animate-pulse rounded-full bg-cyan-400/20" /><p className="text-xs font-bold text-slate-400">در حال آماده‌سازی Match Vision…</p></section>}><Visualization /></Suspense>
   </div></main>;
 }
