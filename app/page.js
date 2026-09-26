@@ -81,8 +81,8 @@ export default function HomePage() {
           <Link href="/settings" className="text-[8px] font-black text-cyan-300">شخصی‌سازی</Link>
         </div>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {quickNav.map(([label, Icon], index) => (
-            <Link key={label} href={label === "نتایج زنده" ? "/matches?live=1" : label === "لیگ‌ها" ? "/leagues" : label === "تیم ملی" ? "/national-teams" : label === "بازیکنان" || label === "برترین‌های ماه" ? "/players" : "/settings"} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a1422] p-3 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 hover:bg-[#0d1928] active:scale-[.98]">
+          {quickNav.map(([label, Icon, href], index) => (
+            <Link key={label} href={href} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a1422] p-3 shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 hover:bg-[#0d1928] active:scale-[.98]">
               <div className="absolute -left-6 -top-6 h-16 w-16 rounded-full bg-cyan-400/5 blur-2xl" />
               <div className="relative flex items-center gap-2.5">
                 <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border ${index === 0 ? "border-red-300/20 bg-red-400/10 text-red-300" : index === 1 ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-300" : "border-white/10 bg-white/[.04] text-slate-300"}`}>
