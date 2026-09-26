@@ -17,11 +17,12 @@ const EVENT_SEQUENCE = [
   { at: 25, type: "attack", team: "away", minute: 26, label: "حمله اسپانیا" },
   { at: 35, type: "card", team: "away", minute: 35, label: "کارت زرد اسپانیا" },
   { at: 48, type: "goal", team: "home", minute: 42, label: "گل انگلیس" },
-  { at: 63, type: "substitution", team: "away", minute: 57, label: "تعویض اسپانیا" },
-  { at: 78, type: "shot", team: "away", minute: 66, label: "شوت اسپانیا" },
-  { at: 92, type: "goal", team: "away", minute: 73, label: "گل اسپانیا" },
-  { at: 112, type: "halftime", minute: 45, label: "پایان نیمه اول" },
-  { at: 138, type: "attack", team: "home", minute: 52, label: "حمله انگلیس" },
+  { at: 54, type: "halftime", minute: 45, label: "پایان نیمه اول" },
+  { at: 70, type: "attack", team: "home", minute: 52, label: "حمله انگلیس" },
+  { at: 82, type: "substitution", team: "away", minute: 57, label: "تعویض اسپانیا" },
+  { at: 94, type: "shot", team: "away", minute: 66, label: "شوت اسپانیا" },
+  { at: 108, type: "goal", team: "away", minute: 73, label: "گل اسپانیا" },
+  { at: 132, type: "finished", minute: 90, label: "پایان مسابقه" },
 ];
 
 const BASE_HOME = [
@@ -63,10 +64,6 @@ function ballFor(eventType, team, tick) {
   return { x: 50 + Math.sin(tick * .7) * 15, y: 50 + Math.cos(tick * .5) * 18 };
 }
 
-function initialPlayers() {
-  return buildPlayers(0, { x: 50, y: 50 }, "kickoff");
-}
-
 function Visualization() {
   const searchParams = useSearchParams();
   const flagEnabled = process.env.NEXT_PUBLIC_FOT10_MATCH_VISUALIZATION === "true" || searchParams.get("viz") === "1";
@@ -77,7 +74,8 @@ function Visualization() {
   const [eventIndex, setEventIndex] = useState(0);
   const [minute, setMinute] = useState(1);
   const [score, setScore] = useState({ home: 0, away: 0 });
-  const [phase, setPhase] = useState("live");
+  const [phase, setPhase] = useState("upcoming");
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [lastEvent, setLastEvent] = useState(EVENT_SEQUENCE[0]);
   const [lastDataAt, setLastDataAt] = useState(Date.now());
 
@@ -86,7 +84,21 @@ function Visualization() {
   const players = useMemo(() => buildPlayers(tick, ball, currentEvent.type), [tick, ball, currentEvent.type]);
 
   useEffect(() => {
-    if (!running || cancelled || stale || !flagEnabled) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(media.matches);
+    sync();
+    media.addEventListener?.("change", sync);
+    return () => media.removeEventListener?.("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!flagEnabled) return;
+    const timer = setTimeout(() => setPhase("live"), 900);
+    return () => clearTimeout(timer);
+  }, [flagEnabled]);
+
+  useEffect(() => {
+    if (!running || cancelled || stale || !flagEnabled || phase === "finished") return;
     const timer = setInterval(() => {
       setTick((v) => v + 1);
       setLastDataAt(Date.now());
@@ -97,6 +109,7 @@ function Visualization() {
         setLastEvent(event);
         if (event.type === "goal") setScore((s) => ({ ...s, [event.team]: s[event.team] + 1 }));
         if (event.type === "halftime") setPhase("halftime");
+        else if (event.type === "finished") setPhase("finished");
         else if (phase === "halftime") setPhase("live");
         return next;
       });
@@ -121,7 +134,7 @@ function Visualization() {
 
   function reset() {
     setRunning(true); setCancelled(false); setStale(false); setTick(0); setEventIndex(0);
-    setMinute(1); setScore({ home: 0, away: 0 }); setPhase("live"); setLastEvent(EVENT_SEQUENCE[0]); setLastDataAt(Date.now());
+    setMinute(1); setScore({ home: 0, away: 0 }); setPhase("upcoming"); setLastEvent(EVENT_SEQUENCE[0]); setLastDataAt(Date.now());
   }
 
   function simulateStale() {
@@ -137,11 +150,12 @@ function Visualization() {
     return <section className="glass rounded-3xl p-6 text-center"><div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-500/10 text-slate-400">×</div><h2 className="font-black text-slate-200">مسابقه لغو شده</h2><p className="mt-2 text-xs text-slate-500">هیچ موقعیت یا رویداد جدیدی نمایش داده نمی‌شود.</p><button onClick={reset} className="mt-4 rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-slate-200">شروع مجدد دمو</button></section>;
   }
 
+  const motionLabel = reducedMotion ? "حرکت کمینه" : "حرکت نرم";
   return <section className="space-y-3">
     <div className="rounded-3xl border border-cyan-400/15 bg-gradient-to-br from-cyan-400/[.08] via-white/[.025] to-transparent p-4">
       <div className="flex items-start justify-between gap-3">
         <div><div className="flex items-center gap-2"><Radio size={15} className="text-cyan-300"/><span className="text-[10px] font-black tracking-widest text-cyan-200">MATCH VISUALIZATION · V1</span></div><p className="mt-1 text-[9px] text-slate-500">نمایش شبیه‌سازی‌شده بر اساس رویدادها — مختصات بازیکنان واقعی نیست.</p></div>
-        <span className={`rounded-full px-2 py-1 text-[8px] font-black ${stale ? "bg-amber-400/10 text-amber-300" : "bg-emerald-400/10 text-emerald-300"}`}>{stale ? "STALE" : phase.toUpperCase()}</span>
+        <span className={`rounded-full px-2 py-1 text-[8px] font-black ${stale ? "bg-amber-400/10 text-amber-300" : phase === "finished" ? "bg-slate-400/10 text-slate-300" : "bg-emerald-400/10 text-emerald-300"}`}>{stale ? "STALE" : phase.toUpperCase()}</span>
       </div>
       <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-black/20 p-3 text-center">
         <div><b className="text-sm text-blue-200">{TEAM.home.name}</b><strong className="mt-1 block text-2xl text-white">{score.home}</strong></div>
@@ -151,7 +165,7 @@ function Visualization() {
     </div>
 
     <div className="relative mx-auto w-full max-w-[430px] overflow-hidden rounded-[28px] border border-white/15 bg-[#087443] shadow-2xl" style={{ aspectRatio: "2 / 3" }}>
-      <div className="pointer-events-none absolute inset-[4%] rounded-[22px] border-2 border-white/70/70" style={{borderColor:"rgba(255,255,255,.65)"}}/>
+      <div className="pointer-events-none absolute inset-[4%] rounded-[22px] border-2" style={{borderColor:"rgba(255,255,255,.65)"}}/>
       <div className="pointer-events-none absolute left-[4%] right-[4%] top-1/2 border-t border-white/60"/>
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[14%] w-[14%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/60"/>
       <div className="pointer-events-none absolute left-[4%] top-[33%] h-[34%] w-[17%] border border-white/60"/>
@@ -160,12 +174,15 @@ function Visualization() {
       <div className="pointer-events-none absolute right-[4%] top-[42%] h-[16%] w-[6%] border border-white/60"/>
       {players.map((player) => {
         const t = TEAM[player.team];
-        return <div key={player.id} className="absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-700 ease-out" style={{left:`${player.x}%`,top:`${player.y}%`}}><div className={`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg ${player.state === "celebrate" ? "scale-125" : player.state === "attack" ? "scale-110" : ""}`} style={{background:t.soft,borderColor:t.color}}><span className="text-[20px] leading-none">🏃‍♂️</span></div></div>;
+        return <div key={player.id} className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${player.x}%`,top:`${player.y}%`}}><div className={`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg ${player.state === "celebrate" ? "scale-125" : player.state === "attack" ? "scale-110" : ""}`} style={{background:t.soft,borderColor:t.color}}><span className="text-[20px] leading-none">🏃‍♂️</span></div></div>;
       })}
-      <div className="absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-700 ease-out" style={{left:`${ball.x}%`,top:`${ball.y}%`}}><span className="block text-[24px] leading-none drop-shadow-lg">⚽</span></div>
+      <div className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${ball.x}%`,top:`${ball.y}%`}}><span className="block text-[24px] leading-none drop-shadow-lg">⚽</span></div>
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/30 px-3 py-2 text-[8px] font-bold text-white/80"><span>{TEAM.home.name}</span><span>{lastEvent.label}</span><span>{TEAM.away.name}</span></div>
     </div>
 
+    {lastEvent.type === "card" && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] text-amber-200">🟨 کارت زرد برای {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name}</div>}
+    {lastEvent.type === "substitution" && <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-[9px] text-cyan-200">🔄 تعویض برای {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name}</div>}
+    {lastEvent.type === "goal" && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[9px] font-black text-emerald-200">⚽ گل {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name} — نتیجه به‌روزرسانی شد</div>}
     {stale && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] text-amber-200">داده تازه دریافت نشد؛ انیمیشن متوقف شد تا از نمایش وضعیت جعلی جلوگیری شود.</div>}
 
     <div className="flex flex-wrap items-center justify-center gap-2">
