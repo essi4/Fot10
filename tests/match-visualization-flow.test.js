@@ -11,12 +11,12 @@ function read(file) {
   return fs.readFileSync(file, "utf8");
 }
 
-test("flow contract keeps ten selected club leagues plus national competitions", () => {
+test("flow contract keeps twelve selected club leagues plus national competitions", () => {
   const source = read(scopePath);
-  const entries = source.match(/\{ key:/g) || [];
-  assert.equal(entries.length, 10);
-  for (const leagueId of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307]) {
-    assert.match(source, new RegExp("leagueIds: \\[" + leagueId + "\\]"));
+  const entries = source.match(/{ key:/g) || [];
+  assert.equal(entries.length, 12);
+  for (const leagueId of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307, 128, 71]) {
+    assert.match(source, new RegExp("leagueIds: \[" + leagueId + "\]"));
   }
   assert.match(source, /NATIONAL_COMPETITION_PATTERNS/);
   assert.match(source, /YOUTH_NATIONAL_MARKER/);
