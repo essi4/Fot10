@@ -326,7 +326,7 @@ function MatchesContent() {
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[8px] font-bold text-slate-400">
-                        <span>{g.detailAvailable === false ? "اطلاعات خلاصه مسابقه" : "مشاهده جزئیات مسابقه"}</span>
+                        <span>{g.broadcastAvailable ? "۳۶۰ · پخش مینیمال" : (g.detailAvailable === false ? "اطلاعات خلاصه مسابقه" : "مشاهده جزئیات مسابقه")}</span>
                         <ChevronLeft size={13}/>
                       </div>
                     </Link>
