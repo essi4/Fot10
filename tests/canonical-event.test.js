@@ -95,3 +95,9 @@ test("duplicate upstream events are idempotent", () => {
 test("unsupported provider events do not enter the canonical model", () => {
   assert.equal(toCanonicalEvent({ type: "SomethingUnknown", time: { elapsed: 10 } }, details), null);
 });
+
+test("missed penalty maps to missed_penalty and assist is not target_player", () => {
+  const event = toCanonicalEvent({ type: "Goal", detail: "Missed Penalty", minute: 61, team: { id: 7, name: "Argentina" }, player: { id: 9, name: "Player" }, assist: { id: 10, name: "Assist" } }, { fixture: { id: 99, status: { short: "2H" } } });
+  assert.equal(event.event_type, "missed_penalty");
+  assert.equal(event.target_player, null);
+});
