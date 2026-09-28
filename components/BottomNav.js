@@ -1,11 +1,11 @@
 "use client";
 
-import { Activity, Heart, Radio, Shield } from "lucide-react";
+import { Activity, Heart, House, Radio, Shield } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  ["Match Visualization", Activity, "/matches/visualization"],
+  ["خانه", House, "/"],
   ["فوتبال منتخب", Shield, "/matches"],
   ["نتایج زنده", Radio, "/matches?live=1"],
   ["علاقه‌مندی", Heart, "/favorites"],
