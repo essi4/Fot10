@@ -203,6 +203,7 @@ function Visualization() {
   if (!enabled) return <section className="glass rounded-3xl p-6 text-center"><ShieldAlert className="mx-auto mb-3 text-amber-300" size={28}/><h2 className="font-black text-slate-200">Match Visualization غیرفعال است</h2><p className="mt-2 text-xs text-slate-500">برای Preview می‌توان با viz=1 فعالش کرد.</p></section>;
 
   const filtered = league === "all" ? scoped : scoped.filter((x) => getMatchVisualizationLeague(x)?.key === league);
+  const hasRenderableMatch = Boolean(match || activeDemo);
   const scoreHome = Number.isFinite(Number(match?.goals?.home)) ? match.goals.home : "—";
   const scoreAway = Number.isFinite(Number(match?.goals?.away)) ? match.goals.away : "—";
 
@@ -220,8 +221,8 @@ function Visualization() {
 
     {activeDemo && <div className="rounded-2xl border border-amber-300/15 bg-amber-300/5 p-3 text-[9px] text-amber-100">Demo QA فقط با ?demo=1 فعال می‌شود و برای تست کارت، گل، نیمه‌وقت، پایان و Reduced Motion است؛ داده واقعی را تغییر نمی‌دهد.</div>}
     {error && <div className="rounded-2xl border border-red-400/15 bg-red-400/5 p-3 text-[9px] text-red-200">{error}</div>}
-    {!activeDemo && !match && <div className="rounded-2xl border border-white/10 bg-white/[.025] p-5 text-center"><div className="text-sm font-black text-slate-300">مسابقه‌ای برای نمایش انتخاب نشده است</div><p className="mt-2 text-[9px] leading-5 text-slate-500">یک مسابقه از فهرست بالا انتخاب کن. در این حالت هیچ رویداد یا نتیجه ساختگی نمایش داده نمی‌شود.</p></div>}
 
+    {hasRenderableMatch && <>
     <div className="rounded-3xl border border-white/10 bg-white/[.025] p-3.5">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-black/20 p-3 text-center">
         <div className="min-w-0"><b className="block truncate text-sm text-blue-200">{match?.teams?.home?.name || "میزبان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreHome}</strong></div>
@@ -255,6 +256,7 @@ function Visualization() {
       <button type="button" onClick={() => { setStale(true); setRunning(false); }} className="min-h-[44px] rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[10px] font-black text-amber-200 touch-manipulation">تست STALE</button>
       {activeDemo && <button type="button" onClick={() => setIndex(sequence.length - 1)} className="min-h-[44px] rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-[10px] font-black text-red-200 touch-manipulation">برو پایان</button>}
     </div>
+    </>}
   </section>;
 }
 
