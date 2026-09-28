@@ -1,19 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, Flag, Search, Shield } from "lucide-react";
-import { useMemo, useState } from "react";
-import { CONTINENTS, NATIONAL_TEAMS } from "../../lib/fot10-universe";
+import { Activity, ArrowRight, Flag, Radio } from "lucide-react";
 
 export default function NationalTeamsPage() {
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(() => { const value = query.trim().toLowerCase(); if (!value) return NATIONAL_TEAMS; return NATIONAL_TEAMS.filter((team) => `${team.name} ${team.fa}`.toLowerCase().includes(value)); }, [query]);
-  const iran = NATIONAL_TEAMS.find((team) => team.slug === "iran");
-  return <main className="fot-shell"><div className="fot-container space-y-5">
-    <header className="flex items-center gap-3"><Link href="/" className="glass h-10 w-10 rounded-xl grid place-items-center" aria-label="بازگشت"><ArrowRight size={19}/></Link><div><h1 className="text-xl font-black">تیم‌های ملی</h1><p className="text-[11px] text-slate-500">مسابقات ملی منتخب · بازی‌ها · نتایج</p></div></header>
-    {iran && <Link href="/national-teams/iran" className="group relative overflow-hidden rounded-3xl border border-emerald-300/20 bg-gradient-to-br from-emerald-400/15 via-white/[.045] to-transparent p-4 shadow-xl active:scale-[.99] transition-transform"><div className="absolute -left-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/10 blur-3xl" /><div className="relative flex items-center gap-4"><div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-white/10 bg-black/20 text-4xl shadow-lg">{iran.flag}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><Shield size={15} className="text-emerald-300"/><span className="text-[9px] font-black uppercase tracking-wider text-emerald-300">تیم ملی منتخب FOT10</span></div><h2 className="mt-1 text-lg font-black">تیم ملی ایران</h2><p className="mt-1 text-[9px] text-slate-400">بازی‌ها · نتایج · بازیکنان · آمار</p></div><ChevronLeft size={18} className="shrink-0 text-slate-500 transition-transform group-hover:-translate-x-1"/></div></Link>}
-    <div className="glass rounded-2xl p-4 flex items-center gap-3"><Flag className="text-emerald-400" size={20}/><div className="flex-1"><b className="text-sm">مرکز تیم‌های ملی FOT10</b><p className="text-[10px] text-slate-500 mt-1">از آسیا تا اروپا، آفریقا، آمریکا و اقیانوسیه</p></div><b className="text-emerald-400">ملی</b></div>
-    <div className="relative"><Search className="absolute right-4 top-3.5 text-slate-500" size={18}/><input value={query} onChange={(event) => setQuery(event.target.value)} className="glass w-full rounded-2xl py-3 pr-11 pl-4 outline-none" placeholder="جستجوی کشور..."/></div>
-    <section className="space-y-5">{CONTINENTS.map((continent) => { const items = filtered.filter((team) => team.continent === continent.slug); if (!items.length) return null; return <div key={continent.slug} className="space-y-2"><div className="flex items-center justify-between px-1"><h2 className="font-black text-sm">{continent.icon} {continent.name}</h2><span className="text-[10px] text-slate-500">{items.length} تیم</span></div><div className="grid grid-cols-2 gap-2">{items.map((team) => <Link key={team.slug} href={`/national-teams/${team.slug}`} className="glass rounded-2xl p-3 flex items-center gap-2 active:scale-[.98] transition-transform"><span className="text-2xl">{team.flag}</span><span className="flex-1 min-w-0"><b className="block text-xs truncate">{team.fa}</b><small className="text-[9px] text-slate-500">{team.name} · بازی‌ها</small></span><ChevronLeft size={14} className="text-slate-600"/></Link>)}</div></div>})}</section>
-  </div></main>;
+  return (
+    <main className="fot-shell min-h-screen">
+      <div className="fot-container space-y-4 pb-28">
+        <header className="flex items-center gap-3">
+          <Link href="/matches" className="glass grid h-11 w-11 shrink-0 place-items-center rounded-2xl" aria-label="بازگشت">
+            <ArrowRight size={19} />
+          </Link>
+          <div>
+            <div className="text-[9px] font-black tracking-[.18em] text-emerald-300">NATIONAL MATCHES</div>
+            <h1 className="mt-1 text-xl font-black">بازی‌های ملی</h1>
+            <p className="mt-1 text-[10px] text-slate-500">مسابقات واقعی تیم‌های ملی داخل مرکز بازی‌ها</p>
+          </div>
+        </header>
+
+        <section className="relative overflow-hidden rounded-[28px] border border-emerald-300/10 bg-[radial-gradient(circle_at_10%_0%,rgba(16,185,129,.18),transparent_35%),linear-gradient(145deg,#101c29,#060b12)] p-5">
+          <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="relative flex items-start gap-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-300">
+              <Flag size={25} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black">مسابقات ملی منتخب</h2>
+              <p className="mt-2 text-[10px] leading-5 text-slate-400">
+                بازی‌های ملی بزرگسالان و رده‌های ملی مثل U21، U19 و رقابت‌های بین‌المللی از همان Scope اصلی FOT10 دریافت می‌شوند.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/matches" className="glass rounded-2xl p-4">
+            <Activity size={19} className="text-emerald-300" />
+            <b className="mt-2 block text-sm">مرکز بازی‌ها</b>
+            <p className="mt-1 text-[9px] text-slate-500">۱۰ لیگ منتخب + تیم‌های ملی</p>
+          </Link>
+          <Link href="/matches?live=1" className="glass rounded-2xl p-4">
+            <Radio size={19} className="text-red-300" />
+            <b className="mt-2 block text-sm">نتایج زنده</b>
+            <p className="mt-1 text-[9px] text-slate-500">فقط بازی‌های زنده داخل Scope</p>
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
 }
