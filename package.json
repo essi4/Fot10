@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:visualization": "node --test tests/match-visualization-normalizer.test.js"
+    "test:visualization": "node --test tests/match-visualization-normalizer.test.js tests/match-visualization-flow.test.js"
   },
   "dependencies": {
     "next": "14.2.35",
