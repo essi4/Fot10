@@ -73,7 +73,7 @@ function ScopeSelector({ selected, onSelect, counts }) {
           <p className="text-[9px] font-black text-slate-400">فوتبال منتخب</p>
           <h2 className="text-sm font-black text-slate-950">انتخاب محدوده مسابقات</h2>
         </div>
-        <span className="rounded-full bg-slate-100 px-2 py-1 text-[8px] font-black text-slate-500">۱۰ لیگ + ملی</span>
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-[8px] font-black text-slate-500">۱۲ لیگ + ملی</span>
       </div>
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {items.map(({ key, label, icon: Icon }) => {
@@ -265,7 +265,7 @@ function MatchesContent() {
             <div className="min-w-0">
               <div className="text-[9px] font-black text-slate-400">FOT10</div>
               <h1 className="text-xl font-black">فوتبال منتخب</h1>
-              <p className="text-[10px] font-bold text-slate-500">۱۰ لیگ منتخب و تیم‌های ملی بزرگسالان</p>
+              <p className="text-[10px] font-bold text-slate-500">۱۲ لیگ منتخب و تیم‌های ملی بزرگسالان</p>
             </div>
           </div>
           <button onClick={() => loadMatches({ manual: true })} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700" aria-label="به‌روزرسانی مسابقات">
