@@ -280,7 +280,9 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
         <div className="absolute left-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-l-0 border-[#f5f1dc]/75" />
         <div className="absolute right-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-r-0 border-[#f5f1dc]/75" />
 
-        <RetroBroadcastPlayers match={match} football360Linked={football360Linked} lineups={lineups} />\n\n        {located.map((p) => {
+        <RetroBroadcastPlayers match={match} football360Linked={football360Linked} lineups={lineups} />
+
+        {located.map((p) => {
           const side = eventTeamSide(p, match);
           const active = p.event_id === selectedCanonical?.event_id;
           return (
@@ -351,18 +353,36 @@ function Visualization() {
   const [football360Live, setFootball360Live] = useState([]);
 
   const scoped = useMemo(() => fixtures.filter(isMatchVisualizationScope), [fixtures]);
+  const broadcastCandidates = useMemo(() => football360Live.map((item) => ({
+    ...item,
+    football360Only: true,
+    detailAvailable: false,
+    statusShort: item.statusShort || "LIVE",
+    league: item.league || "پخش زنده",
+  })), [football360Live]);
+  const candidates = useMemo(() => {
+    const seen = new Set();
+    const result = [];
+    for (const item of [...scoped, ...broadcastCandidates]) {
+      const key = String(item.id || `${item.home}|${item.away}`);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(item);
+    }
+    return result;
+  }, [broadcastCandidates, scoped]);
   const activeDemo = demo;
   const filtered = useMemo(
     () =>
       league === "all"
-        ? scoped
-        : scoped.filter((x) => getMatchVisualizationLeague(x)?.key === league),
-    [league, scoped],
+        ? candidates
+        : candidates.filter((x) => getMatchVisualizationLeague(x)?.key === league),
+    [league, candidates],
   );
 
   const match = activeDemo
     ? DEMO.details
-    : details || scoped.find((x) => String(x.id) === String(selected));
+    : details || candidates.find((x) => String(x.id) === String(selected));
 
   const demoEvents = useMemo(
     () =>
@@ -412,6 +432,7 @@ function Visualization() {
       setSelected(filtered[0]?.id ? String(filtered[0].id) : "");
       setDetails(null);
       setRawEvents([]);
+      setLineups([]);
     }
   }, [activeDemo, league, filtered, selected]);
 
@@ -448,6 +469,7 @@ function Visualization() {
       const next = json.matches.filter(isMatchVisualizationScope);
       setFixtures(next);
       setSelected((current) => current || (next[0]?.id ? String(next[0].id) : ""));
+
       setError("");
     } catch (e) {
       setError(e?.message || "دریافت مسابقات ناموفق بود.");
@@ -456,6 +478,7 @@ function Visualization() {
 
   async function loadMatch(id, quiet = false) {
     if (!id) return;
+    const signal = football360Live.find((item) => String(item.id || "") === String(id));
     try {
       const [detailsResponse, eventsResponse, lineupsResponse] = await Promise.all([
         fetch(`/api/football/fixture?id=${id}&section=details`, { cache: "no-store" }),
@@ -470,7 +493,23 @@ function Visualization() {
       ]);
 
       if (!detailsResponse.ok || !detailsJson?.ok || !detailsJson?.data) {
-        throw new Error(detailsJson?.error || "جزئیات مسابقه در دسترس نیست.");
+        if (!signal) throw new Error(detailsJson?.error || "جزئیات مسابقه در دسترس نیست.");
+        const fallbackDetails = {
+          fixture: { status: { short: "LIVE", elapsed: signal.elapsed ?? null }, date: signal.date || null },
+          teams: {
+            home: { id: `360-home-${signal.id || signal.home}`, name: signal.home, logo: signal.homeLogo || "" },
+            away: { id: `360-away-${signal.id || signal.away}`, name: signal.away, logo: signal.awayLogo || "" },
+          },
+          goals: { home: signal.homeScore ?? null, away: signal.awayScore ?? null },
+          league: { name: signal.league || "پخش زنده" },
+        };
+        setDetails(fallbackDetails);
+        setLineups([]);
+        setRawEvents([]);
+        setLastMatchDataAt(Date.now());
+        setStale(false);
+        setError("");
+        return;
       }
 
       setDetails(detailsJson.data);
@@ -553,7 +592,7 @@ function Visualization() {
               className={`min-w-[180px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation ${String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]"}`}
             >
               <span className="block truncate text-[8px] text-slate-500">
-                {fixture.league || "—"} · {fixture.statusShort || "—"}
+                {fixture.football360Only ? "۳۶۰ · پخش زنده" : (fixture.league || "—")} · {fixture.statusShort || "—"}
               </span>
               <span className="mt-1 block truncate text-[9px] font-black text-slate-300">
                 {fixture.home || "—"} · {fixture.away || "—"}
