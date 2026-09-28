@@ -15,12 +15,18 @@ test("match center exposes exactly ten selected club leagues", () => {
 });
 
 test("national competition scope is senior-only", () => {
-  const source = read("lib/match-center-scope.js");
-  assert.match(source, /uefa.*under/i);
-  assert.match(source, /international friendlies/);
-  assert.match(source, /world cup/);
-  assert.match(source, /nations league/);
-  assert.doesNotMatch(source, /european under/);
+  const { isMatchCenterScope } = require("../lib/match-center-scope.js");
+  assert.equal(isMatchCenterScope({ league: "UEFA Nations League", country: "Europe" }), true);
+  assert.equal(isMatchCenterScope({ league: "FIFA World Cup", country: "World" }), true);
+  assert.equal(isMatchCenterScope({ league: "International Friendlies", country: "World" }), true);
+  for (const league of [
+    "UEFA European Under-21 Championship",
+    "UEFA European Under-19 Championship",
+    "FIFA U20 World Cup",
+    "FIFA U17 World Cup",
+  ]) {
+    assert.equal(isMatchCenterScope({ league, country: "World" }), false, league);
+  }
 });
 
 test("club competitions outside the ten leagues are not granted by country alone", () => {
