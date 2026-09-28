@@ -2,23 +2,13 @@ import { NextResponse } from "next/server";
 import { getMatchesResilient } from "../../../../lib/football-resilient";
 import { getSportsDbLiveMatches } from "../../../../lib/thesportsdb-day";
 import { runWithApiFootballCircuit } from "../../../../lib/api-football-circuit";
+import { isMatchCenterScope } from "../../../../lib/match-center-scope";
 
 export const dynamic = "force-dynamic";
 
 const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
 const LIVE_CACHE_SECONDS = 15;
 const LIVE_STALE_SECONDS = 15;
-
-const LIVE_COUNTRIES = new Set([
-  "iran", "ایران", "spain", "اسپانیا", "england", "انگلیس", "italy", "ایتالیا", "france", "فرانسه",
-  "germany", "آلمان", "netherlands", "هلند", "turkey", "ترکیه", "saudi arabia", "عربستان سعودی",
-  "qatar", "قطر", "portugal", "پرتغال", "belgium", "بلژیک", "austria", "اتریش", "denmark", "دانمارک",
-  "scotland", "اسکاتلند", "czech republic", "جمهوری چک", "sweden", "سوئد", "croatia", "کرواسی", "greece", "یونان",
-]);
-const LIVE_LEAGUES = new Set([
-  "uefa champions league", "afc champions league", "afc champions league elite", "afc champions league two",
-  "champions league", "لیگ قهرمانان اروپا", "لیگ قهرمانان آسیا",
-]);
 
 function liveHeaders() {
   return { "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}` };
@@ -37,14 +27,8 @@ function isActuallyLive(match) {
   return LIVE_CODES.has(status) || /LIVE|IN PLAY|HALF/i.test(status);
 }
 
-function normalizeScope(value) {
-  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 function isInLiveScope(match) {
-  const country = normalizeScope(match?.country);
-  const league = normalizeScope(match?.league);
-  return LIVE_COUNTRIES.has(country) || LIVE_LEAGUES.has(league) || /champions league|لیگ قهرمانان/i.test(league);
+  return isMatchCenterScope(match);
 }
 
 async function fallbackLiveMatches() {
