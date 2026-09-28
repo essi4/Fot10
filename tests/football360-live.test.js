@@ -20,6 +20,13 @@ test("normalizes a Football360 live payload and keeps only FOT10 scope", () => {
   assert.equal(matches[0].broadcastAvailable, true);
 });
 
+test("allows live matches outside the twelve-team selection", () => {
+  const payload = [{ home: "Japan", away: "Mexico", status: "live", league: "International Friendlies" }];
+  const matches = normalizeFootball360LiveResponse(payload);
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].id, "360-japan-mexico");
+});
+
 test("recognizes normalized Türkiye team names", () => {
   const payload = [{ home: "Türkiye", away: "Italy", status: "live", league: "UEFA Nations League" }];
   const matches = normalizeFootball360LiveResponse(payload);
