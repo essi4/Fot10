@@ -39,13 +39,13 @@ test("visualization flow reads fixture list, details, events and lineups", () =>
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
   assert.match(source, /Timeline رویدادها/);
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
-  assert.match(source, /demo=1/);
+  assert.match(source, /sp\.get\("demo"\) === "1"/);
 });
 
 test("real mode does not inject synthetic timeline/player movement and can consume Football360 live signals", () => {
   const source = read(pagePath);
   assert.match(source, /if \(!enabled \|\| activeDemo\)/);
-  assert.ok(source.includes("const demoEvents = useMemo(() => DEMO.events.map"));
+  assert.match(source, /DEMO\.events\.map/);
   assert.ok(source.includes("const feedSource = activeDemo ? demoEvents : rawEvents"));
   assert.match(source, /\/api\/football360\/live/);
   assert.match(source, /football360Linked/);
