@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Flame } from "lucide-react";
+import { Activity, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -29,18 +29,34 @@ export default function HomeMatchdayHub() {
     return () => { alive = false; clearInterval(timer); };
   }, []);
 
-  return <section className="mt-4 rounded-3xl border border-white/10 bg-gradient-to-br from-white/[.045] to-white/[.015] p-3.5 shadow-xl">
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <div>
-        <div className="flex items-center gap-2"><Flame size={15} className="text-orange-300"/><h2 className="text-sm font-black">مرکز مسابقه</h2></div>
-        <p className="mt-1 text-[9px] font-bold text-slate-600">{today} · مسیر سریع دنبال‌کردن فوتبال</p>
+  return (
+    <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_8px_25px_rgba(15,23,42,.05)]">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Activity size={17} className="text-slate-700" />
+            <h2 className="text-sm font-black text-slate-950">وضعیت مسابقات</h2>
+          </div>
+          <p className="mt-1 text-[9px] font-bold text-slate-400">{today} · داده‌های مسابقات منتخب</p>
+        </div>
+        <Link href="/matches" className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[8px] font-black text-slate-600">
+          نمایش همه <ChevronLeft size={11} className="inline" />
+        </Link>
       </div>
-      <Link href="/matches" className="rounded-xl border border-white/10 bg-white/[.035] px-2.5 py-2 text-[8px] font-black text-slate-400">نمایش همه <ChevronLeft size={11} className="inline"/></Link>
-    </div>
 
-    <Link href="/matches?live=1" className="flex items-center justify-between rounded-2xl border border-red-400/15 bg-red-500/[.07] px-3 py-2.5 transition hover:border-red-400/30">
-      <div className="flex items-center gap-2.5"><span className="relative grid h-8 w-8 place-items-center rounded-xl bg-red-500/10"><span className="absolute h-2 w-2 animate-ping rounded-full bg-red-400/70"/><span className="relative h-2 w-2 rounded-full bg-red-400"/></span><div><div className="text-[10px] font-black text-white">پالس زنده</div><div className="mt-0.5 text-[8px] font-bold text-slate-500">به‌روزرسانی خودکار هر ۳۰ ثانیه</div></div></div>
-      <div className="text-left"><div className="text-lg font-black tabular-nums text-red-300">{liveCount === null ? "—" : liveCount}</div><div className="text-[7px] font-black text-red-300/70">مسابقه زنده</div></div>
-    </Link>
-  </section>;
+      <Link href="/matches?live=1" className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition hover:border-slate-300">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-white text-slate-700 shadow-sm"><Activity size={15} /></span>
+          <div>
+            <div className="text-[10px] font-black text-slate-950">بازی‌های زنده</div>
+            <div className="mt-0.5 text-[8px] font-bold text-slate-400">به‌روزرسانی خودکار هر ۳۰ ثانیه</div>
+          </div>
+        </div>
+        <div className="text-left">
+          <div className="text-lg font-black tabular-nums text-slate-900">{liveCount === null ? "—" : liveCount}</div>
+          <div className="text-[7px] font-black text-slate-400">مسابقه زنده</div>
+        </div>
+      </Link>
+    </section>
+  );
 }
