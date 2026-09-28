@@ -5,6 +5,35 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, ChevronLeft, Heart, Radio, RefreshCw, Shield, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { getMatchCenterScope, MATCH_CENTER_CLUB_LEAGUES } from "../../lib/match-center-scope";
+
+const COUNTRY_FLAGS = Object.fromEntries(MATCH_CENTER_CLUB_LEAGUES.map((item) => [item.key, item.flag]));
+const TEAM_FLAGS = [
+  [/argentina|آرژانتین/i, "🇦🇷"],
+  [/brazil|brasil|برزیل/i, "🇧🇷"],
+  [/iran|ایران/i, "🇮🇷"],
+  [/england|انگلیس/i, "🇬🇧"],
+  [/spain|اسپانیا/i, "🇪🇸"],
+  [/italy|ایتالیا/i, "🇮🇹"],
+  [/germany|آلمان/i, "🇩🇪"],
+  [/france|فرانسه/i, "🇫🇷"],
+  [/netherlands|هلند/i, "🇳🇱"],
+  [/portugal|پرتغال/i, "🇵🇹"],
+  [/turkey|ترکیه/i, "🇹🇷"],
+  [/saudi|عربستان/i, "🇸🇦"],
+];
+
+function flagForTeam(name) {
+  const match = TEAM_FLAGS.find(([pattern]) => pattern.test(String(name || "")));
+  return match?.[1] || "";
+}
+
+function scopeMeta(match) {
+  const scope = getMatchCenterScope(match);
+  return {
+    flag: scope?.kind === "club-league" ? scope.entry?.flag || COUNTRY_FLAGS[scope.key] || "" : "🌍",
+    badge: scope?.key === "Argentina" ? "LPF" : scope?.key === "Brazil" ? "CBF" : "",
+  };
+}
 import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const SETTINGS_KEY = "fot10-settings";
@@ -34,7 +63,7 @@ function scopeKey(match) {
 function ScopeSelector({ selected, onSelect, counts }) {
   const items = [
     { key: "all", label: "همه", icon: Shield },
-    ...MATCH_CENTER_CLUB_LEAGUES.map(({ key, label }) => ({ key, label, icon: Trophy })),
+    ...MATCH_CENTER_CLUB_LEAGUES.map(({ key, label, flag }) => ({ key, label: `${flag || ""} ${label}`.trim(), icon: Trophy })),
     { key: "national-team", label: "ملی", icon: Shield },
   ];
   return (
@@ -267,14 +296,14 @@ function MatchesContent() {
             {Object.entries(grouped).map(([league, list]) => (
               <div key={league}>
                 <div className="mb-2 flex items-center justify-between px-1">
-                  <div className="text-xs font-black text-slate-700">{league}</div>
+                  <div className="flex items-center gap-2 text-xs font-black text-slate-700">{(() => { const meta = scopeMeta(list[0]); return <><span className="text-base leading-none">{meta.flag}</span><span>{league}</span>{meta.badge && <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[7px] font-black text-slate-500">{meta.badge}</span>}</>; })()}</div>
                   <span className="text-[8px] font-bold text-slate-400">{list.length} بازی</span>
                 </div>
                 <div className="space-y-2.5">
                   {list.map((g) => (
                     <Link key={g.id} href={g.detailAvailable === false ? `/matches?date=${date}` : `/matches/${g.id}`} className="block rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-[0_8px_25px_rgba(15,23,42,.04)] transition active:scale-[.995] hover:border-slate-300">
                       <div className="mb-3 flex items-center justify-between gap-2">
-                        <span className="text-[8px] font-bold text-slate-400">{g.country || "فوتبال منتخب"} · {g.league}</span>
+                        <span className="flex min-w-0 items-center gap-1.5 text-[8px] font-bold text-slate-400"><span className="text-sm leading-none">{scopeMeta(g).flag}</span><span className="truncate">{g.country || "فوتبال منتخب"} · {g.league}</span></span>
                         <div className="flex items-center gap-1.5">
                           <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleFavorite(g); }} className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500" aria-label={favoriteMatches.some((item) => favoriteKey(item) === favoriteKey(g)) ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}>
                             <Heart size={15} fill={favoriteMatches.some((item) => favoriteKey(item) === favoriteKey(g)) ? "currentColor" : "none"} />
@@ -284,7 +313,7 @@ function MatchesContent() {
                       </div>
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5">
                         <div className="min-w-0 text-center">
-                          <div className="mx-auto grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-slate-50 text-sm font-black text-slate-700">{g.homeLogo ? <img src={g.homeLogo} alt="" className="h-8 w-8 object-contain"/> : g.home[0]}</div>
+                          <div className="mx-auto grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-slate-50 text-sm font-black text-slate-700">{g.homeLogo ? <img src={g.homeLogo} alt="" className="h-8 w-8 object-contain"/> : <><span className="text-lg">{flagForTeam(g.home)}</span>{!flagForTeam(g.home) && g.home[0]}</>}</div>
                           <div className="mt-2 truncate text-[11px] font-black text-slate-900">{g.home}</div>
                         </div>
                         <div className="text-center">
@@ -292,7 +321,7 @@ function MatchesContent() {
                           <div className="mt-1 text-[7px] font-bold text-slate-400">{g.live ? "در جریان" : g.finished ? "پایان" : "زمان مسابقه"}</div>
                         </div>
                         <div className="min-w-0 text-center">
-                          <div className="mx-auto grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-slate-50 text-sm font-black text-slate-700">{g.awayLogo ? <img src={g.awayLogo} alt="" className="h-8 w-8 object-contain"/> : g.away[0]}</div>
+                          <div className="mx-auto grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-slate-50 text-sm font-black text-slate-700">{g.awayLogo ? <img src={g.awayLogo} alt="" className="h-8 w-8 object-contain"/> : <><span className="text-lg">{flagForTeam(g.away)}</span>{!flagForTeam(g.away) && g.away[0]}</>}</div>
                           <div className="mt-2 truncate text-[11px] font-black text-slate-900">{g.away}</div>
                         </div>
                       </div>
