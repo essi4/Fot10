@@ -19,7 +19,7 @@ test("flow contract keeps ten selected club leagues plus national competitions",
     assert.match(source, new RegExp("leagueIds: \\[" + leagueId + "\\]"));
   }
   assert.match(source, /NATIONAL_COMPETITION_PATTERNS/);
-  assert.match(source, /UEFA.*under/);
+  assert.match(source, /uefa.*under/i);
   assert.match(source, /world cup/);
 });
 
