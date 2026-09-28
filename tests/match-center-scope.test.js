@@ -14,8 +14,8 @@ test("match center exposes exactly ten selected club leagues", () => {
   }
 });
 
-test("national competition scope is senior-only", () => {
-  const { isMatchCenterScope } = require("../lib/match-center-scope.js");
+test("national competition scope is senior-only", async () => {
+  const { isMatchCenterScope } = await import("../lib/match-center-scope.js");
   assert.equal(isMatchCenterScope({ league: "UEFA Nations League", country: "Europe" }), true);
   assert.equal(isMatchCenterScope({ league: "FIFA World Cup", country: "World" }), true);
   assert.equal(isMatchCenterScope({ league: "International Friendlies", country: "World" }), true);
