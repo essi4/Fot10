@@ -13,7 +13,7 @@ export default function NationalTeamsPage() {
           </Link>
           <div>
             <div className="text-[9px] font-black tracking-[.18em] text-emerald-300">NATIONAL MATCHES</div>
-            <h1 className="mt-1 text-xl font-black">بازی‌های ملی</h1>
+            <h1 className="mt-1 text-xl font-black">تیم‌های ملی بزرگسالان</h1>
             <p className="mt-1 text-[10px] text-slate-500">مسابقات واقعی تیم‌های ملی داخل مرکز بازی‌ها</p>
           </div>
         </header>
@@ -25,9 +25,9 @@ export default function NationalTeamsPage() {
               <Flag size={25} />
             </div>
             <div>
-              <h2 className="text-lg font-black">مسابقات ملی منتخب</h2>
+              <h2 className="text-lg font-black">مسابقات تیم‌های ملی بزرگسالان</h2>
               <p className="mt-2 text-[10px] leading-5 text-slate-400">
-                بازی‌های ملی بزرگسالان و رده‌های ملی مثل U21، U19 و رقابت‌های بین‌المللی از همان Scope اصلی FOT10 دریافت می‌شوند.
+                بازی‌های رسمی، انتخابی و دوستانه تیم‌های ملی بزرگسالان از همان Scope اصلی FOT10 دریافت می‌شوند. رده‌های پایه مثل U21، U19 و U17 در این مرکز نمایش داده نمی‌شوند.
               </p>
             </div>
           </div>
