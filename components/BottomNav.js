@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   ["خانه", House, "/"],
-  ["فوتبال منتخب", Shield, "/matches"],
+  ["فوتبال منتخب", Shield, "/leagues"],
   ["نتایج زنده", Radio, "/matches?live=1"],
   ["علاقه‌مندی", Heart, "/favorites"],
 ];
