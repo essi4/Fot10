@@ -16,7 +16,7 @@ test("flow contract keeps twelve selected club leagues plus national competition
   const entries = source.match(/{ key:/g) || [];
   assert.equal(entries.length, 12);
   for (const leagueId of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307, 128, 71]) {
-    assert.match(source, new RegExp("leagueIds: \[" + leagueId + "\]"));
+    assert.match(source, new RegExp("leagueIds: \\[" + leagueId + "\\]"));
   }
   assert.match(source, /NATIONAL_COMPETITION_PATTERNS/);
   assert.match(source, /YOUTH_NATIONAL_MARKER/);
@@ -37,25 +37,28 @@ test("visualization flow reads fixture list, details, events and lineups", () =>
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=details/);
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=events/);
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
-  assert.match(source, /Timeline واقعی رویدادها/);
+  assert.match(source, /Timeline رویدادها/);
+  assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
   assert.match(source, /demo=1/);
 });
 
-test("real mode never advances the event timeline as a synthetic replay", () => {
+test("real mode does not inject synthetic timeline/player movement and can consume Football360 live signals", () => {
   const source = read(pagePath);
-  assert.match(source, /if \(!enabled \|\| stale \|\| !running \|\| !activeDemo/);
+  assert.match(source, /if \(!enabled \|\| activeDemo\)/);
   assert.ok(source.includes("const demoEvents = useMemo(() => DEMO.events.map"));
   assert.ok(source.includes("const feedSource = activeDemo ? demoEvents : rawEvents"));
-  assert.match(source, /playersFor\(match \|\| DEMO\.details, event, tick, lineups, activeDemo\)/);
+  assert.match(source, /\/api\/football360\/live/);
+  assert.match(source, /football360Linked/);
+  assert.match(source, /چیدمان پیکسلی · نمایشی؛ موقعیت لحظه‌ای نیست/);
 });
 
 test("mobile QA contract protects touch targets, reduced motion and selection state", () => {
   const source = read(pagePath);
   assert.match(source, /min-h-\[44px\]/);
   assert.match(source, /touch-manipulation/);
-  assert.match(source, /prefers-reduced-motion/);
+  assert.match(source, /motion-reduce/);
   assert.match(source, /setSelected\(\(current\) => current \|\|/);
-  assert.match(source, /setStale\(true\); setRunning\(false\)/);
+  assert.match(source, /setStale\(true\)/);
   assert.match(source, /lastMatchDataAt/);
   const fixturesStart = source.indexOf("async function loadFixtures");
   const matchStart = source.indexOf("async function loadMatch");
