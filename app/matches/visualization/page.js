@@ -2,224 +2,310 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Pause, Play, RotateCcw, Radio, ShieldAlert, Zap } from "lucide-react";
+import { ArrowRight, Pause, Play, Radio, RotateCcw, ShieldAlert, Zap } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import {
+  MATCH_VISUALIZATION_SCOPE,
+  getMatchVisualizationLeague,
+  isMatchVisualizationScope,
+} from "../../../lib/match-visualization-scope";
 
-const TEAM = {
-  home: { name: "انگلیس", color: "#2563eb", soft: "rgba(37,99,235,.18)", text: "#dbeafe" },
-  away: { name: "اسپانیا", color: "#dc2626", soft: "rgba(220,38,38,.18)", text: "#fee2e2" },
+const DEMO = {
+  details: {
+    fixture: { status: { short: "FT", elapsed: 90 } },
+    teams: { home: { name: "انگلیس" }, away: { name: "اسپانیا" } },
+    goals: { home: 2, away: 1 },
+  },
+  events: [
+    ["kickoff", 1, "", "شروع مسابقه", "•"],
+    ["Card", 22, "اسپانیا", "کارت زرد اسپانیا", "🟨"],
+    ["Card", 35, "انگلیس", "کارت قرمز انگلیس", "🟥"],
+    ["Goal", 42, "انگلیس", "گل انگلیس", "⚽"],
+    ["halftime", 45, "", "پایان نیمه اول", "•"],
+    ["subst", 57, "اسپانیا", "تعویض اسپانیا", "🔄"],
+    ["shot", 66, "اسپانیا", "شوت اسپانیا", "🎯"],
+    ["Goal", 73, "اسپانیا", "گل اسپانیا", "⚽"],
+    ["Goal", 84, "انگلیس", "گل انگلیس", "⚽"],
+    ["finished", 90, "", "پایان مسابقه", "•"],
+  ],
 };
 
-const EVENT_SEQUENCE = [
-  { at: 0, type: "kickoff", minute: 1, label: "شروع مسابقه" },
-  { at: 8, type: "attack", team: "home", minute: 9, label: "حمله انگلیس" },
-  { at: 16, type: "shot", team: "home", minute: 17, label: "شوت انگلیس" },
-  { at: 25, type: "attack", team: "away", minute: 26, label: "حمله اسپانیا" },
-  { at: 35, type: "card", team: "away", minute: 35, label: "کارت زرد اسپانیا" },
-  { at: 48, type: "goal", team: "home", minute: 42, label: "گل انگلیس" },
-  { at: 54, type: "halftime", minute: 45, label: "پایان نیمه اول" },
-  { at: 70, type: "attack", team: "home", minute: 52, label: "حمله انگلیس" },
-  { at: 82, type: "substitution", team: "away", minute: 57, label: "تعویض اسپانیا" },
-  { at: 94, type: "shot", team: "away", minute: 66, label: "شوت اسپانیا" },
-  { at: 108, type: "goal", team: "away", minute: 73, label: "گل اسپانیا" },
-  { at: 132, type: "finished", minute: 90, label: "پایان مسابقه" },
-];
-
-const PLAYER_NAMES = {
-  home: ["Pickford", "Walker", "Stones", "Guehi", "Shaw", "Rice", "Bellingham", "Foden", "Saka", "Kane", "Grealish"],
-  away: ["Simon", "Carvajal", "Le Normand", "Laporte", "Cucurella", "Rodri", "Pedri", "Olmo", "Yamal", "Morata", "Williams"],
+const BASE = {
+  home: [[9,50],[22,18],[22,38],[22,62],[22,82],[38,28],[38,48],[38,68],[57,22],[57,50],[57,78]],
+  away: [[91,50],[78,18],[78,38],[78,62],[78,82],[62,28],[62,48],[62,68],[43,22],[43,50],[43,78]],
+};
+const FALLBACK_NAMES = {
+  home: ["Pickford","Walker","Stones","Guehi","Shaw","Rice","Bellingham","Foden","Saka","Kane","Grealish"],
+  away: ["Simon","Carvajal","Le Normand","Laporte","Cucurella","Rodri","Pedri","Olmo","Yamal","Morata","Williams"],
 };
 
-const BASE_HOME = [
-  [9,50],[22,18],[22,38],[22,62],[22,82],[38,28],[38,48],[38,68],[57,22],[57,50],[57,78]
-];
-const BASE_AWAY = [
-  [91,50],[78,18],[78,38],[78,62],[78,82],[62,28],[62,48],[62,68],[43,22],[43,50],[43,78]
-];
-
-function seededOffset(index, tick, teamSign) {
-  const wave = Math.sin((tick + index * 1.7) * 0.9) * 2.2;
-  const drift = Math.cos((tick * 0.65) + index) * 1.4;
-  return {
-    x: teamSign * (Math.abs(wave) + 1.2) + drift * 0.22,
-    y: Math.sin(tick * 0.7 + index) * 1.7,
-  };
+function todayTehran() {
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date()).reduce((a, x) => ({ ...a, [x.type]: x.value }), {});
+  return \`\${p.year}-\${p.month}-\${p.day}\`;
 }
 
-function buildPlayers(tick, ball, eventType) {
-  return [
-    ...BASE_HOME.map(([x,y], i) => {
-      const o = seededOffset(i, tick, 1);
-      const push = eventType === "attack" || eventType === "shot" || eventType === "goal" ? 4 : 0;
-      return { id: `h-${i}`, team: "home", name: PLAYER_NAMES.home[i], x: Math.min(95, x + o.x + push), y: Math.max(7, Math.min(93, y + o.y)), state: eventType === "goal" ? "celebrate" : push ? "attack" : "run" };
-    }),
-    ...BASE_AWAY.map(([x,y], i) => {
-      const o = seededOffset(i, tick, -1);
-      const push = eventType === "attack" || eventType === "shot" || eventType === "goal" ? 4 : 0;
-      return { id: `a-${i}`, team: "away", name: PLAYER_NAMES.away[i], x: Math.max(5, x + o.x - (eventType === "attack" && eventType !== "goal" ? push : 0)), y: Math.max(7, Math.min(93, y + o.y)), state: eventType === "goal" ? "celebrate" : push ? "attack" : "run" };
-    }),
-  ].map((p) => ({ ...p, distance: Math.hypot(p.x - ball.x, p.y - ball.y) }));
+function norm(v = "") {
+  return String(v).toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim();
 }
 
-function ballFor(eventType, team, tick) {
-  const wave = Math.sin(tick * 0.8) * 8;
-  if (eventType === "goal") return team === "home" ? { x: 96, y: 50 } : { x: 4, y: 50 };
-  if (eventType === "shot") return team === "home" ? { x: 84, y: 48 + wave * .3 } : { x: 16, y: 52 + wave * .3 };
-  if (eventType === "attack") return team === "home" ? { x: 70, y: 46 + wave } : { x: 30, y: 54 + wave };
-  return { x: 50 + Math.sin(tick * .7) * 15, y: 50 + Math.cos(tick * .5) * 18 };
+function phaseOf(details) {
+  const s = String(details?.fixture?.status?.short || "").toUpperCase();
+  if (["FT","AET","PEN"].includes(s)) return "finished";
+  if (s === "HT") return "halftime";
+  if (["1H","2H","ET","P","BT","LIVE","IN PLAY"].includes(s)) return "live";
+  if (["PST","CANC","ABD","AWD","WO"].includes(s)) return "cancelled";
+  return "upcoming";
+}
+
+function normalizeEvents(raw, details, demo) {
+  if (demo) {
+    return DEMO.events.map(([type, minute, team, label, icon], i) => ({
+      key: \`d-\${i}\`, type: type === "Goal" ? "goal" : type === "Card" ? "card" : type === "subst" ? "substitution" : type,
+      minute, team, label, icon, red: type === "Card" && /red/i.test(label),
+    }));
+  }
+
+  const out = [{ key: "kickoff", type: "kickoff", minute: 1, team: "", label: "شروع مسابقه", icon: "•" }];
+  for (const e of Array.isArray(raw) ? raw : []) {
+    const type = String(e?.type || "").toLowerCase();
+    const detail = String(e?.detail || "");
+    const minute = Number(e?.time?.elapsed);
+    const team = e?.team?.name || "";
+    if (!Number.isFinite(minute)) continue;
+    if (type === "goal") out.push({ key: \`goal-\${minute}-\${team}-\${detail}\`, type: "goal", minute, team, label: \`گل \${team}\`, icon: "⚽" });
+    else if (type === "card") {
+      const red = /red|second yellow/i.test(detail);
+      out.push({ key: \`card-\${minute}-\${team}-\${detail}\`, type: "card", minute, team, label: \`\${red ? "کارت قرمز" : "کارت زرد"} \${team}\`, icon: red ? "🟥" : "🟨", red });
+    } else if (type === "subst" || /substitution/i.test(detail)) out.push({ key: \`subst-\${minute}-\${team}\`, type: "substitution", minute, team, label: \`تعویض \${team}\`, icon: "🔄" });
+    else if (type === "var") out.push({ key: \`var-\${minute}-\${team}\`, type: "var", minute, team, label: \`VAR \${team}\`, icon: "📺" });
+    else if (/shot|missed penalty/i.test(detail)) out.push({ key: \`shot-\${minute}-\${team}-\${detail}\`, type: "shot", minute, team, label: \`شوت \${team}\`, icon: "🎯" });
+  }
+
+  const status = String(details?.fixture?.status?.short || "").toUpperCase();
+  if (out.some((e) => e.minute >= 45) || ["HT","2H","ET","FT","AET","PEN"].includes(status)) {
+    out.push({ key: "halftime", type: "halftime", minute: 45, team: "", label: "پایان نیمه اول", icon: "•" });
+  }
+  if (["FT","AET","PEN"].includes(status)) {
+    out.push({
+      key: "finished",
+      type: "finished",
+      minute: Number(details?.fixture?.status?.elapsed) || 90,
+      team: "",
+      label: "پایان مسابقه",
+      icon: "•",
+    });
+  }
+  return [...new Map(out.map((e) => [e.key, e])).values()].sort((a, b) => a.minute - b.minute);
+}
+
+function sideOf(details, team) {
+  const t = norm(team);
+  if (t && t === norm(details?.teams?.home?.name)) return "home";
+  if (t && t === norm(details?.teams?.away?.name)) return "away";
+  return "";
+}
+
+function playersFor(details, event, tick, lineups) {
+  const h = lineups?.find((x) => x?.team?.id === details?.teams?.home?.id)?.startXI?.map((x) => x?.player?.name).filter(Boolean) || [];
+  const a = lineups?.find((x) => x?.team?.id === details?.teams?.away?.id)?.startXI?.map((x) => x?.player?.name).filter(Boolean) || [];
+  const names = { home: h.length === 11 ? h : FALLBACK_NAMES.home, away: a.length === 11 ? a : FALLBACK_NAMES.away };
+  const active = sideOf(details, event?.team);
+
+  const make = (team) => BASE[team].map(([x, y], i) => {
+    const sign = team === "home" ? 1 : -1;
+    const push = active === team && ["goal","shot","substitution"].includes(event?.type) ? 4 : 0;
+    return {
+      id: \`\${team}-\${i}\`,
+      team,
+      name: names[team][i] || \`بازیکن \${i + 1}\`,
+      x: team === "home" ? Math.min(95, x + sign * (1 + Math.abs(Math.sin((tick + i) * .8))) + push) : Math.max(5, x + sign * (1 + Math.abs(Math.sin((tick + i) * .8))) - push),
+      y: Math.max(7, Math.min(93, y + Math.sin(tick * .6 + i) * 1.5)),
+    };
+  });
+  return [...make("home"), ...make("away")];
+}
+
+function ballFor(details, event, tick) {
+  const side = sideOf(details, event?.team);
+  if (event?.type === "goal") return side === "home" ? { x: 96, y: 50 } : { x: 4, y: 50 };
+  if (event?.type === "shot") return side === "home" ? { x: 84, y: 48 } : { x: 16, y: 52 };
+  return { x: 50 + Math.sin(tick * .7) * 14, y: 50 + Math.cos(tick * .5) * 17 };
 }
 
 function Visualization() {
-  const searchParams = useSearchParams();
-  const flagEnabled = process.env.NEXT_PUBLIC_FOT10_MATCH_VISUALIZATION === "true" || searchParams.get("viz") === "1";
-  const [running, setRunning] = useState(true);
-  const [cancelled, setCancelled] = useState(false);
-  const [stale, setStale] = useState(false);
-  const [tick, setTick] = useState(0);
-  const [eventIndex, setEventIndex] = useState(0);
-  const [minute, setMinute] = useState(1);
-  const [score, setScore] = useState({ home: 0, away: 0 });
-  const [phase, setPhase] = useState("upcoming");
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [lastEvent, setLastEvent] = useState(EVENT_SEQUENCE[0]);
-  const [lastDataAt, setLastDataAt] = useState(Date.now());
+  const sp = useSearchParams();
+  const enabled = process.env.NEXT_PUBLIC_FOT10_MATCH_VISUALIZATION === "true" || sp.get("viz") === "1";
+  const demo = sp.get("demo") === "1";
+  const initialFixture = sp.get("fixture") || "";
 
-  const currentEvent = EVENT_SEQUENCE[Math.min(eventIndex, EVENT_SEQUENCE.length - 1)];
-  const ball = useMemo(() => ballFor(currentEvent.type, currentEvent.team, tick), [currentEvent, tick]);
-  const players = useMemo(() => buildPlayers(tick, ball, currentEvent.type), [tick, ball, currentEvent.type]);
+  const [fixtures, setFixtures] = useState([]);
+  const [selected, setSelected] = useState(initialFixture);
+  const [details, setDetails] = useState(null);
+  const [rawEvents, setRawEvents] = useState([]);
+  const [lineups, setLineups] = useState([]);
+  const [league, setLeague] = useState("all");
+  const [index, setIndex] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [running, setRunning] = useState(true);
+  const [stale, setStale] = useState(false);
+  const [reduced, setReduced] = useState(false);
+  const [error, setError] = useState("");
+  const [lastDataAt, setLastDataAt] = useState(0);
+
+  const scoped = useMemo(() => fixtures.filter(isMatchVisualizationScope), [fixtures]);
+  const activeDemo = demo || (!selected && !scoped.length && sp.get("viz") === "1");
+  const match = activeDemo ? DEMO.details : details || scoped.find((x) => String(x.id) === String(selected));
+  const sequence = useMemo(() => normalizeEvents(rawEvents, match, activeDemo), [rawEvents, match, activeDemo]);
+  const event = sequence[Math.min(index, Math.max(sequence.length - 1, 0))] || sequence[0] || null;
+  const phase = stale ? "stale" : activeDemo ? (event?.type === "finished" ? "finished" : event?.type === "halftime" ? "halftime" : "live") : phaseOf(match);
+  const players = useMemo(() => playersFor(match || DEMO.details, event, tick, lineups), [match, event, tick, lineups]);
+  const ball = useMemo(() => ballFor(match || DEMO.details, event, tick), [match, event, tick]);
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReducedMotion(media.matches);
-    sync();
-    media.addEventListener?.("change", sync);
-    return () => media.removeEventListener?.("change", sync);
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mq.matches);
+    sync(); mq.addEventListener?.("change", sync);
+    return () => mq.removeEventListener?.("change", sync);
   }, []);
 
-  useEffect(() => {
-    if (!flagEnabled) return;
-    const timer = setTimeout(() => setPhase("live"), 900);
-    return () => clearTimeout(timer);
-  }, [flagEnabled]);
-
-  useEffect(() => {
-    if (!running || cancelled || stale || !flagEnabled || phase === "finished") return;
-    const timer = setInterval(() => {
-      setTick((v) => v + 1);
-      setLastDataAt(Date.now());
-      setEventIndex((index) => {
-        const next = Math.min(index + 1, EVENT_SEQUENCE.length - 1);
-        const event = EVENT_SEQUENCE[next];
-        setMinute(event.minute);
-        setLastEvent(event);
-        if (event.type === "goal") setScore((s) => ({ ...s, [event.team]: s[event.team] + 1 }));
-        if (event.type === "halftime") setPhase("halftime");
-        else if (event.type === "finished") setPhase("finished");
-        else if (phase === "halftime") setPhase("live");
-        return next;
-      });
-    }, 1200);
-    return () => clearInterval(timer);
-  }, [running, cancelled, stale, flagEnabled, phase]);
-
-  useEffect(() => {
-    if (!running || cancelled || !flagEnabled) return;
-    const watchdog = setInterval(() => {
-      if (Date.now() - lastDataAt > 6000) setStale(true);
-    }, 1000);
-    return () => clearInterval(watchdog);
-  }, [running, cancelled, flagEnabled, lastDataAt]);
-
-  useEffect(() => {
-    if (currentEvent.type === "halftime") {
-      const timer = setTimeout(() => setPhase("live"), 1600);
-      return () => clearTimeout(timer);
+  async function loadFixtures() {
+    try {
+      const r = await fetch(\`/api/football/fixtures?date=\${todayTehran()}\`, { cache: "no-store" });
+      const j = await r.json();
+      if (!r.ok || !Array.isArray(j?.matches)) throw new Error("دریافت مسابقات ناموفق بود.");
+      const next = j.matches.filter(isMatchVisualizationScope);
+      setFixtures(next);
+      if (!selected && next[0]?.id) setSelected(String(next[0].id));
+      setLastDataAt(Date.now()); setStale(false); setError("");
+    } catch (e) {
+      setError(e?.message || "دریافت مسابقات ناموفق بود.");
     }
-  }, [currentEvent.type]);
-
-  function reset() {
-    setRunning(true); setCancelled(false); setStale(false); setTick(0); setEventIndex(0);
-    setMinute(1); setScore({ home: 0, away: 0 }); setPhase("upcoming"); setLastEvent(EVENT_SEQUENCE[0]); setLastDataAt(Date.now());
   }
 
-  function simulateStale() {
-    setStale(true);
-    setRunning(false);
+  async function loadMatch(id, quiet = false) {
+    if (!id) return;
+    try {
+      const [d, e, l] = await Promise.all([
+        fetch(\`/api/football/fixture?id=\${id}&section=details\`, { cache: "no-store" }),
+        fetch(\`/api/football/fixture?id=\${id}&section=events\`, { cache: "no-store" }),
+        fetch(\`/api/football/fixture?id=\${id}&section=lineups\`, { cache: "no-store" }),
+      ]);
+      const [dj, ej, lj] = await Promise.all([d.json(), e.json(), l.json()]);
+      if (!d.ok || !dj?.ok || !dj?.data) throw new Error(dj?.error || "جزئیات مسابقه در دسترس نیست.");
+      setDetails(dj.data);
+      setRawEvents(Array.isArray(ej?.data) ? ej.data : []);
+      setLineups(Array.isArray(lj?.data) ? lj.data : []);
+      setLastDataAt(Date.now()); setStale(false); setError("");
+    } catch (e) {
+      setError(e?.message || "داده مسابقه دریافت نشد.");
+      if (!quiet && lastDataAt && Date.now() - lastDataAt > 20000) setStale(true);
+    }
   }
 
-  if (!flagEnabled) {
-    return <section className="glass rounded-3xl p-6 text-center"><ShieldAlert className="mx-auto mb-3 text-amber-300" size={28}/><h2 className="font-black text-slate-200">Match Visualization غیرفعال است</h2><p className="mt-2 text-xs text-slate-500">این قابلیت پشت Feature Flag قرار دارد. برای Preview می‌توان آن را با پارامتر viz=1 فعال کرد.</p></section>;
+  useEffect(() => {
+    if (!enabled || activeDemo) return;
+    loadFixtures();
+    const t = setInterval(loadFixtures, 30000);
+    return () => clearInterval(t);
+  }, [enabled, activeDemo]);
+
+  useEffect(() => {
+    if (!enabled || activeDemo || !selected) return;
+    setIndex(0); setTick(0); setRunning(true);
+    loadMatch(selected);
+    const t = setInterval(() => loadMatch(selected, true), 15000);
+    return () => clearInterval(t);
+  }, [enabled, activeDemo, selected]);
+
+  useEffect(() => {
+    if (!enabled || stale || !running || sequence.length <= 1 || index >= sequence.length - 1) return;
+    const t = setInterval(() => {
+      setTick((v) => v + 1);
+      setIndex((v) => Math.min(v + 1, sequence.length - 1));
+    }, reduced ? 1400 : 1200);
+    return () => clearInterval(t);
+  }, [enabled, stale, running, sequence.length, index, reduced]);
+
+  useEffect(() => {
+    if (!enabled || activeDemo || !lastDataAt) return;
+    const t = setInterval(() => {
+      const s = String(match?.fixture?.status?.short || "").toUpperCase();
+      const terminal = ["FT","AET","PEN","CANC","ABD","AWD","WO"].includes(s);
+      if (!terminal && Date.now() - lastDataAt > 20000) {
+        setStale(true); setRunning(false);
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [enabled, activeDemo, lastDataAt, match]);
+
+  function selectFixture(id) {
+    setSelected(String(id));
+    const u = new URL(window.location.href);
+    u.searchParams.set("viz", "1");
+    u.searchParams.set("fixture", String(id));
+    u.searchParams.delete("demo");
+    window.history.replaceState(null, "", u);
   }
 
-  if (cancelled) {
-    return <section className="glass rounded-3xl p-6 text-center"><div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-500/10 text-slate-400">×</div><h2 className="font-black text-slate-200">مسابقه لغو شده</h2><p className="mt-2 text-xs text-slate-500">هیچ موقعیت یا رویداد جدیدی نمایش داده نمی‌شود.</p><button onClick={reset} className="mt-4 rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-slate-200">شروع مجدد دمو</button></section>;
-  }
+  if (!enabled) return <section className="glass rounded-3xl p-6 text-center"><ShieldAlert className="mx-auto mb-3 text-amber-300" size={28}/><h2 className="font-black text-slate-200">Match Visualization غیرفعال است</h2><p className="mt-2 text-xs text-slate-500">برای Preview می‌توان با viz=1 فعالش کرد.</p></section>;
+
+  const filtered = league === "all" ? scoped : scoped.filter((x) => getMatchVisualizationLeague(x)?.key === league);
+  const scoreHome = Number.isFinite(Number(match?.goals?.home)) ? match.goals.home : 0;
+  const scoreAway = Number.isFinite(Number(match?.goals?.away)) ? match.goals.away : 0;
 
   return <section className="space-y-3">
-    <div className="rounded-3xl border border-cyan-400/15 bg-gradient-to-br from-cyan-400/[.08] via-white/[.025] to-transparent p-4">
+    <div className="rounded-3xl border border-cyan-400/15 bg-cyan-400/[.05] p-4">
       <div className="flex items-start justify-between gap-3">
-        <div><div className="flex items-center gap-2"><Radio size={15} className="text-cyan-300"/><span className="text-[10px] font-black tracking-widest text-cyan-200">MATCH VISUALIZATION · V1</span></div><p className="mt-1 text-[9px] text-slate-500">نمایش شبیه‌سازی‌شده بر اساس رویدادها — مختصات بازیکنان واقعی نیست.</p></div>
-        <span className={`rounded-full px-2 py-1 text-[8px] font-black ${stale ? "bg-amber-400/10 text-amber-300" : phase === "finished" ? "bg-slate-400/10 text-slate-300" : "bg-emerald-400/10 text-emerald-300"}`}>{stale ? "STALE" : phase.toUpperCase()}</span>
+        <div className="min-w-0"><div className="flex items-center gap-2"><Radio size={15} className="shrink-0 text-cyan-300"/><span className="truncate text-[10px] font-black tracking-widest text-cyan-200">MATCH VISUALIZATION · V1 · MOBILE</span></div><p className="mt-1 text-[9px] leading-4 text-slate-500">فقط ۱۰ لیگ تعیین‌شده FOT10؛ حرکت‌ها نمایشی‌اند و مختصات واقعی بازیکنان نیستند.</p></div>
+        <span className={\`shrink-0 rounded-full px-2 py-1 text-[8px] font-black \${phase === "stale" ? "bg-amber-400/10 text-amber-300" : phase === "finished" ? "bg-slate-400/10 text-slate-300" : phase === "halftime" ? "bg-amber-400/10 text-amber-300" : "bg-emerald-400/10 text-emerald-300"}\`}>{phase === "stale" ? "STALE" : phase === "finished" ? "پایان" : phase === "halftime" ? "نیمه‌وقت" : phase === "upcoming" ? "UPCOMING" : "LIVE"}</span>
       </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-black/20 p-3 text-center">
-        <div><b className="text-sm text-blue-200">{TEAM.home.name}</b><strong className="mt-1 block text-2xl text-white">{score.home}</strong></div>
-        <div><span className="text-xs font-black text-slate-500">{minute}'</span><span className="mx-1 text-slate-700">·</span><span className="text-[9px] text-slate-500">{lastEvent.label}</span></div>
-        <div><b className="text-sm text-red-200">{TEAM.away.name}</b><strong className="mt-1 block text-2xl text-white">{score.away}</strong></div>
+
+      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">{MATCH_VISUALIZATION_SCOPE.map((x) => <button type="button" key={x.key} onClick={() => setLeague(x.key === league ? "all" : x.key)} className={\`min-w-[72px] shrink-0 rounded-xl border px-2 py-2.5 text-[8px] font-black touch-manipulation \${x.key === league ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-200" : "border-white/7 bg-white/[.025] text-slate-500"}\`}>{x.label}</button>)}</div>
+
+      {!activeDemo && <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scrollbar-none">{filtered.slice(0, 10).map((x) => <button type="button" key={x.id} onClick={() => selectFixture(x.id)} className={\`min-w-[170px] shrink-0 rounded-xl border p-2.5 text-right \${String(x.id) === String(selected) ? "border-emerald-300/25 bg-emerald-400/10" : "border-white/7 bg-white/[.02]"}\`}><span className="block truncate text-[8px] text-slate-500">{x.league}</span><span className="mt-1 block truncate text-[9px] font-black text-slate-300">{x.home} · {x.away}</span></button>)}</div>}
+    </div>
+
+    {activeDemo && <div className="rounded-2xl border border-amber-300/15 bg-amber-300/5 p-3 text-[9px] text-amber-100">Demo QA فقط برای تست کارت زرد/قرمز، گل، نیمه‌وقت، پایان و Reduced Motion است؛ داده واقعی را تغییر نمی‌دهد.</div>}
+    {error && <div className="rounded-2xl border border-red-400/15 bg-red-400/5 p-3 text-[9px] text-red-200">{error}</div>}
+
+    <div className="rounded-3xl border border-white/10 bg-white/[.025] p-3.5">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-black/20 p-3 text-center">
+        <div className="min-w-0"><b className="block truncate text-sm text-blue-200">{match?.teams?.home?.name || "میزبان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreHome}</strong></div>
+        <div className="min-w-[90px]"><span className="text-xs font-black text-slate-500">{event?.minute || match?.fixture?.status?.elapsed || "—"}'</span><span className="mx-1 text-slate-700">·</span><span className="text-[8px] text-slate-500">{event?.label || "داده رویدادی"}</span></div>
+        <div className="min-w-0"><b className="block truncate text-sm text-red-200">{match?.teams?.away?.name || "مهمان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreAway}</strong></div>
       </div>
     </div>
 
     <div className="relative mx-auto w-full max-w-[430px] overflow-hidden rounded-[28px] border border-white/15 bg-[#087443] shadow-2xl" style={{ aspectRatio: "2 / 3" }}>
-      <div className="pointer-events-none absolute inset-[4%] rounded-[22px] border-2" style={{borderColor:"rgba(255,255,255,.65)"}}/>
-      <div className="pointer-events-none absolute left-[4%] right-[4%] top-1/2 border-t border-white/60"/>
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[14%] w-[14%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/60"/>
-      <div className="pointer-events-none absolute left-[4%] top-[33%] h-[34%] w-[17%] border border-white/60"/>
-      <div className="pointer-events-none absolute right-[4%] top-[33%] h-[34%] w-[17%] border border-white/60"/>
-      <div className="pointer-events-none absolute left-[4%] top-[42%] h-[16%] w-[6%] border border-white/60"/>
-      <div className="pointer-events-none absolute right-[4%] top-[42%] h-[16%] w-[6%] border border-white/60"/>
-      {players.map((player) => {
-        const t = TEAM[player.team];
-        return <div key={player.id} className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${player.x}%`,top:`${player.y}%`}}><span className="pointer-events-none absolute bottom-full left-1/2 mb-0.5 max-w-[64px] -translate-x-1/2 truncate rounded bg-black/65 px-1 py-0.5 text-center text-[7px] font-black leading-none shadow-sm sm:max-w-[72px] sm:text-[8px]" style={{color:t.text, border:`1px solid ${t.color}66`}}><span className="min-[360px]:hidden">{player.name.slice(0, 1)}</span><span className="hidden min-[360px]:inline">{player.name}</span></span><div className={`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg ${player.state === "celebrate" ? "scale-125" : player.state === "attack" ? "scale-110" : ""}`} style={{background:t.soft,borderColor:t.color}}><span className="text-[20px] leading-none">🏃‍♂️</span></div></div>;
-      })}
-      <div className={`absolute -translate-x-1/2 -translate-y-1/2 ease-out ${reducedMotion ? "" : "transition-[left,top] duration-700"}`} style={{left:`${ball.x}%`,top:`${ball.y}%`}}><span className="block text-[24px] leading-none drop-shadow-lg">⚽</span></div>
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/30 px-3 py-2 text-[8px] font-bold text-white/80"><span>{TEAM.home.name}</span><span>{lastEvent.label}</span><span>{TEAM.away.name}</span></div>
+      <div className="pointer-events-none absolute inset-[4%] rounded-[22px] border-2 border-white/60"/><div className="pointer-events-none absolute left-[4%] right-[4%] top-1/2 border-t border-white/60"/><div className="pointer-events-none absolute left-1/2 top-1/2 h-[14%] w-[14%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/60"/><div className="pointer-events-none absolute left-[4%] top-[33%] h-[34%] w-[17%] border border-white/60"/><div className="pointer-events-none absolute right-[4%] top-[33%] h-[34%] w-[17%] border border-white/60"/>
+      {players.map((p) => <div key={p.id} className={\`absolute -translate-x-1/2 -translate-y-1/2 \${reduced ? "" : "transition-[left,top] duration-700"}\`} style={{left:\`\${p.x}%\`,top:\`\${p.y}%\`}}><span className="pointer-events-none absolute bottom-full left-1/2 mb-0.5 max-w-[74px] -translate-x-1/2 truncate rounded bg-black/65 px-1 py-0.5 text-[7px] font-black">{p.name}</span><div className={\`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg \${p.team === "home" ? "border-blue-400 bg-blue-400/15" : "border-red-400 bg-red-400/15"} \${event?.type === "goal" && sideOf(match || DEMO.details, event.team) === p.team ? "scale-125" : ""}\`}><span className="text-[19px]">🏃‍♂️</span></div></div>)}
+      <div className={\`absolute -translate-x-1/2 -translate-y-1/2 \${reduced ? "" : "transition-[left,top] duration-700"}\`} style={{left:\`\${ball.x}%\`,top:\`\${ball.y}%\`}}><span className="text-[24px]">⚽</span></div>
     </div>
 
-    {lastEvent.type === "card" && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] text-amber-200">🟨 کارت زرد برای {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name}</div>}
-    {lastEvent.type === "substitution" && <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-[9px] text-cyan-200">🔄 تعویض برای {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name}</div>}
-    {lastEvent.type === "goal" && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[9px] font-black text-emerald-200">⚽ گل {lastEvent.team === "home" ? TEAM.home.name : TEAM.away.name} — نتیجه به‌روزرسانی شد</div>}
-    {stale && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] text-amber-200">داده تازه دریافت نشد؛ انیمیشن متوقف شد تا از نمایش وضعیت جعلی جلوگیری شود.</div>}
+    {event?.type === "card" && <div className={\`rounded-2xl border px-3 py-2 text-[9px] \${event.red ? "border-red-400/20 bg-red-400/5 text-red-200" : "border-amber-400/20 bg-amber-400/5 text-amber-200"}\`}>{event.red ? "🟥" : "🟨"} {event.label}</div>}
+    {event?.type === "goal" && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[9px] font-black text-emerald-200">⚽ {event.label} · نتیجه معتبر: {scoreHome} - {scoreAway}</div>}
+    {event?.type === "halftime" && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] font-black text-amber-200">⏸️ پایان نیمه اول</div>}
+    {event?.type === "finished" && <div className="rounded-2xl border border-slate-400/15 bg-slate-400/5 px-3 py-2 text-[9px] font-black text-slate-200">🏁 پایان مسابقه · نتیجه: {scoreHome} - {scoreAway}</div>}
+    {stale && <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[9px] text-amber-200">داده تازه دریافت نشد؛ نمایش متحرک متوقف شد تا از نمایش وضعیت جعلی جلوگیری شود.</div>}
 
     <div className="glass rounded-2xl p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Zap size={14} className="text-cyan-300"/>
-          <span className="text-[10px] font-black text-slate-200">رویدادهای اخیر</span>
-        </div>
-        <span className="text-[8px] text-slate-600">EVENT FEED</span>
-      </div>
-      <div className="space-y-1.5">
-        {EVENT_SEQUENCE.slice(0, eventIndex + 1).slice(-4).reverse().map((event, index) => (
-          <div key={event.at} className={`flex items-center gap-2 rounded-xl border px-2.5 py-2 ${index === 0 ? "border-cyan-400/15 bg-cyan-400/[.05]" : "border-white/5 bg-white/[.02]"}`}>
-            <span className="text-[12px]">{event.type === "goal" ? "⚽" : event.type === "card" ? "🟨" : event.type === "substitution" ? "🔄" : event.type === "shot" ? "🎯" : event.type === "attack" ? "⚡" : "•"}</span>
-            <span className="min-w-0 flex-1 truncate text-[9px] font-bold text-slate-300">{event.label}</span>
-            <span className="text-[8px] font-black text-slate-500">{event.minute}'</span>
-          </div>
-        ))}
+      <div className="mb-2 flex items-center justify-between"><div className="flex items-center gap-2"><Zap size={14} className="text-cyan-300"/><span className="text-[10px] font-black">Event Feed</span></div><span className="text-[8px] text-slate-600">{sequence.length} رویداد</span></div>
+      <div className="max-h-[360px] space-y-1.5 overflow-y-auto">
+        {sequence.map((e, i) => <button key={e.key} type="button" onClick={() => setIndex(i)} className={\`flex min-h-[44px] w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-right touch-manipulation \${i === index ? "border-cyan-400/15 bg-cyan-400/[.05]" : "border-white/5 bg-white/[.02]"}\`}><span className="text-[12px]">{e.icon}</span><span className="min-w-0 flex-1 truncate text-[9px] font-bold text-slate-300">{e.label}</span><span className="text-[8px] font-black text-slate-500">{e.minute}'</span></button>)}
       </div>
     </div>
 
     <div className="flex flex-wrap items-center justify-center gap-2">
-      <button onClick={() => { setRunning((v) => !v); setStale(false); setLastDataAt(Date.now()); }} className="glass rounded-xl px-3 py-2 text-[10px] font-black text-slate-200">{running ? <><Pause size={13} className="mr-1 inline"/> توقف</> : <><Play size={13} className="mr-1 inline"/> ادامه</>}</button>
-      <button onClick={reset} className="glass rounded-xl px-3 py-2 text-[10px] font-black text-slate-200"><RotateCcw size={13} className="mr-1 inline"/> ریست</button>
-      <button onClick={simulateStale} className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[10px] font-black text-amber-200">تست STALE</button>
-      <button onClick={() => { setCancelled(true); setRunning(false); }} className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-[10px] font-black text-red-200">لغو مسابقه</button>
+      <button type="button" onClick={() => setRunning((v) => !v)} className="glass min-h-[44px] rounded-xl px-3 py-2 text-[10px] font-black touch-manipulation">{running ? <><Pause size={13} className="mr-1 inline"/>توقف</> : <><Play size={13} className="mr-1 inline"/>ادامه</>}</button>
+      <button type="button" onClick={() => { setIndex(0); setTick(0); setRunning(true); setStale(false); }} className="glass min-h-[44px] rounded-xl px-3 py-2 text-[10px] font-black touch-manipulation"><RotateCcw size={13} className="mr-1 inline"/>ریست</button>
+      <button type="button" onClick={() => { setStale(true); setRunning(false); }} className="min-h-[44px] rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[10px] font-black text-amber-200 touch-manipulation">تست STALE</button>
+      {activeDemo && <button type="button" onClick={() => setIndex(sequence.length - 1)} className="min-h-[44px] rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-[10px] font-black text-red-200 touch-manipulation">برو پایان</button>}
     </div>
   </section>;
 }
 
 export default function MatchVisualizationPage() {
-  return <main className="fot-shell"><div className="fot-container space-y-4">
-    <header className="flex items-center justify-between"><div className="flex items-center gap-3"><Link href="/matches" className="glass grid h-10 w-10 place-items-center rounded-xl"><ArrowRight size={18}/></Link><div><h1 className="text-xl font-black text-slate-100">نمایش آتاری‌مانند مسابقه</h1><p className="text-[10px] text-slate-500">FOT10 · Match Visualization V1</p></div></div></header>
-    <Suspense fallback={<section className="glass rounded-3xl p-6 text-center"><div className="mx-auto mb-3 h-8 w-8 animate-pulse rounded-full bg-cyan-400/20" /><p className="text-xs font-bold text-slate-400">در حال آماده‌سازی Match Vision…</p></section>}><Visualization /></Suspense>
-  </div></main>;
+  return <main className="fot-shell"><div className="fot-container space-y-4 pb-28"><header className="flex items-center gap-3"><Link href="/matches" aria-label="بازگشت" className="glass grid h-11 w-11 shrink-0 place-items-center rounded-xl touch-manipulation"><ArrowRight size={18}/></Link><div className="min-w-0"><h1 className="truncate text-xl font-black text-slate-100">نمایش آتاری‌مانند مسابقه</h1><p className="text-[10px] text-slate-500">FOT10 · Match Visualization V1 · Mobile · ۱۰ لیگ</p></div></header><Suspense fallback={<section className="glass rounded-3xl p-6 text-center"><div className="mx-auto mb-3 h-8 w-8 animate-pulse rounded-full bg-cyan-400/20"/><p className="text-xs font-bold text-slate-400">در حال آماده‌سازی Match Vision…</p></section>}><Visualization/></Suspense></div></main>;
 }
