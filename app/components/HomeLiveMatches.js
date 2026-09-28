@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 const TEAM_FA = { "Manchester City": "منچسترسیتی", "Manchester United": "منچستریونایتد", Liverpool: "لیورپول", Arsenal: "آرسنال", Chelsea: "چلسی", Tottenham: "تاتنهام", "Real Madrid": "رئال مادرید", Barcelona: "بارسلونا", "Atletico Madrid": "اتلتیکومادرید", "Bayern Munich": "بایرن مونیخ", "Borussia Dortmund": "بوروسیا دورتموند", Juventus: "یوونتوس", Inter: "اینتر", "AC Milan": "آث میلان", PSG: "پاری‌سن‌ژرمن", Tractor: "تراکتور", Persepolis: "پرسپولیس", Esteghlal: "استقلال", Sepahan: "سپاهان" };
 const faTeam = (name) => TEAM_FA[name] || name;
+const isLive = (m) => ["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"].includes(String(m?.statusShort || m?.status || "").toUpperCase());
 function MatchRow({ match }) {
   return <Link href={match.id ? `/matches/${match.id}` : "/matches"} className="group block rounded-2xl border border-red-400/15 bg-red-500/[.035] p-3 transition active:scale-[.99] hover:border-red-300/25">
     <div className="mb-2 flex items-center justify-between gap-2 text-[7px] font-black"><span className="truncate text-slate-500">{match.league}</span><span className="shrink-0 text-red-300">● LIVE {match.elapsed ? `· ${match.elapsed}'` : ""}</span></div>
