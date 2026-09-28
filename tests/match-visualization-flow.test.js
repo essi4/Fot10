@@ -16,7 +16,7 @@ test("flow contract keeps the 10-league scope explicit", () => {
   const entries = source.match(/\{ key:/g) || [];
   assert.equal(entries.length, 10);
   for (const leagueId of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307]) {
-    assert.match(source, new RegExp(`leagueIds: \\[\\s*\${leagueId}\\s*\\]`));
+    assert.match(source, new RegExp("leagueIds: \\[\\s*" + leagueId + "\\s*\\]"));
   }
 });
 
