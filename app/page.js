@@ -49,7 +49,7 @@ export default function HomePage() {
               </div>
               <ChevronLeft size={14} className="text-emerald-300/50 transition-transform group-hover:-translate-x-1" />
             </Link>
-            <Link href="/leagues" className="group flex items-center justify-between rounded-2xl border border-cyan-300/10 bg-cyan-400/[.045] px-3 py-2.5 transition hover:border-cyan-300/25 hover:bg-cyan-400/[.08]">
+            <Link href="/matches" className="group flex items-center justify-between rounded-2xl border border-cyan-300/10 bg-cyan-400/[.045] px-3 py-2.5 transition hover:border-cyan-300/25 hover:bg-cyan-400/[.08]">
               <div className="flex items-center gap-2">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300"><Trophy size={15} /></span>
                 <div><div className="text-[10px] font-black text-cyan-200">COMPETITIONS</div><div className="mt-0.5 text-[7px] font-bold text-cyan-300/45">لیگ و جدول</div></div>
