@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ChevronLeft, Heart, Radio, Search, Shield } from "lucide-react";
+import { Activity, ChevronLeft, Heart, Radio, Search, Shield, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
 import HomeMatchdayHub from "./components/HomeMatchdayHub";
 
