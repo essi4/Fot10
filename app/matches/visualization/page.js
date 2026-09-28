@@ -21,6 +21,7 @@ import {
 import visualizationNormalizer from "../../../lib/match-visualization-normalizer.cjs";
 import { teamName } from "../../../lib/team-identity";
 import retroPitchRenderer from "../../../lib/retro-pitch-renderer.cjs";
+import { sameMatch } from "../../../lib/football360-live.cjs";
 
 const { buildVisualizationFeed } = visualizationNormalizer;
 const { selectRenderablePitchEvents } = retroPitchRenderer;
@@ -198,7 +199,46 @@ function TeamBlock({ team, score, align = "center" }) {
   );
 }
 
-function RetroPitch({ events, selectedEvent, match }) {
+const HOME_RETRO_POSITIONS = [
+  [7, 50], [17, 25], [17, 50], [17, 75], [30, 18], [32, 40], [32, 60], [30, 82], [49, 32], [49, 68], [62, 50],
+];
+const AWAY_RETRO_POSITIONS = HOME_RETRO_POSITIONS.map(([x, y]) => [100 - x, y]);
+
+function RetroPlayerSprite({ number, side }) {
+  const home = side === "home";
+  return (
+    <div className="relative h-6 w-5 drop-shadow-[0_3px_4px_rgba(0,0,0,.35)]" aria-label={`بازیکن ${number}`}>
+      <span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full border border-[#f5f1dc]/80 bg-[#d9c6ad]" />
+      <span className={`absolute left-1/2 top-1.5 h-2.5 w-3.5 -translate-x-1/2 rounded-[3px] border border-black/20 ${home ? "bg-blue-600" : "bg-red-600"}`} />
+      <span className="absolute left-1/2 top-2.5 -translate-x-1/2 text-[5px] font-black leading-none text-white">{number}</span>
+      <span className={`absolute left-1 top-4 h-2 w-1 rounded-b-sm ${home ? "bg-blue-800" : "bg-red-800"}`} />
+      <span className={`absolute right-1 top-4 h-2 w-1 rounded-b-sm ${home ? "bg-blue-800" : "bg-red-800"}`} />
+    </div>
+  );
+}
+
+function RetroBroadcastPlayers({ match, football360Linked }) {
+  if (!football360Linked) return null;
+  return (
+    <div className="absolute inset-0 pointer-events-none" aria-label="چیدمان پیکسلی نمایشی">
+      {HOME_RETRO_POSITIONS.map(([x, y], index) => (
+        <div key={`h-${index}`} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
+          <RetroPlayerSprite number={index + 1} side="home" />
+        </div>
+      ))}
+      {AWAY_RETRO_POSITIONS.map(([x, y], index) => (
+        <div key={`a-${index}`} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
+          <RetroPlayerSprite number={index + 1} side="away" />
+        </div>
+      ))}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-[6px] font-black text-[#f5f1dc]/80 backdrop-blur">
+        چیدمان پیکسلی · نمایشی؛ موقعیت لحظه‌ای نیست
+      </div>
+    </div>
+  );
+}
+
+function RetroPitch({ events, selectedEvent, match, football360Linked }) {
   const canonicalEvents = events.map((e) => e?.canonicalEvent).filter(Boolean);
   const located = selectRenderablePitchEvents(canonicalEvents);
   const selectedCanonical = selectedEvent?.canonicalEvent;
@@ -231,7 +271,7 @@ function RetroPitch({ events, selectedEvent, match }) {
         <div className="absolute left-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-l-0 border-[#f5f1dc]/75" />
         <div className="absolute right-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-r-0 border-[#f5f1dc]/75" />
 
-        {located.map((p) => {
+        <RetroBroadcastPlayers match={match} football360Linked={football360Linked} />\n\n        {located.map((p) => {
           const side = eventTeamSide(p, match);
           const active = p.event_id === selectedCanonical?.event_id;
           return (
@@ -297,7 +337,7 @@ function Visualization() {
   const [stale, setStale] = useState(false);
   const [error, setError] = useState("");
   const [lastMatchDataAt, setLastMatchDataAt] = useState(0);
-  const [sharing, setSharing] = useState(false);
+  const [sharing, setSharing] = useState(false);\n  const [football360Live, setFootball360Live] = useState([]);
 
   const scoped = useMemo(() => fixtures.filter(isMatchVisualizationScope), [fixtures]);
   const activeDemo = demo;
@@ -332,12 +372,12 @@ function Visualization() {
   );
   const event = sequence[Math.min(index, Math.max(sequence.length - 1, 0))] || sequence[0] || null;
   const phase = stale ? "stale" : activeDemo ? "finished" : phaseOf(match);
-  const phaseForUi = phase === "stale" ? "live" : phase;
+  const phaseForUi = phase === "stale" ? "live" : phase;\n  const football360Linked = Boolean(match && football360Live.some((candidate) => sameMatch(match, candidate)));
 
   useEffect(() => {
     if (!enabled || activeDemo) return;
     loadFixtures();
-    const timer = setInterval(loadFixtures, 30000);
+    const timer = setInterval(() => { loadFixtures(); loadFootball360Live(); }, 30000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo]);
 
@@ -371,6 +411,17 @@ function Visualization() {
     }, 1000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo, lastMatchDataAt, match]);
+
+  async function loadFootball360Live() {
+    try {
+      const response = await fetch("/api/football360/live", { cache: "no-store" });
+      const json = await response.json();
+      if (response.ok && Array.isArray(json?.matches)) setFootball360Live(json.matches);
+      else setFootball360Live([]);
+    } catch {
+      setFootball360Live([]);
+    }
+  }
 
   async function loadFixtures() {
     try {
@@ -525,7 +576,7 @@ function Visualization() {
                   <Radio size={15} className="text-cyan-300" />
                   <span className="text-[9px] font-black tracking-[0.12em] text-cyan-200">MATCH CENTER</span>
                 </div>
-                <span className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}>
+                <div className="flex items-center gap-1.5">\n                  {football360Linked && <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-2.5 py-1 text-[8px] font-black text-amber-200">۳۶۰ · پخش زنده</span>}\n                  <span className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}>
                   {phase === "stale" ? "داده قدیمی" : phaseLabel(phaseForUi)}
                 </span>
               </div>
@@ -580,7 +631,7 @@ function Visualization() {
             </div>
           </section>
 
-          <RetroPitch events={sequence} selectedEvent={event} match={match || DEMO.details} />
+          <RetroPitch events={sequence} selectedEvent={event} match={match || DEMO.details} football360Linked={football360Linked} />
 
           <section className="glass rounded-2xl p-3">
             <div className="mb-2 flex items-end justify-between gap-2">
