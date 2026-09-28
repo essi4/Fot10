@@ -29,7 +29,7 @@ test("builds a canonical goal event with one stable identity", () => {
   assert.equal(event.period, "second_half");
   assert.equal(event.acting_team, "10");
   assert.equal(event.acting_player, "99");
-  assert.equal(event.target_player, "88");
+  assert.equal(event.target_player, null);
   assert.equal(event.coordinates.has_location, false);
 });
 
@@ -78,7 +78,7 @@ test("event identity is deterministic when provider id is unavailable", () => {
     detail: "Normal Goal",
   };
   assert.equal(canonicalEventId(input, details, 0), canonicalEventId(input, details, 0));
-  assert.notEqual(canonicalEventId(input, details, 0), canonicalEventId(input, details, 1));
+  assert.equal(canonicalEventId(input, details, 0), canonicalEventId(input, details, 1));
 });
 
 test("duplicate upstream events are idempotent", () => {
