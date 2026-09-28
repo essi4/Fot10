@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, ChevronLeft, Heart, Radio, RefreshCw, Shield, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { getMatchCenterScope, MATCH_CENTER_CLUB_LEAGUES } from "../../lib/match-center-scope";
+import { getSupabaseBrowserClient } from "../../lib/supabase/client";
 
 const SETTINGS_KEY = "fot10-settings";
 const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
@@ -207,14 +208,22 @@ function MatchesContent() {
   }, {}), [filteredGames]);
 
   const liveCount = filteredGames.filter((g) => g.live).length;
-  const toggleFavorite = useCallback((game) => {
-    setFavoriteMatches((current) => {
-      const key = favoriteKey(game);
-      const exists = current.some((item) => favoriteKey(item) === key);
-      const next = exists ? current.filter((item) => favoriteKey(item) !== key) : [...current, { id: game.id, home: game.home, away: game.away, homeLogo: game.homeLogo, awayLogo: game.awayLogo, league: game.league, country: game.country, date: game.date, homeScore: game.homeScore, awayScore: game.awayScore, statusLabel: game.statusLabel, live: game.live }];
-      writeFavorites(next);
-      return next;
-    });
+  const toggleFavorite = useCallback(async (game) => {
+    const key = favoriteKey(game);
+    const current = readFavorites();
+    const exists = current.some((item) => favoriteKey(item) === key);
+    const snapshot = { id: game.id, home: game.home, away: game.away, homeLogo: game.homeLogo, awayLogo: game.awayLogo, league: game.league, country: game.country, date: game.date, homeScore: game.homeScore, awayScore: game.awayScore, statusLabel: game.statusLabel, live: game.live };
+    const next = exists ? current.filter((item) => favoriteKey(item) !== key) : [...current, snapshot];
+    writeFavorites(next);
+    setFavoriteMatches(next);
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth?.user) return;
+      if (exists) await supabase.from("fot10_favorites").delete().eq("user_id", auth.user.id).eq("item_type", "match").eq("item_name", JSON.stringify(snapshot));
+      else await supabase.from("fot10_favorites").insert({ user_id: auth.user.id, item_type: "match", item_name: JSON.stringify(snapshot) });
+    } catch {}
   }, []);
   const dayLabel = day === -1 ? "دیروز" : day === 1 ? "فردا" : "امروز";
 
