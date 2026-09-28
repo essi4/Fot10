@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOpenFootballMatches } from "../../../../../lib/openfootball";
 import { getSportsDbDayMatches, getSportsDbLiveMatches } from "../../../../../lib/thesportsdb-day";
+import { isMatchCenterScope } from "../../../../../lib/match-center-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -10,14 +11,6 @@ export const dynamic = "force-dynamic";
 const CACHE_TTL = 60 * 1000;
 const LIVE_CACHE_TTL = 30 * 1000;
 const cache = new Map();
-
-const FALLBACK_COUNTRIES = new Set([
-  "iran", "ایران", "england", "انگلیس", "انگلستان", "spain", "اسپانیا", "italy", "ایتالیا",
-  "france", "فرانسه", "germany", "آلمان", "netherlands", "هلند", "turkey", "ترکیه",
-  "saudi arabia", "عربستان سعودی", "qatar", "قطر", "portugal", "پرتغال", "belgium", "بلژیک",
-  "austria", "اتریش", "denmark", "دانمارک", "scotland", "اسکاتلند", "czech republic", "چک",
-  "sweden", "سوئد", "croatia", "کرواسی", "greece", "یونان",
-]);
 
 function key(date, live = false) {
   return `${live ? "live" : "day"}:${date || "now"}`;
@@ -32,11 +25,7 @@ function normalize(value) {
 }
 
 function inScope(match) {
-  const country = String(match?.country || "").trim().toLowerCase().replace(/\s+/g, " ");
-  const league = String(match?.league || "").trim().toLowerCase();
-  return FALLBACK_COUNTRIES.has(country)
-    || /champions league|champions league elite|afc champions|uefa champions|لیگ قهرمانان/.test(league)
-    || !country;
+  return isMatchCenterScope(match);
 }
 
 function dedupe(matches = []) {
