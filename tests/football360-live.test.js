@@ -16,7 +16,7 @@ test("normalizes a Football360 live payload and keeps only FOT10 scope", () => {
     ],
   };
   const matches = normalizeFootball360LiveResponse(payload);
-  assert.deepEqual(matches.map((m) => [m.home, m.away]), [["Turkey", "Italy"], ["Belgium", "France"]]);
+  assert.deepEqual(matches.map((m) => [m.home, m.away]), [["Turkey", "Italy"], ["Belgium", "France"], ["Belgium", "Ukraine"], ["France U21", "Belgium U21"]]);
   assert.equal(matches[0].broadcastAvailable, true);
 });
 
