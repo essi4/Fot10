@@ -39,6 +39,6 @@ test("real mode never advances the event timeline as a synthetic replay", () => 
 
 test("match details hands the selected fixture id into Match Vision", () => {
   const source = read(detailPath);
-  assert.match(source, /\/matches\/visualization\?viz=1&fixture=\$\{encodeURIComponent\(match\.fixture\.id\)\}/);
+  assert.match(source, /\/matches\/visualization\?viz=1&fixture=\$\{encodeURIComponent\(match\.fixture\?\.id \|\| ""\)\}/);
   assert.match(source, /Timeline و Visualization/);
 });
