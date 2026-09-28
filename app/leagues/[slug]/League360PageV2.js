@@ -183,6 +183,7 @@ export default async function League360PageV2({ params, searchParams }) {
 
   const leagueId = resolved?.league?.id || league.leagueId || null;
   const rows = standings.flatMap((item) => item?.league?.standings || []).flat();
+  const hasVerifiedTable = rows.length > 0 && standingsMeta.source !== "none" && Boolean(standingsMeta.fetchedAt);
 
   const finished = seasonMatches
     .filter((match) => FINISHED.includes(match?.statusShort))
@@ -644,7 +645,7 @@ export default async function League360PageV2({ params, searchParams }) {
           </div>
         )}
 
-        {tab === "table" && <Table />}
+        {tab === "table" && (hasVerifiedTable ? <Table /> : <section className="rounded-[22px] border border-slate-200 bg-white p-10 text-center text-xs text-slate-400">جدول این لیگ فعلاً از منبع معتبر و زمان‌دار دریافت نشد.</section>)}
         {tab === "matches" && <Matches />}
         {tab === "stats" && <Stats />}
       </div>
