@@ -183,10 +183,10 @@ export default function HomePage() {
           <div className="absolute inset-y-0 left-0 w-1.5 bg-slate-900" />
           <div className="p-5 sm:p-7">
             <div className="flex items-center gap-3">
-              <div aria-label="FOT10" className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-950 text-white shadow-sm"><span className="absolute inset-x-2 top-2 h-px bg-white/20" /><CircleDot size={13} className="absolute right-2 top-2 text-white/60" /><span className="relative text-[15px] font-black leading-none tracking-[-.08em]">10</span><span className="absolute bottom-1.5 left-2 text-[6px] font-black tracking-[.18em] text-white/60">FOT</span></div>
+              <div aria-label="نشان FOT10" className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-950 text-white shadow-sm"><span className="absolute inset-x-2 top-2 h-px bg-white/20" /><CircleDot size={13} className="absolute right-2 top-2 text-white/60" /><span className="relative text-[13px] font-black leading-none tracking-[-.06em]">FOT10</span></div>
               <div>
                 <div className="text-2xl font-black tracking-[-.04em]">FOT10</div>
-                <div className="text-[9px] font-bold text-slate-500">Football Data · Match Center</div>
+                <div className="text-[9px] font-bold text-slate-500">داده‌های فوتبال · مرکز مسابقات</div>
               </div>
             </div>
           </div>
@@ -197,13 +197,13 @@ export default function HomePage() {
         <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_8px_25px_rgba(15,23,42,.045)]">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[9px] font-black tracking-[.12em] text-slate-400">MATCH VISUALIZATION</div>
+              <div className="text-[9px] font-black tracking-[.12em] text-slate-400">نمایش مسابقه</div>
               <h2 className="mt-1 text-lg font-black text-slate-950">نمایش زنده اتفاقات بازی</h2>
               <p className="mt-1 text-[9px] font-bold leading-5 text-slate-400">زمین مینیمال مسابقه، رویدادهای واقعی و جزئیات ظریف 8-bit؛ بدون داده ساختگی.</p>
             </div>
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-700"><Activity size={19} /></div>
           </div>
-          <Link href="/matches/visualization" className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 py-2.5 text-[9px] font-black text-slate-700">ورود به Match Visualization <ArrowLeft size={13} /></Link>
+          <Link href="/matches/visualization" className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 py-2.5 text-[9px] font-black text-slate-700">ورود به نمایش مسابقه <ArrowLeft size={13} /></Link>
         </section>
 
         <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_8px_25px_rgba(15,23,42,.045)]">
