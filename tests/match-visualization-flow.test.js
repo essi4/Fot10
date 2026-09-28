@@ -37,6 +37,15 @@ test("real mode never advances the event timeline as a synthetic replay", () => 
   assert.match(source, /playersFor\(match \|\| DEMO\.details, event, tick, lineups, activeDemo\)/);
 });
 
+test("mobile QA contract protects touch targets, reduced motion and selection state", () => {
+  const source = read(pagePath);
+  assert.match(source, /min-h-\[44px\]/);
+  assert.match(source, /touch-manipulation/);
+  assert.match(source, /prefers-reduced-motion/);
+  assert.match(source, /setSelected\(\(current\) => current \|\|/);
+  assert.match(source, /setStale\(true\); setRunning\(false\)/);
+});
+
 test("match details hands the selected fixture id into Match Vision", () => {
   const source = read(detailPath);
   assert.match(source, /\/matches\/visualization\?viz=1&fixture=\$\{encodeURIComponent\(match\.fixture\?\.id \|\| ""\)\}/);
