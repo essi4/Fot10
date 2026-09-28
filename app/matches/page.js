@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, ChevronLeft, Clock3, Heart, Radio, RefreshCw, Shield, Trophy } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronLeft, Heart, Radio, RefreshCw, Shield, Trophy } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { getMatchCenterScope, MATCH_CENTER_CLUB_LEAGUES } from "../../lib/match-center-scope";
 
@@ -17,21 +17,6 @@ function toTime(value) { if (!value) return "—"; const date = new Date(value);
 function toFaDate(value) { return new Date(`${value}T12:00:00+03:30`).toLocaleDateString("fa-IR", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Tehran" }); }
 function mapGame(match) { const statusCode = String(match.statusShort || match.status || "").toUpperCase(); const live = LIVE_CODES.has(statusCode) || /LIVE|IN PLAY|HALF/i.test(statusCode); const finished = FINISHED_CODES.has(statusCode); return { ...match, league: match.league || "مسابقات فوتبال", country: match.country || "", home: match.home || "میزبان", away: match.away || "مهمان", statusCode, statusLabel: live ? (LIVE_LABELS[statusCode] || "در جریان") : finished ? "پایان" : toTime(match.date), minute: live && match.elapsed != null ? `${match.elapsed}'` : finished ? "پایان" : toTime(match.date), live, finished }; }
 function sortLive(a, b) { return Number(b.live) - Number(a.live) || String(a.league).localeCompare(String(b.league)); }
-function sourceStatus(source, liveOnly) { if (!liveOnly) return null; const value = String(source || "").toLowerCase(); if (value === "thesportsdb-live" || value.includes("fallback")) return { tone: "amber", label: "منبع پشتیبان فعال", detail: "داده زنده از مسیر جایگزین دریافت می‌شود" }; if (value === "api-football") return { tone: "emerald", label: "داده زنده فعال", detail: "اتصال مستقیم به منبع اصلی برقرار است" }; return { tone: "slate", label: "در حال بررسی منابع", detail: "سیستم به‌صورت خودکار منبع مناسب را انتخاب می‌کند" }; }
-
-function mergeSummary(previous, next) {
-  if (!next?.ok) return previous;
-  if (!previous) return next;
-  const keys = ["live", "yesterday", "today", "tomorrow"];
-  const merged = { ...next };
-  for (const key of keys) {
-    const incoming = next[key];
-    const prior = previous[key];
-    if (incoming && prior && Number(incoming.count || 0) === 0 && Number(prior.count || 0) > 0) merged[key] = prior;
-  }
-  return merged;
-}
-
 function scopeLabel(match) {
   const scope = getMatchCenterScope(match);
   return scope?.kind === "national-team" ? "تیم‌های ملی بزرگسالان" : scope?.label || match?.league || "فوتبال";
