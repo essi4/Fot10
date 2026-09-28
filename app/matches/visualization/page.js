@@ -19,6 +19,7 @@ import {
   isMatchVisualizationScope,
 } from "../../../lib/match-visualization-scope";
 import visualizationNormalizer from "../../../lib/match-visualization-normalizer.cjs";
+import { teamName } from "../../../lib/team-identity";
 import retroPitchRenderer from "../../../lib/retro-pitch-renderer.cjs";
 
 const { buildVisualizationFeed } = visualizationNormalizer;
@@ -108,6 +109,28 @@ function commentsLabel(match) {
   return Number.isFinite(value) ? `${value.toLocaleString("fa-IR")} نظر` : "نظرات";
 }
 
+function teamCountry(name) {
+  const text = String(name || "");
+  if (/turkey|türkiye|ترکیه/i.test(text)) return "ترکیه";
+  if (/italy|ایتالیا/i.test(text)) return "ایتالیا";
+  if (/iran|ایران/i.test(text)) return "ایران";
+  if (/england|انگلیس/i.test(text)) return "انگلیس";
+  if (/spain|اسپانیا/i.test(text)) return "اسپانیا";
+  if (/germany|آلمان/i.test(text)) return "آلمان";
+  if (/france|فرانسه/i.test(text)) return "فرانسه";
+  if (/netherlands|هلند/i.test(text)) return "هلند";
+  if (/portugal|پرتغال/i.test(text)) return "پرتغال";
+  if (/saudi|arabia|عربستان/i.test(text)) return "عربستان";
+  if (/argentina|آرژانتین/i.test(text)) return "آرژانتین";
+  if (/brazil|brasil|برزیل/i.test(text)) return "برزیل";
+  return "—";
+}
+
+const COMPETITION_FA = {
+  "UEFA Nations League": "لیگ ملت‌های اروپا",
+  "UEFA National League": "لیگ ملت‌های اروپا",
+};
+
 function EventIcon({ type }) {
   const labels = {
     goal: "⚽",
@@ -133,18 +156,21 @@ function eventTeamSide(canonical, match) {
 }
 
 function TeamBlock({ team, score, align = "center" }) {
-  const name = team?.name || "—";
+  const sourceName = team?.name || "—";
+  const name = teamName(sourceName);
+  const country = team?.country || teamCountry(sourceName);
   const logo = team?.logo || team?.image || "";
   return (
     <div className={`min-w-0 text-${align}`}>
-      <div className="mx-auto mb-2 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[.04]">
+      <span className="block truncate text-[9px] font-bold text-slate-500">{country}</span>
+      <div className="mx-auto mt-1 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[.04]">
         {logo ? (
           <img src={logo} alt={`لوگوی ${name}`} className="h-10 w-10 object-contain" />
         ) : (
           <Trophy size={20} className="text-slate-600" />
         )}
       </div>
-      <b className="block truncate text-sm font-black text-white">{name}</b>
+      <b className="mt-2 block truncate text-sm font-black text-white">{name}</b>
       <strong className="mt-1 block text-3xl font-black tabular-nums text-white">
         {score}
       </strong>
@@ -420,10 +446,11 @@ function Visualization() {
   const scoreAway = Number.isFinite(Number(scoreAwayValue)) ? Number(scoreAwayValue) : "—";
   const homeTeam = match?.teams?.home || { name: match?.home || "میزبان", logo: match?.homeLogo || "" };
   const awayTeam = match?.teams?.away || { name: match?.away || "مهمان", logo: match?.awayLogo || "" };
-  const homeTeamName = homeTeam.name || "میزبان";
-  const awayTeamName = awayTeam.name || "مهمان";
+  const homeTeamName = teamName(homeTeam.name || "میزبان");
+  const awayTeamName = teamName(awayTeam.name || "مهمان");
   const dateTime = toFaDateTime(match?.fixture?.date || match?.date);
-  const competition = match?.league?.name || match?.league || "—";
+  const competitionRaw = match?.league?.name || match?.league || "—";
+  const competition = COMPETITION_FA[competitionRaw] || competitionRaw;
   const venue = match?.fixture?.venue?.name || "—";
   const currentMinute = event?.minuteLabel || (match?.fixture?.status?.elapsed != null ? `${match.fixture.status.elapsed}'` : "—");
   const hasRenderableMatch = Boolean(match || activeDemo);
