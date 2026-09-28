@@ -44,6 +44,8 @@ test("mobile QA contract protects touch targets, reduced motion and selection st
   assert.match(source, /prefers-reduced-motion/);
   assert.match(source, /setSelected\(\(current\) => current \|\|/);
   assert.match(source, /setStale\(true\); setRunning\(false\)/);
+  assert.match(source, /lastMatchDataAt/);
+  assert.doesNotMatch(source, /setLastMatchDataAt\(Date\.now\(\)\); setStale\(false\); setError\(""\);/);
 });
 
 test("match details hands the selected fixture id into Match Vision", () => {
