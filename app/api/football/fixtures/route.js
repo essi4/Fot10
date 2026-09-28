@@ -7,28 +7,6 @@ import { jsonWithCache, noStoreHeaders } from "../../../../lib/http-cache";
 
 export const dynamic = "force-dynamic";
 
-const FALLBACK_COUNTRIES = new Set([
-  "iran", "ایران",
-  "england", "انگلیس", "انگلستان",
-  "spain", "اسپانیا",
-  "italy", "ایتالیا",
-  "france", "فرانسه",
-  "germany", "آلمان",
-  "netherlands", "هلند",
-  "turkey", "ترکیه",
-  "saudi arabia", "عربستان سعودی",
-  "qatar", "قطر",
-  "portugal", "پرتغال",
-  "belgium", "بلژیک",
-  "austria", "اتریش",
-  "denmark", "دانمارک",
-  "scotland", "اسکاتلند",
-  "czech republic", "چک",
-  "sweden", "سوئد",
-  "croatia", "کرواسی",
-  "greece", "یونان",
-]);
-
 function normalizeKey(value) {
   return String(value || "")
     .toLowerCase()
@@ -37,15 +15,8 @@ function normalizeKey(value) {
     .trim();
 }
 
-function normalizeCountry(value) {
-  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 function isFallbackMatchInScope(match) {
-  const country = normalizeCountry(match?.country);
-  const league = normalizeCountry(match?.league);
-  const continental = /champions league|champions league elite|afc champions|uefa champions|لیگ قهرمانان/.test(league);
-  return FALLBACK_COUNTRIES.has(country) || continental || !country;
+  return isMatchCenterScope(match);
 }
 
 function dedupeMatches(matches = []) {
@@ -95,7 +66,7 @@ async function fallbackResponse(date, primaryError = null, cacheProfile = "fixtu
       ok: true,
       provider: "fallback-merged",
       sources: ["thesportsdb-day", "openfootball"],
-      scope: ["iran", "england", "spain", "italy", "france", "germany", "netherlands", "turkey", "saudi-arabia", "qatar", "portugal", "belgium", "austria", "denmark", "scotland", "czech-republic", "sweden", "croatia", "greece", "champions-leagues"],
+      scope: { clubLeagues: 10, nationalTeams: true },
       count: fallbackMatches.length,
       matches: fallbackMatches,
       degraded: true,
@@ -122,10 +93,11 @@ export async function GET(request) {
 
   try {
     const matches = await getMatches({ date, live, league, season });
-    if (matches.length || live || !date) {
+    const scopedMatches = !league ? matches.filter(isMatchCenterScope) : matches;
+    if (scopedMatches.length || live || !date) {
       return jsonWithCache(
         NextResponse,
-        { ok: true, provider: "api-football", count: matches.length, matches },
+        { ok: true, provider: "api-football", scope: { clubLeagues: 10, nationalTeams: true }, count: scopedMatches.length, matches: scopedMatches },
         cacheProfile,
       );
     }
