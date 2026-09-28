@@ -14,25 +14,29 @@ test("match center exposes exactly twelve selected club leagues", () => {
   }
 });
 
-test("national competition scope is senior-only", async () => {
+test("national competition scope is senior-only and anchored to the twelve selected countries", async () => {
   const { isMatchCenterScope } = await import("../lib/match-center-scope.js");
-  assert.equal(isMatchCenterScope({ league: "UEFA Nations League", country: "Europe" }), true);
-  assert.equal(isMatchCenterScope({ league: "FIFA World Cup", country: "World" }), true);
-  assert.equal(isMatchCenterScope({ league: "International Friendlies", country: "World" }), true);
+  const match = (home, away, league = "UEFA Nations League") => ({ home, away, league, country: "Europe" });
+
+  assert.equal(isMatchCenterScope(match("Türkiye", "Italy")), true);
+  assert.equal(isMatchCenterScope(match("Belgium", "France")), true);
+  assert.equal(isMatchCenterScope(match("Belgium", "Ukraine")), false);
+  assert.equal(isMatchCenterScope(match("England", "Spain", "International Friendlies")), true);
+  assert.equal(isMatchCenterScope(match("Belgium", "Netherlands", "FIFA World Cup")), true);
+
   for (const league of [
     "UEFA European Under-21 Championship",
     "UEFA European Under-19 Championship",
     "FIFA U20 World Cup",
     "FIFA U17 World Cup",
   ]) {
-    assert.equal(isMatchCenterScope({ league, country: "World" }), false, league);
+    assert.equal(isMatchCenterScope(match("France U21", "Belgium U21", league)), false, league);
   }
 });
 
 test("club competitions outside the twelve leagues are not granted by country alone", () => {
   const source = read("lib/match-center-scope.js");
   assert.match(source, /getClubLeagueScope/);
-  assert.match(source, /NATIONAL_ONLY_COUNTRIES/);
   assert.match(source, /return null/);
 });
 
