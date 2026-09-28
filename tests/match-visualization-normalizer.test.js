@@ -103,3 +103,10 @@ test("explicit demo events remain supported but are not injected", () => {
 test("eventSide returns empty for unrelated teams", () => {
   assert.equal(eventSide({ team: { id: 999, name: "France" } }, details), "");
 });
+
+
+test("deduplicates identical upstream events", () => {
+  const goal = { type: "Goal", time: { elapsed: 10 }, team: { id: 10, name: "England" }, player: { id: 99, name: "Harry Kane" }, detail: "Normal Goal" };
+  const feed = buildVisualizationFeed([goal, { ...goal }], details);
+  assert.equal(feed.filter((event) => event.type === "goal").length, 1);
+});
