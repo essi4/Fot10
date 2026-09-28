@@ -52,6 +52,7 @@ const sourceLabel = (source) =>
         : "منبع نامشخص";
 
 const seasonLabel = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
   const start = n > 1800 ? n - 621 : n;
