@@ -89,14 +89,18 @@ export default function Golden10Theme({ children }) {
 
   return (
     <>
-      <div className="golden10-atmosphere" aria-hidden="true">
-        <div className="golden10-player-image" />
-        <div className="golden10-number">10</div>
-      </div>
-      <div className="golden10-badge" aria-hidden="true">
-        <span>۱۰</span>
-        {golden?.player_name && <small>{golden.player_name}</small>}
-      </div>
+      {golden && (
+        <>
+          <div className="golden10-atmosphere" aria-hidden="true">
+            <div className="golden10-player-image" />
+            <div className="golden10-number">10</div>
+          </div>
+          <div className="golden10-badge" aria-hidden="true">
+            <span>۱۰</span>
+            {golden.player_name && <small>{golden.player_name}</small>}
+          </div>
+        </>
+      )}
       {children}
     </>
   );
