@@ -13,11 +13,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import {
-  MATCH_VISUALIZATION_SCOPE,
-  getMatchVisualizationLeague,
-  isMatchVisualizationScope,
-} from "../../../lib/match-visualization-scope";
 import visualizationNormalizer from "../../../lib/match-visualization-normalizer.cjs";
 import { teamName } from "../../../lib/team-identity";
 import retroPitchRenderer from "../../../lib/retro-pitch-renderer.cjs";
@@ -44,18 +39,6 @@ const DEMO = {
     ["goal", 84, "انگلیس", "گل انگلیس", "⚽"],
   ],
 };
-
-function todayTehran() {
-  const p = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tehran",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .formatToParts(new Date())
-    .reduce((a, x) => ({ ...a, [x.type]: x.value }), {});
-  return `${p.year}-${p.month}-${p.day}`;
-}
 
 function phaseOf(details) {
   const s = String(details?.fixture?.status?.short || details?.statusShort || "").toUpperCase();
@@ -339,12 +322,10 @@ function Visualization() {
   const demo = sp.get("demo") === "1";
   const initialFixture = sp.get("fixture") || "";
 
-  const [fixtures, setFixtures] = useState([]);
   const [selected, setSelected] = useState(initialFixture);
   const [details, setDetails] = useState(null);
   const [lineups, setLineups] = useState([]);
   const [rawEvents, setRawEvents] = useState([]);
-  const [league, setLeague] = useState(sp.get("league") || "all");
   const [index, setIndex] = useState(0);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState("");
@@ -352,43 +333,28 @@ function Visualization() {
   const [sharing, setSharing] = useState(false);
   const [football360Live, setFootball360Live] = useState([]);
 
-  const scoped = useMemo(() => fixtures.filter(isMatchVisualizationScope), [fixtures]);
-  const broadcastCandidates = useMemo(() => football360Live.map((item) => ({
-    ...item,
-    football360Only: true,
-    detailAvailable: false,
-    statusShort: item.statusShort || "LIVE",
-    league: item.league || "پخش زنده",
-  })), [football360Live]);
-  const candidates = useMemo(() => {
-    const seen = new Set();
-    const result = [];
-    for (const item of [...scoped, ...broadcastCandidates]) {
-      const key = String(item.id || `${item.home}|${item.away}`);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      result.push(item);
-    }
-    return result;
-  }, [broadcastCandidates, scoped]);
   const activeDemo = demo;
-  const filtered = useMemo(
-    () =>
-      league === "all"
-        ? candidates
-        : candidates.filter((x) => getMatchVisualizationLeague(x)?.key === league),
-    [league, candidates],
-  );
+  const broadcastCandidates = useMemo(() => football360Live, [football360Live]);
 
   const match = activeDemo
     ? DEMO.details
-    : details || candidates.find((x) => String(x.id) === String(selected));
+    : details || broadcastCandidates.find((x) => String(x.id) === String(selected));
 
   useEffect(() => {
-    if (activeDemo || selected || !candidates.length) return;
-    const first = candidates[0];
+    if (activeDemo || selected || !broadcastCandidates.length) return;
+    const first = broadcastCandidates[0];
     if (first?.id) setSelected(String(first.id));
-  }, [activeDemo, candidates, selected]);
+  }, [activeDemo, broadcastCandidates, selected]);
+
+  useEffect(() => {
+    if (activeDemo || !broadcastCandidates.length) return;
+    if (!broadcastCandidates.some((item) => String(item.id) === String(selected))) {
+      setSelected(String(broadcastCandidates[0]?.id || ""));
+      setDetails(null);
+      setLineups([]);
+      setRawEvents([]);
+    }
+  }, [activeDemo, broadcastCandidates, selected]);
 
   const demoEvents = useMemo(
     () =>
@@ -414,9 +380,8 @@ function Visualization() {
 
   useEffect(() => {
     if (!enabled || activeDemo) return;
-    loadFixtures();
     loadFootball360Live();
-    const timer = setInterval(() => { loadFixtures(); loadFootball360Live(); }, 30000);
+    const timer = setInterval(loadFootball360Live, 15000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo]);
 
@@ -463,33 +428,35 @@ function Visualization() {
     }
   }
 
-  async function loadFixtures() {
-    try {
-      const response = await fetch(`/api/football/fixtures?date=${todayTehran()}`, {
-        cache: "no-store",
-      });
-      const json = await response.json();
-      if (!response.ok || !Array.isArray(json?.matches)) {
-        throw new Error("دریافت مسابقات ناموفق بود.");
-      }
-      const next = json.matches.filter(isMatchVisualizationScope);
-      setFixtures(next);
-      setSelected((current) => current || (next[0]?.id ? String(next[0].id) : ""));
-
-      setError("");
-    } catch (e) {
-      setError(e?.message || "دریافت مسابقات ناموفق بود.");
-    }
-  }
 
   async function loadMatch(id, quiet = false) {
     if (!id) return;
     const signal = football360Live.find((item) => String(item.id || "") === String(id));
+    if (signal && !signal.sourceMatchId) {
+      const fallbackDetails = {
+        fixture: { status: { short: "LIVE", elapsed: signal.elapsed ?? null }, date: signal.date || null },
+        teams: {
+          home: { id: `360-home-${signal.id || signal.home}`, name: signal.home, logo: signal.homeLogo || "" },
+          away: { id: `360-away-${signal.id || signal.away}`, name: signal.away, logo: signal.awayLogo || "" },
+        },
+        goals: { home: signal.homeScore ?? null, away: signal.awayScore ?? null },
+        league: { name: signal.league || "پخش زنده" },
+      };
+      setDetails(fallbackDetails);
+      setLineups([]);
+      setRawEvents([]);
+      setLastMatchDataAt(Date.now());
+      setStale(false);
+      setError("");
+      return;
+    }
+
+    const providerId = signal?.sourceMatchId || id;
     try {
       const [detailsResponse, eventsResponse, lineupsResponse] = await Promise.all([
-        fetch(`/api/football/fixture?id=${id}&section=details`, { cache: "no-store" }),
-        fetch(`/api/football/fixture?id=${id}&section=events`, { cache: "no-store" }),
-        fetch(`/api/football/fixture?id=${id}&section=lineups`, { cache: "no-store" }),
+        fetch(`/api/football/fixture?id=${providerId}&section=details`, { cache: "no-store" }),
+        fetch(`/api/football/fixture?id=${providerId}&section=events`, { cache: "no-store" }),
+        fetch(`/api/football/fixture?id=${providerId}&section=lineups`, { cache: "no-store" }),
       ]);
 
       const [detailsJson, eventsJson, lineupsJson] = await Promise.all([
@@ -530,14 +497,14 @@ function Visualization() {
     }
   }
 
+
   function selectFixture(id) {
     setSelected(String(id));
     setDetails(null);
     setRawEvents([]);
+    setLineups([]);
     const url = new URL(window.location.href);
-    url.searchParams.set("viz", "1");
     url.searchParams.set("fixture", String(id));
-    url.searchParams.set("league", league);
     url.searchParams.delete("demo");
     window.history.replaceState(null, "", url);
   }
@@ -588,9 +555,9 @@ function Visualization() {
 
   return (
     <section className="space-y-3">
-      {!activeDemo && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب مسابقه">
-          {filtered.slice(0, 20).map((fixture) => (
+      {!activeDemo && football360Live.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب پخش زنده">
+          {football360Live.slice(0, 30).map((fixture) => (
             <button
               type="button"
               key={fixture.id}
@@ -598,7 +565,7 @@ function Visualization() {
               className={`min-w-[180px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation ${String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]"}`}
             >
               <span className="block truncate text-[8px] text-slate-500">
-                {fixture.football360Only ? "۳۶۰ · پخش زنده" : (fixture.league || "—")} · {fixture.statusShort || "—"}
+                ۳۶۰ · پخش زنده · {fixture.statusShort || "LIVE"}
               </span>
               <span className="mt-1 block truncate text-[9px] font-black text-slate-300">
                 {fixture.home || "—"} · {fixture.away || "—"}
@@ -621,10 +588,10 @@ function Visualization() {
       )}
 
       {!hasRenderableMatch && (
-        <section className="rounded-[30px] border border-white/10 bg-white/[.025] p-6 text-center">
+        <section className="rounded-[30px] border border-white/10 bg-white/[.025] p-7 text-center">
           <Radio className="mx-auto mb-2 text-slate-500" size={22} />
-          <h2 className="text-base font-black text-slate-200">اطلاعات تصویری مسابقه در حال حاضر در دسترس نیست.</h2>
-          <p className="mt-2 text-xs text-slate-600">تا وقتی مسابقه واقعی و داده معتبر دریافت نشود، هیچ مسابقه ساختگی نمایش داده نمی‌شود.</p>
+          <h2 className="text-base font-black text-slate-200">در حال حاضر پخش زنده‌ای در دسترس نیست.</h2>
+          <p className="mt-2 text-xs leading-6 text-slate-600">هر مسابقه‌ای که سیگنال پخش زنده دریافت کند، همین‌جا با سبک پخش مینیمال نوستالژیک نمایش داده می‌شود.</p>
         </section>
       )}
 
@@ -793,16 +760,9 @@ export default function MatchVisualizationPage() {
     <main className="fot-shell">
       <div className="fot-container space-y-4 pb-28">
         <header className="flex items-center gap-3">
-          <Link
-            href="/leagues"
-            aria-label="بازگشت"
-            className="glass grid h-11 w-11 shrink-0 place-items-center rounded-xl touch-manipulation"
-          >
-            <ArrowRight size={18} />
-          </Link>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-black text-slate-100">نمایش مسابقه</h1>
-            <p className="text-[10px] text-slate-500">FOT10 · Match Visualization · داده واقعی مسابقه</p>
+            <h1 className="truncate text-xl font-black text-slate-100">FOT10 · پخش مینیمال</h1>
+            <p className="text-[10px] text-slate-500">پخش نوستالژیک مسابقات زنده · داده واقعی</p>
           </div>
         </header>
 
