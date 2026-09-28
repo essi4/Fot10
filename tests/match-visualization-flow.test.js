@@ -4,72 +4,55 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const pagePath = path.join(process.cwd(), "app/matches/visualization/page.js");
-const detailPath = path.join(process.cwd(), "app/matches/[id]/page.js");
-const scopePath = path.join(process.cwd(), "lib/match-center-scope.js");
+const homePath = path.join(process.cwd(), "app/page.js");
+const layoutPath = path.join(process.cwd(), "app/layout.js");
 
 function read(file) {
   return fs.readFileSync(file, "utf8");
 }
 
-test("flow contract keeps twelve selected club leagues plus national competitions", () => {
-  const source = read(scopePath);
-  const entries = source.match(/{ key:/g) || [];
-  assert.equal(entries.length, 12);
-  for (const leagueId of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307, 128, 71]) {
-    assert.match(source, new RegExp("leagueIds: \\[" + leagueId + "\\]"));
-  }
-  assert.match(source, /NATIONAL_COMPETITION_PATTERNS/);
-  assert.match(source, /YOUTH_NATIONAL_MARKER/);
-  assert.match(source, /under[- ]?/i);
-  assert.match(source, /world cup/);
+test("FOT10 home is the minimalist broadcast", () => {
+  const source = read(homePath);
+  assert.match(source, /export \{ default \} from "\.\/matches\/visualization\/page"/);
 });
 
-test("national competition examples are accepted while unrelated club competitions are not", () => {
-  const source = read(scopePath);
-  assert.match(source, /getMatchCenterScope/);
-  assert.match(source, /national-team/);
-  assert.match(source, /return null/);
-});
-
-test("visualization flow reads fixture list, details, events and lineups", () => {
+test("visualization consumes Football360 live signals and real fixture data when a provider id exists", () => {
   const source = read(pagePath);
-  assert.match(source, /api\/football\/fixtures\?date=/);
-  assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=details/);
-  assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=events/);
-  assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
-  assert.match(source, /Timeline رویدادها/);
-  assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
-  assert.match(source, /sp\.get\("demo"\) === "1"/);
-});
-
-test("real mode does not inject synthetic timeline/player movement and can consume Football360 live signals", () => {
-  const source = read(pagePath);
-  assert.match(source, /if \(!enabled \|\| activeDemo\)/);
-  assert.match(source, /DEMO\.events\.map/);
-  assert.ok(source.includes("const feedSource = activeDemo ? demoEvents : rawEvents"));
   assert.match(source, /\/api\/football360\/live/);
-  assert.match(source, /football360Linked/);
-  assert.match(source, /چیدمان پیکسلی · نمایشی؛ موقعیت لحظه‌ای نیست/);
+  assert.match(source, /Football360/);
+  assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=details/);
+  assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=events/);
+  assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=lineups/);
+  assert.match(source, /هر مسابقه‌ای که سیگنال پخش زنده دریافت کند/);
 });
 
-test("mobile QA contract protects touch targets, reduced motion and selection state", () => {
+test("retro player sprites are clearly illustrative and not live positional data", () => {
+  const source = read(pagePath);
+  assert.match(source, /RetroPlayerSprite/);
+  assert.match(source, /چیدمان پیکسلی · نمایشی؛ موقعیت لحظه‌ای نیست/);
+  assert.match(source, /motion-reduce/);
+});
+
+test("demo mode remains explicitly isolated", () => {
+  const source = read(pagePath);
+  assert.match(source, /sp\.get\("demo"\) === "1"/);
+  assert.match(source, /DEMO MATCH/);
+  assert.match(source, /activeDemo/);
+});
+
+test("old product navigation is not part of the new shell", () => {
+  const source = read(layoutPath);
+  assert.doesNotMatch(source, /BottomNav/);
+  assert.doesNotMatch(source, /PushBell/);
+  assert.doesNotMatch(source, /LanguageToggle/);
+  assert.doesNotMatch(source, /حساب من/);
+});
+
+test("touch targets and stale-data protection remain in the broadcast UI", () => {
   const source = read(pagePath);
   assert.match(source, /min-h-\[44px\]/);
   assert.match(source, /touch-manipulation/);
-  assert.match(source, /motion-reduce/);
-  assert.match(source, /setSelected\(\(current\) => current \|\|/);
-  assert.match(source, /setStale\(true\)/);
   assert.match(source, /lastMatchDataAt/);
-  const fixturesStart = source.indexOf("async function loadFixtures");
-  const matchStart = source.indexOf("async function loadMatch");
-  assert.ok(fixturesStart >= 0 && matchStart > fixturesStart);
-  const fixturesSection = source.slice(fixturesStart, matchStart);
-  assert.doesNotMatch(fixturesSection, /setStale/);
-  assert.match(source.slice(matchStart), /setLastMatchDataAt\(Date\.now\(\)\);/);
-});
-
-test("match details hands the selected fixture id into Match Vision", () => {
-  const source = read(detailPath);
-  assert.match(source, /\/matches\/visualization\?viz=1&fixture=\$\{encodeURIComponent\(match\.fixture\?\.id \|\| ""\)\}/);
-  assert.match(source, /Timeline و Visualization/);
+  assert.match(source, /setStale\(true\)/);
+  assert.match(source, /داده تازه دریافت نشد؛ نمایش زنده متوقف می‌شود/);
 });
