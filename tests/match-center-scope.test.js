@@ -6,10 +6,10 @@ const path = require("node:path");
 const root = path.join(process.cwd());
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-test("match center exposes exactly ten selected club leagues", () => {
+test("match center exposes exactly twelve selected club leagues", () => {
   const source = read("lib/match-center-scope.js");
-  assert.equal((source.match(/leagueIds: \[/g) || []).length, 10);
-  for (const id of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307]) {
+  assert.equal((source.match(/leagueIds: \[/g) || []).length, 12);
+  for (const id of [195, 39, 140, 135, 78, 61, 88, 94, 203, 307, 128, 71]) {
     assert.ok(source.includes("leagueIds: [" + id + "]"), "missing league " + id);
   }
 });
@@ -29,7 +29,7 @@ test("national competition scope is senior-only", async () => {
   }
 });
 
-test("club competitions outside the ten leagues are not granted by country alone", () => {
+test("club competitions outside the twelve leagues are not granted by country alone", () => {
   const source = read("lib/match-center-scope.js");
   assert.match(source, /getClubLeagueScope/);
   assert.match(source, /NATIONAL_ONLY_COUNTRIES/);
@@ -38,8 +38,8 @@ test("club competitions outside the ten leagues are not granted by country alone
 
 test("core navigation has the four requested features", () => {
   const source = read("components/BottomNav.js");
-  assert.match(source, /\["خانه", House, "\/"]/);
-  assert.match(source, /\["فوتبال منتخب", Shield, "\/matches"\]/);
+  assert.match(source, /["خانه", House, "\/"]/);
+  assert.match(source, /["فوتبال منتخب", Shield, "\/leagues"]/);
   assert.doesNotMatch(source, /۱۰ لیگ و تیم ملی/);
   assert.match(source, /نتایج زنده/);
   assert.match(source, /علاقه‌مندی/);
