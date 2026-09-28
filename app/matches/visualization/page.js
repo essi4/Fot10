@@ -284,8 +284,7 @@ function RetroPitch({ events, selectedEvent, match }) {
 
 function Visualization() {
   const sp = useSearchParams();
-  const enabled =
-    process.env.NEXT_PUBLIC_FOT10_MATCH_VISUALIZATION === "true" || sp.get("viz") === "1";
+  const enabled = true;
   const demo = sp.get("demo") === "1";
   const initialFixture = sp.get("fixture") || "";
 
