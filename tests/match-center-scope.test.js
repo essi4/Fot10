@@ -38,8 +38,9 @@ test("club competitions outside the ten leagues are not granted by country alone
 
 test("core navigation has the four requested features", () => {
   const source = read("components/BottomNav.js");
-  assert.match(source, /Match Visualization/);
-  assert.match(source, /۱۰ لیگ و تیم ملی/);
+  assert.match(source, /\["خانه", House, "\/"]/);
+  assert.match(source, /\["فوتبال منتخب", Shield, "\/matches"\]/);
+  assert.doesNotMatch(source, /۱۰ لیگ و تیم ملی/);
   assert.match(source, /نتایج زنده/);
   assert.match(source, /علاقه‌مندی/);
   assert.match(source, /grid-cols-4/);
