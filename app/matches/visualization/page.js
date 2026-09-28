@@ -219,12 +219,13 @@ function Visualization() {
     </div>
 
     {activeDemo && <div className="rounded-2xl border border-amber-300/15 bg-amber-300/5 p-3 text-[9px] text-amber-100">Demo QA فقط با ?demo=1 فعال می‌شود و برای تست کارت، گل، نیمه‌وقت، پایان و Reduced Motion است؛ داده واقعی را تغییر نمی‌دهد.</div>}
-    {error && <div className="rounded-2xl border border-red-400/15 bg-red-400/5 p-3 text-[9px] text-red-200">{error}</div>}\n    {!activeDemo && !match && <div className="rounded-2xl border border-white/10 bg-white/[.025] p-5 text-center"><div className="text-sm font-black text-slate-300">مسابقه‌ای برای نمایش انتخاب نشده است</div><p className="mt-2 text-[9px] leading-5 text-slate-500">یک مسابقه از فهرست بالا انتخاب کن. در این حالت هیچ رویداد یا نتیجه ساختگی نمایش داده نمی‌شود.</p></div>}
+    {error && <div className="rounded-2xl border border-red-400/15 bg-red-400/5 p-3 text-[9px] text-red-200">{error}</div>}
+    {!activeDemo && !match && <div className="rounded-2xl border border-white/10 bg-white/[.025] p-5 text-center"><div className="text-sm font-black text-slate-300">مسابقه‌ای برای نمایش انتخاب نشده است</div><p className="mt-2 text-[9px] leading-5 text-slate-500">یک مسابقه از فهرست بالا انتخاب کن. در این حالت هیچ رویداد یا نتیجه ساختگی نمایش داده نمی‌شود.</p></div>}
 
     <div className="rounded-3xl border border-white/10 bg-white/[.025] p-3.5">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-black/20 p-3 text-center">
         <div className="min-w-0"><b className="block truncate text-sm text-blue-200">{match?.teams?.home?.name || "میزبان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreHome}</strong></div>
-        <div className="min-w-[90px]"><span className="text-xs font-black text-slate-500">{event?.minuteLabel || (match?.fixture?.status?.elapsed != null ? `${match.fixture.status.elapsed}'` : "—")}'</span><span className="mx-1 text-slate-700">·</span><span className="text-[8px] text-slate-500">{event?.label || "داده رویدادی"}</span></div>
+        <div className="min-w-[90px]"><span className="text-xs font-black text-slate-500">{event?.minuteLabel || (match?.fixture?.status?.elapsed != null ? `${match.fixture.status.elapsed}'` : "—")}</span><span className="mx-1 text-slate-700">·</span><span className="text-[8px] text-slate-500">{event?.label || "داده رویدادی"}</span></div>
         <div className="min-w-0"><b className="block truncate text-sm text-red-200">{match?.teams?.away?.name || "مهمان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreAway}</strong></div>
       </div>
     </div>
