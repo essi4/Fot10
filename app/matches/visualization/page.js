@@ -109,6 +109,26 @@ function commentsLabel(match) {
   return Number.isFinite(value) ? `${value.toLocaleString("fa-IR")} نظر` : "نظرات";
 }
 
+const TEAM_NAME_FA = {
+  Turkey: "ترکیه",
+  Türkiye: "ترکیه",
+  Italy: "ایتالیا",
+  Spain: "اسپانیا",
+  England: "انگلیس",
+  Germany: "آلمان",
+  France: "فرانسه",
+  Netherlands: "هلند",
+  Portugal: "پرتغال",
+  Brazil: "برزیل",
+  Argentina: "آرژانتین",
+  Iran: "ایران",
+  "Saudi Arabia": "عربستان",
+};
+
+function displayTeamName(name) {
+  return TEAM_NAME_FA[name] || teamName(name);
+}
+
 function teamCountry(name) {
   const text = String(name || "");
   if (/turkey|türkiye|ترکیه/i.test(text)) return "ترکیه";
@@ -157,7 +177,7 @@ function eventTeamSide(canonical, match) {
 
 function TeamBlock({ team, score, align = "center" }) {
   const sourceName = team?.name || "—";
-  const name = teamName(sourceName);
+  const name = displayTeamName(sourceName);
   const country = team?.country || teamCountry(sourceName);
   const logo = team?.logo || team?.image || "";
   return (
@@ -446,8 +466,8 @@ function Visualization() {
   const scoreAway = Number.isFinite(Number(scoreAwayValue)) ? Number(scoreAwayValue) : "—";
   const homeTeam = match?.teams?.home || { name: match?.home || "میزبان", logo: match?.homeLogo || "" };
   const awayTeam = match?.teams?.away || { name: match?.away || "مهمان", logo: match?.awayLogo || "" };
-  const homeTeamName = teamName(homeTeam.name || "میزبان");
-  const awayTeamName = teamName(awayTeam.name || "مهمان");
+  const homeTeamName = displayTeamName(homeTeam.name || "میزبان");
+  const awayTeamName = displayTeamName(awayTeam.name || "مهمان");
   const dateTime = toFaDateTime(match?.fixture?.date || match?.date);
   const competitionRaw = match?.league?.name || match?.league || "—";
   const competition = COMPETITION_FA[competitionRaw] || competitionRaw;
