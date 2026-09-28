@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const pagePath = path.join(process.cwd(), "app/matches/visualization/page.js");
 const detailPath = path.join(process.cwd(), "app/matches/[id]/page.js");
-const scopePath = path.join(process.cwd(), "lib/match-visualization-scope.js");
+const scopePath = path.join(process.cwd(), "lib/match-center-scope.js");
 
 function read(file) {
   return fs.readFileSync(file, "utf8");
