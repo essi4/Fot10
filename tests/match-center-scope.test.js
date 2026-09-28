@@ -14,12 +14,13 @@ test("match center exposes exactly ten selected club leagues", () => {
   }
 });
 
-test("national competition scope includes UEFA U21 and international matches", () => {
+test("national competition scope is senior-only", () => {
   const source = read("lib/match-center-scope.js");
   assert.match(source, /uefa.*under/i);
   assert.match(source, /international friendlies/);
   assert.match(source, /world cup/);
   assert.match(source, /nations league/);
+  assert.doesNotMatch(source, /european under/);
 });
 
 test("club competitions outside the ten leagues are not granted by country alone", () => {
