@@ -9,10 +9,10 @@ const {
 test("normalizes a Football360 live payload and keeps only FOT10 scope", () => {
   const payload = {
     data: [
-      { id: "a", home: "Turkey", away: "Italy", status: "LIVE", score: { home: 1, away: 0 } },
-      { id: "b", home: "Belgium", away: "France", status: "live" },
-      { id: "c", home: "Belgium", away: "Ukraine", status: "live" },
-      { id: "d", home: "France U21", away: "Belgium U21", status: "live" },
+      { id: "a", home: "Turkey", away: "Italy", status: "LIVE", league: "UEFA Nations League", score: { home: 1, away: 0 } },
+      { id: "b", home: "Belgium", away: "France", status: "live", league: "UEFA Nations League" },
+      { id: "c", home: "Belgium", away: "Ukraine", status: "live", league: "UEFA Nations League" },
+      { id: "d", home: "France U21", away: "Belgium U21", status: "live", league: "UEFA Nations League" },
     ],
   };
   const matches = normalizeFootball360LiveResponse(payload);
@@ -21,7 +21,7 @@ test("normalizes a Football360 live payload and keeps only FOT10 scope", () => {
 });
 
 test("recognizes normalized Türkiye team names", () => {
-  const payload = [{ home: "Türkiye", away: "Italy", status: "live" }];
+  const payload = [{ home: "Türkiye", away: "Italy", status: "live", league: "UEFA Nations League" }];
   const matches = normalizeFootball360LiveResponse(payload);
   assert.equal(matches.length, 1);
 });
