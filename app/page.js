@@ -1,18 +1,14 @@
 "use client";
 
-import { BarChart3, ChevronLeft, Medal, Search, Settings, Shield, Trophy, Users, Zap } from "lucide-react";
+import { Activity, ChevronLeft, Heart, Radio, Search, Shield } from "lucide-react";
 import Link from "next/link";
 import HomeMatchdayHub from "./components/HomeMatchdayHub";
-import HomeNews from "./components/HomeNews";
 
 const quickNav = [
-  ["نتایج زنده", Trophy, "/matches?live=1"],
-  ["لیگ‌ها", Trophy, "/leagues"],
-  ["تیم ملی", Shield, "/national-teams"],
-  ["بازیکنان", Users, "/players"],
-  ["آمار", BarChart3, "/stats"],
-  ["برترین‌های ماه", Medal, "/players"],
-  ["تنظیمات", Settings, "/settings"],
+  ["Match Visualization", Activity, "/matches/visualization"],
+  ["۱۰ لیگ و بازی ملی", Shield, "/matches"],
+  ["نتایج زنده", Radio, "/matches?live=1"],
+  ["علاقه‌مندی", Heart, "/favorites"],
 ];
 
 export default function HomePage() {
@@ -26,7 +22,7 @@ export default function HomePage() {
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-[18px] font-black italic text-slate-950 shadow-[0_8px_28px_rgba(34,211,238,.18)]">10</div>
               <div className="min-w-0">
                 <div className="text-xl font-black tracking-tight text-white">FOT<span className="text-cyan-300">10</span></div>
-                <div className="text-[8px] font-bold text-slate-500">رسانه و نبض زنده فوتبال</div>
+                <div className="text-[8px] font-bold text-slate-500">مرکز بازی و نتایج فوتبال</div>
               </div>
             </Link>
             <Link href="/search" aria-label="جستجو" className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-slate-300 transition hover:bg-white/[.08]">
@@ -40,7 +36,7 @@ export default function HomePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> فوتبال، همین حالا
               </div>
               <h1 className="text-[25px] font-black leading-[1.25] tracking-tight text-white sm:text-[30px]">همه فوتبال، یک‌جا</h1>
-              <p className="mt-2 text-[10px] font-bold leading-5 text-slate-400">خبر، نتیجه، بازی زنده، لیگ، آمار و بازیکن؛ سریع و ساده، با تمرکز روی چیزی که برای هوادار مهم است.</p>
+              <p className="mt-2 text-[10px] font-bold leading-5 text-slate-400">بازی، نتایج زنده، ۱۰ لیگ منتخب و مسابقات ملی، با علاقه‌مندی‌های شخصی؛ سریع و ساده.</p>
             </div>
             <div className="hidden select-none text-[92px] font-black italic leading-none text-white/[.035] sm:block">360</div>
           </div>
@@ -71,7 +67,6 @@ export default function HomePage() {
       </header>
 
       <HomeMatchdayHub />
-      <HomeNews />
 
       <section className="mt-7">
         <div className="mb-3 flex items-end justify-between">
