@@ -384,7 +384,7 @@ function Visualization() {
   const event = sequence[Math.min(index, Math.max(sequence.length - 1, 0))] || sequence[0] || null;
   const phase = stale ? "stale" : activeDemo ? "finished" : phaseOf(match);
   const phaseForUi = phase === "stale" ? "live" : phase;
-  const football360Linked = Boolean(match && football360Live.some((candidate) => sameMatch(match, candidate)));
+  const football360Linked = Boolean(!activeDemo && match && football360Live.some((candidate) => sameMatch(match, candidate)));
 
   useEffect(() => {
     if (!enabled || activeDemo) return;
