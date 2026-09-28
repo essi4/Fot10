@@ -384,6 +384,12 @@ function Visualization() {
     ? DEMO.details
     : details || candidates.find((x) => String(x.id) === String(selected));
 
+  useEffect(() => {
+    if (activeDemo || selected || !candidates.length) return;
+    const first = candidates[0];
+    if (first?.id) setSelected(String(first.id));
+  }, [activeDemo, candidates, selected]);
+
   const demoEvents = useMemo(
     () =>
       DEMO.events.map(([type, minute, team, label, icon]) => ({
