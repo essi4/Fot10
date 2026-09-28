@@ -11,6 +11,9 @@ const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"
 const FINISHED_CODES = new Set(["FT", "AET", "PEN"]);
 const LIVE_LABELS = { "1H": "نیمه اول", HT: "بین دو نیمه", "2H": "نیمه دوم", ET: "وقت اضافه", P: "پنالتی", BT: "استراحت", LIVE: "در جریان", "IN PLAY": "در جریان" };
 
+function readFavorites() { try { const raw = JSON.parse(localStorage.getItem("fot10-profile") || "{}"); return Array.isArray(raw.favoriteMatches) ? raw.favoriteMatches : []; } catch { return []; } }
+function writeFavorites(items) { try { const raw = JSON.parse(localStorage.getItem("fot10-profile") || "{}"); localStorage.setItem("fot10-profile", JSON.stringify({ ...raw, favoriteMatches: items })); } catch {} }
+function favoriteKey(game) { return String(game.id); }
 function readSettings() { try { return { autoRefresh: true, compactScores: true, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") }; } catch { return { autoRefresh: true, compactScores: true }; } }
 function iranDate(offset = 0) { const now = new Date(); const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now).reduce((a, p) => ({ ...a, [p.type]: p.value }), {}); const d = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); }
 function toTime(value) { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Tehran" }); }
@@ -105,11 +108,12 @@ function MatchesContent() {
   const [settings, setSettings] = useState({ autoRefresh: true, compactScores: true });
   const [updatedAt, setUpdatedAt] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [favoriteMatches, setFavoriteMatches] = useState([]);
   const requestInFlight = useRef(false);
   const date = useMemo(() => requestedDate || iranDate(day), [requestedDate, day]);
 
   useEffect(() => {
-    const sync = () => setSettings(readSettings());
+    const sync = () => { setSettings(readSettings()); setFavoriteMatches(readFavorites()); };
     sync();
     window.addEventListener("storage", sync);
     window.addEventListener("fot10-settings-changed", sync);
@@ -203,6 +207,15 @@ function MatchesContent() {
   }, {}), [filteredGames]);
 
   const liveCount = filteredGames.filter((g) => g.live).length;
+  const toggleFavorite = useCallback((game) => {
+    setFavoriteMatches((current) => {
+      const key = favoriteKey(game);
+      const exists = current.some((item) => favoriteKey(item) === key);
+      const next = exists ? current.filter((item) => favoriteKey(item) !== key) : [...current, { id: game.id, home: game.home, away: game.away, homeLogo: game.homeLogo, awayLogo: game.awayLogo, league: game.league, country: game.country, date: game.date, homeScore: game.homeScore, awayScore: game.awayScore, statusLabel: game.statusLabel, live: game.live }];
+      writeFavorites(next);
+      return next;
+    });
+  }, []);
   const dayLabel = day === -1 ? "دیروز" : day === 1 ? "فردا" : "امروز";
 
   return (
@@ -253,7 +266,12 @@ function MatchesContent() {
                     <Link key={g.id} href={g.detailAvailable === false ? `/matches?date=${date}` : `/matches/${g.id}`} className="block rounded-[24px] border border-slate-200 bg-white p-3.5 shadow-[0_8px_25px_rgba(15,23,42,.04)] transition active:scale-[.995] hover:border-slate-300">
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <span className="text-[8px] font-bold text-slate-400">{g.country || "فوتبال منتخب"} · {g.league}</span>
-                        <span className={`rounded-full px-2 py-1 text-[8px] font-black ${g.live ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"}`}>{g.live ? `${g.statusLabel}${g.elapsed != null ? ` · ${g.elapsed}'` : ""}` : g.statusLabel}</span>
+                        <div className="flex items-center gap-1.5">
+                          <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleFavorite(g); }} className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500" aria-label={favoriteMatches.some((item) => favoriteKey(item) === favoriteKey(g)) ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}>
+                            <Heart size={15} fill={favoriteMatches.some((item) => favoriteKey(item) === favoriteKey(g)) ? "currentColor" : "none"} />
+                          </button>
+                          <span className={`rounded-full px-2 py-1 text-[8px] font-black ${g.live ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"}`}>{g.live ? `${g.statusLabel}${g.elapsed != null ? ` · ${g.elapsed}'` : ""}` : g.statusLabel}</span>
+                        </div>
                       </div>
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2.5">
                         <div className="min-w-0 text-center">
