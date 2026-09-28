@@ -576,7 +576,9 @@ function Visualization() {
                   <Radio size={15} className="text-cyan-300" />
                   <span className="text-[9px] font-black tracking-[0.12em] text-cyan-200">MATCH CENTER</span>
                 </div>
-                <div className="flex items-center gap-1.5">\n                  {football360Linked && <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-2.5 py-1 text-[8px] font-black text-amber-200">۳۶۰ · پخش زنده</span>}\n                  <span className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}>
+                <div className="flex items-center gap-1.5">
+                  {football360Linked && <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-2.5 py-1 text-[8px] font-black text-amber-200">۳۶۰ · پخش زنده</span>}
+                  <span className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}>
                   {phase === "stale" ? "داده قدیمی" : phaseLabel(phaseForUi)}
                 </span>
               </div>
