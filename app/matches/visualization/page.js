@@ -12,6 +12,8 @@ import {
 import visualizationNormalizer from "../../../lib/match-visualization-normalizer.cjs";
 
 const { buildVisualizationFeed, eventSide } = visualizationNormalizer;
+import retroPitchRenderer from "../../../lib/retro-pitch-renderer.cjs";
+const { selectRenderablePitchEvents } = retroPitchRenderer;
 
 const DEMO = {
   details: {
