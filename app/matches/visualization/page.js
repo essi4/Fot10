@@ -50,7 +50,7 @@ function todayTehran() {
 }
 
 function phaseOf(details) {
-  const s = String(details?.fixture?.status?.short || "").toUpperCase();
+  const s = String(details?.fixture?.status?.short || details?.statusShort || "").toUpperCase();
   if (["FT","AET","PEN"].includes(s)) return "finished";
   if (s === "HT") return "halftime";
   if (["1H","2H","ET","P","BT","LIVE","IN PLAY"].includes(s)) return "live";
@@ -140,7 +140,7 @@ function Visualization() {
       if (!r.ok || !Array.isArray(j?.matches)) throw new Error("دریافت مسابقات ناموفق بود.");
       const next = j.matches.filter(isMatchVisualizationScope);
       setFixtures(next);
-      if (!selected && next[0]?.id) setSelected(String(next[0].id));
+      setSelected((current) => current || (next[0]?.id ? String(next[0].id) : ""));
       setLastDataAt(Date.now()); setStale(false); setError("");
     } catch (e) {
       setError(e?.message || "دریافت مسابقات ناموفق بود.");
@@ -235,8 +235,12 @@ function Visualization() {
   if (!enabled) return <section className="glass rounded-3xl p-6 text-center"><ShieldAlert className="mx-auto mb-3 text-amber-300" size={28}/><h2 className="font-black text-slate-200">Match Visualization غیرفعال است</h2><p className="mt-2 text-xs text-slate-500">برای Preview می‌توان با viz=1 فعالش کرد.</p></section>;
 
   const hasRenderableMatch = Boolean(match || activeDemo);
-  const scoreHome = Number.isFinite(Number(match?.goals?.home)) ? match.goals.home : "—";
-  const scoreAway = Number.isFinite(Number(match?.goals?.away)) ? match.goals.away : "—";
+  const scoreHomeValue = match?.goals?.home ?? match?.homeScore;
+  const scoreAwayValue = match?.goals?.away ?? match?.awayScore;
+  const scoreHome = Number.isFinite(Number(scoreHomeValue)) ? Number(scoreHomeValue) : "—";
+  const scoreAway = Number.isFinite(Number(scoreAwayValue)) ? Number(scoreAwayValue) : "—";
+  const homeTeamName = match?.teams?.home?.name || match?.home || "میزبان";
+  const awayTeamName = match?.teams?.away?.name || match?.away || "مهمان";
 
   return <section className="space-y-3">
     <div className="rounded-3xl border border-cyan-400/15 bg-cyan-400/[.05] p-4">
@@ -265,9 +269,9 @@ function Visualization() {
 
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-black/20 p-3 text-center">
-        <div className="min-w-0"><b className="block truncate text-sm text-blue-200">{match?.teams?.home?.name || "میزبان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreHome}</strong></div>
+        <div className="min-w-0"><b className="block truncate text-sm text-blue-200">{homeTeamName}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreHome}</strong></div>
         <div className="min-w-[90px]"><span className="text-xs font-black text-slate-500">{event?.minuteLabel || (match?.fixture?.status?.elapsed != null ? `${match.fixture.status.elapsed}'` : "—")}</span><span className="mx-1 text-slate-700">·</span><span className="text-[8px] text-slate-500">{event?.label || "داده رویدادی"}</span></div>
-        <div className="min-w-0"><b className="block truncate text-sm text-red-200">{match?.teams?.away?.name || "مهمان"}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreAway}</strong></div>
+        <div className="min-w-0"><b className="block truncate text-sm text-red-200">{awayTeamName}</b><strong className="mt-1 block text-2xl text-white tabular-nums">{scoreAway}</strong></div>
       </div>
     </div>
 
