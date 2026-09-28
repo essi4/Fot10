@@ -33,7 +33,8 @@ test("visualization flow reads fixture list, details, events and lineups", () =>
 test("real mode never advances the event timeline as a synthetic replay", () => {
   const source = read(pagePath);
   assert.match(source, /if \(!enabled \|\| stale \|\| !running \|\| !activeDemo/);
-  assert.match(source, /const demoEvents = useMemo\(\(\) => DEMO\.events\.map/);\n  assert.match(source, /const feedSource = activeDemo \? demoEvents : rawEvents/);
+  assert.ok(source.includes("const demoEvents = useMemo(() => DEMO.events.map"));
+  assert.ok(source.includes("const feedSource = activeDemo ? demoEvents : rawEvents"));
   assert.match(source, /playersFor\(match \|\| DEMO\.details, event, tick, lineups, activeDemo\)/);
 });
 
