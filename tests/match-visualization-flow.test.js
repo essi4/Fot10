@@ -27,7 +27,7 @@ test("visualization flow reads fixture list, details, events and lineups", () =>
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=events/);
   assert.match(source, /api\/football\/fixture\?id=\$\{id\}&section=lineups/);
   assert.match(source, /Timeline واقعی رویدادها/);
-  assert.match(source, /?demo=1|demo/);
+  assert.match(source, /demo=1/);
 });
 
 test("real mode never advances the event timeline as a synthetic replay", () => {
