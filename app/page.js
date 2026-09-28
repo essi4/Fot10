@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowLeft, Heart, Radio, Shield } from "lucide-react";
+import { Activity, ArrowLeft, CircleDot, Heart, Radio, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import HomeMatchdayHub from "./components/HomeMatchdayHub";
 
@@ -183,9 +183,9 @@ export default function HomePage() {
           <div className="absolute inset-y-0 left-0 w-1.5 bg-slate-900" />
           <div className="p-5 sm:p-7">
             <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-slate-900 text-sm font-black italic text-white">10</div>
+              <div aria-label="FOT10" className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-950 text-white shadow-sm"><span className="absolute inset-x-2 top-2 h-px bg-white/20" /><CircleDot size={13} className="absolute right-2 top-2 text-white/60" /><span className="relative text-[15px] font-black leading-none tracking-[-.08em]">10</span><span className="absolute bottom-1.5 left-2 text-[6px] font-black tracking-[.18em] text-white/60">FOT</span></div>
               <div>
-                <div className="text-2xl font-black tracking-tight">FOT10</div>
+                <div className="text-2xl font-black tracking-[-.04em]">FOT10</div>
                 <div className="text-[9px] font-bold text-slate-500">Football Data · Match Center</div>
               </div>
             </div>
