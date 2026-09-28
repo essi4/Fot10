@@ -111,7 +111,7 @@ function Visualization() {
   const [stale, setStale] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [error, setError] = useState("");
-  const [lastDataAt, setLastDataAt] = useState(0);
+  const [lastMatchDataAt, setLastMatchDataAt] = useState(0);
   const [followLatest, setFollowLatest] = useState(true);
 
   const scoped = useMemo(() => fixtures.filter(isMatchVisualizationScope), [fixtures]);
@@ -141,7 +141,7 @@ function Visualization() {
       const next = j.matches.filter(isMatchVisualizationScope);
       setFixtures(next);
       setSelected((current) => current || (next[0]?.id ? String(next[0].id) : ""));
-      setLastDataAt(Date.now()); setStale(false); setError("");
+      setError("");
     } catch (e) {
       setError(e?.message || "دریافت مسابقات ناموفق بود.");
     }
@@ -160,10 +160,10 @@ function Visualization() {
       setDetails(dj.data);
       setRawEvents(Array.isArray(ej?.data) ? ej.data : []);
       setLineups(Array.isArray(lj?.data) ? lj.data : []);
-      setLastDataAt(Date.now()); setStale(false); setError("");
+      setLastMatchDataAt(Date.now()); setStale(false); setError("");
     } catch (e) {
       setError(e?.message || "داده مسابقه دریافت نشد.");
-      if (!quiet && lastDataAt && Date.now() - lastDataAt > 20000) setStale(true);
+      if (!quiet && lastMatchDataAt && Date.now() - lastMatchDataAt > 20000) setStale(true);
     }
   }
 
@@ -207,16 +207,16 @@ function Visualization() {
   }, [activeDemo, league, filtered, selected]);
 
   useEffect(() => {
-    if (!enabled || activeDemo || !lastDataAt) return;
+    if (!enabled || activeDemo || !lastMatchDataAt) return;
     const t = setInterval(() => {
       const s = String(match?.fixture?.status?.short || "").toUpperCase();
       const terminal = ["FT","AET","PEN","CANC","ABD","AWD","WO"].includes(s);
-      if (!terminal && Date.now() - lastDataAt > 20000) {
+      if (!terminal && Date.now() - lastMatchDataAt > 20000) {
         setStale(true); setRunning(false);
       }
     }, 1000);
     return () => clearInterval(t);
-  }, [enabled, activeDemo, lastDataAt, match]);
+  }, [enabled, activeDemo, lastMatchDataAt, match]);
 
   function selectFixture(id) {
     setSelected(String(id));
