@@ -4,6 +4,7 @@ import { getOpenFootballMatches } from "../../../../lib/openfootball";
 import { getSportsDbDayMatches } from "../../../../lib/thesportsdb-day";
 import { teamName } from "../../../../lib/team-identity";
 import { jsonWithCache, noStoreHeaders } from "../../../../lib/http-cache";
+import { isMatchCenterScope } from "../../../../lib/match-center-scope";
 
 export const dynamic = "force-dynamic";
 
