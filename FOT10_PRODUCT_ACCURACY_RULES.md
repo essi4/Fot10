@@ -1,58 +1,64 @@
-# FOT10 — Product Accuracy & Match Visualization Rules
+# FOT10 — Product Accuracy & Minimal Broadcast Rules
 
 ## Product focus
 
-FOT10 is a football match information product. Its primary visual experience is:
+FOT10 is a single-purpose football product:
 
-> نمایش زنده اتفاقات بازی  
-> زمین مینیمال مسابقه، رویدادهای واقعی و جزئیات ظریف 8-bit؛ بدون داده ساختگی.
+> پخش مینیمال نوستالژیک مسابقات زنده
 
-The 8-bit / retro treatment is visual language only. FOT10 is not a game, betting product, simulation, or synthetic match replay.
+It presents live-match information in a late-1990s pixel/retro broadcast language. It is not a game, betting product, synthetic replay, or video rebroadcast.
 
-## Non-negotiable data rules
+## Live-source rule
 
-1. Match scores, status, minute, teams, league, venue, and events must come from a verified football data source.
-2. Never invent a match, score, event, player position, ball position, timestamp, comment count, or coordinate.
-3. If event coordinates are unavailable or invalid, show the event in the timeline only and do not place a marker on the pitch.
-4. If fresh live data is unavailable, stop live presentation rather than fabricating or extrapolating state.
-5. Demo data may exist only behind an explicit developer/QA gate and must be visibly identified as DEMO.
-6. Empty states must explain that real match/event data is currently unavailable.
-7. Derived labels and formatting are allowed only when based on received source data; they must not create new factual claims.
+1. Every match returned by the configured Football360 live signal source is eligible for the Minimal Broadcast view.
+2. League, country, club, and national-team scope do not restrict Minimal Broadcast eligibility.
+3. Match teams, score, status, minute, competition, lineups, and events must come from a verified received source.
+4. A Football360 live signal may be used to identify a live broadcast candidate. It must not be described as an official Football360 video API unless that is independently verified.
+5. When a provider fixture id exists, detailed events and lineups may be fetched from the football data provider.
+6. When no provider fixture id exists, FOT10 may show only the verified live signal fields and must not invent missing details.
 
-## Visual rules
+## Retro player rule
 
-- Pitch ratio: 16:9.
-- Pitch is minimal and readable.
-- Real event markers only when canonical coordinates are valid.
-- 8-bit details are limited to UI treatment, icons, timeline details, and subtle effects.
-- No artificial ball movement, player movement, possession simulation, or gameplay controls.
-- Visual polish must never imply data that the source did not provide.
+The player sprites are an illustrative broadcast layer inspired by late-1990s football-game aesthetics.
 
-## Information hierarchy
+- They are not live player tracking.
+- Their positions must never be presented as current real-world player coordinates.
+- Shirt numbers may use received lineup numbers.
+- No synthetic ball trajectory, possession, passing network, or tactical movement may be presented as factual data.
 
-1. Live/actual match state.
-2. Real match events and timeline.
-3. Minimal pitch/event map.
-4. Match metadata.
-5. Selected leagues, results, and favorites as supporting navigation.
+## Event-location rule
 
-## Navigation language
+If an event has valid provider coordinates, it may appear as a real event marker.
 
-Use:
-- خانه
-- لیگ‌ها
-- نتایج زنده
-- علاقه‌مندی
+If coordinates are missing or invalid:
 
-Do not expose internal developer flags such as `viz=1` to ordinary users.
+- keep the event in the Timeline,
+- do not create a fallback position,
+- do not animate an invented trajectory.
 
-## Gate policy
+## Stale-data rule
 
-Before merge:
-- CI must be green.
-- Preview must be available.
-- Mobile/RTL UX must be checked.
-- No synthetic-data regression.
-- User approval is required.
+If fresh live data stops arriving, the UI must clearly indicate stale data and stop pretending that the match is progressing.
 
-Main and Production remain untouched until all gates pass.
+## UI rule
+
+The application shell contains only the Minimal Broadcast experience.
+
+No legacy:
+
+- league directory,
+- standings dashboard,
+- national-team directory,
+- favorites system,
+- account/push/navigation dashboard
+
+is part of the active product shell.
+
+## Demo rule
+
+Demo data exists only behind explicit `?demo=1` QA mode and must remain visibly marked.
+
+## Release gate
+
+- Main remains untouched until CI and manual mobile/RTL QA pass.
+- Production remains untouched until explicit approval after the final gate.
