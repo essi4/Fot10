@@ -337,7 +337,8 @@ function Visualization() {
   const [stale, setStale] = useState(false);
   const [error, setError] = useState("");
   const [lastMatchDataAt, setLastMatchDataAt] = useState(0);
-  const [sharing, setSharing] = useState(false);\n  const [football360Live, setFootball360Live] = useState([]);
+  const [sharing, setSharing] = useState(false);
+  const [football360Live, setFootball360Live] = useState([]);
 
   const scoped = useMemo(() => fixtures.filter(isMatchVisualizationScope), [fixtures]);
   const activeDemo = demo;
@@ -372,11 +373,13 @@ function Visualization() {
   );
   const event = sequence[Math.min(index, Math.max(sequence.length - 1, 0))] || sequence[0] || null;
   const phase = stale ? "stale" : activeDemo ? "finished" : phaseOf(match);
-  const phaseForUi = phase === "stale" ? "live" : phase;\n  const football360Linked = Boolean(match && football360Live.some((candidate) => sameMatch(match, candidate)));
+  const phaseForUi = phase === "stale" ? "live" : phase;
+  const football360Linked = Boolean(match && football360Live.some((candidate) => sameMatch(match, candidate)));
 
   useEffect(() => {
     if (!enabled || activeDemo) return;
     loadFixtures();
+    loadFootball360Live();
     const timer = setInterval(() => { loadFixtures(); loadFootball360Live(); }, 30000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo]);
