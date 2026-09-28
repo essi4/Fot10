@@ -555,7 +555,7 @@ function Visualization() {
     <section className="space-y-3">
       {!activeDemo && football360Live.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب پخش زنده">
-          {football360Live.slice(0, 30).map((fixture) => (
+          {football360Live.map((fixture) => (
             <button
               type="button"
               key={fixture.id}
