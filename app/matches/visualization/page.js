@@ -217,18 +217,27 @@ function RetroPlayerSprite({ number, side }) {
   );
 }
 
-function RetroBroadcastPlayers({ match, football360Linked }) {
+function lineupNumbers(lineups, teamId) {
+  const team = (Array.isArray(lineups) ? lineups : []).find((entry) => String(entry?.team?.id ?? "") === String(teamId ?? ""));
+  const players = Array.isArray(team?.startXI) ? team.startXI : [];
+  const numbers = players.map((entry) => entry?.player?.number ?? entry?.number).filter((value) => value !== null && value !== undefined);
+  return numbers.slice(0, 11);
+}
+
+function RetroBroadcastPlayers({ match, football360Linked, lineups }) {
   if (!football360Linked) return null;
+  const homeNumbers = lineupNumbers(lineups, match?.teams?.home?.id);
+  const awayNumbers = lineupNumbers(lineups, match?.teams?.away?.id);
   return (
     <div className="absolute inset-0 pointer-events-none" aria-label="چیدمان پیکسلی نمایشی">
       {HOME_RETRO_POSITIONS.map(([x, y], index) => (
         <div key={`h-${index}`} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
-          <RetroPlayerSprite number={index + 1} side="home" />
+          <RetroPlayerSprite number={homeNumbers[index] ?? index + 1} side="home" />
         </div>
       ))}
       {AWAY_RETRO_POSITIONS.map(([x, y], index) => (
         <div key={`a-${index}`} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
-          <RetroPlayerSprite number={index + 1} side="away" />
+          <RetroPlayerSprite number={awayNumbers[index] ?? index + 1} side="away" />
         </div>
       ))}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-[6px] font-black text-[#f5f1dc]/80 backdrop-blur">
@@ -238,7 +247,7 @@ function RetroBroadcastPlayers({ match, football360Linked }) {
   );
 }
 
-function RetroPitch({ events, selectedEvent, match, football360Linked }) {
+function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }) {
   const canonicalEvents = events.map((e) => e?.canonicalEvent).filter(Boolean);
   const located = selectRenderablePitchEvents(canonicalEvents);
   const selectedCanonical = selectedEvent?.canonicalEvent;
@@ -271,7 +280,7 @@ function RetroPitch({ events, selectedEvent, match, football360Linked }) {
         <div className="absolute left-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-l-0 border-[#f5f1dc]/75" />
         <div className="absolute right-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-r-0 border-[#f5f1dc]/75" />
 
-        <RetroBroadcastPlayers match={match} football360Linked={football360Linked} />\n\n        {located.map((p) => {
+        <RetroBroadcastPlayers match={match} football360Linked={football360Linked} lineups={lineups} />\n\n        {located.map((p) => {
           const side = eventTeamSide(p, match);
           const active = p.event_id === selectedCanonical?.event_id;
           return (
@@ -331,6 +340,7 @@ function Visualization() {
   const [fixtures, setFixtures] = useState([]);
   const [selected, setSelected] = useState(initialFixture);
   const [details, setDetails] = useState(null);
+  const [lineups, setLineups] = useState([]);
   const [rawEvents, setRawEvents] = useState([]);
   const [league, setLeague] = useState(sp.get("league") || "all");
   const [index, setIndex] = useState(0);
@@ -447,14 +457,16 @@ function Visualization() {
   async function loadMatch(id, quiet = false) {
     if (!id) return;
     try {
-      const [detailsResponse, eventsResponse] = await Promise.all([
+      const [detailsResponse, eventsResponse, lineupsResponse] = await Promise.all([
         fetch(`/api/football/fixture?id=${id}&section=details`, { cache: "no-store" }),
         fetch(`/api/football/fixture?id=${id}&section=events`, { cache: "no-store" }),
+        fetch(`/api/football/fixture?id=${id}&section=lineups`, { cache: "no-store" }),
       ]);
 
-      const [detailsJson, eventsJson] = await Promise.all([
+      const [detailsJson, eventsJson, lineupsJson] = await Promise.all([
         detailsResponse.json(),
         eventsResponse.json(),
+        lineupsResponse.json(),
       ]);
 
       if (!detailsResponse.ok || !detailsJson?.ok || !detailsJson?.data) {
@@ -462,6 +474,7 @@ function Visualization() {
       }
 
       setDetails(detailsJson.data);
+      setLineups(Array.isArray(lineupsJson?.data) ? lineupsJson.data : []);
       setRawEvents(Array.isArray(eventsJson?.data) ? eventsJson.data : []);
       setLastMatchDataAt(Date.now());
       setStale(false);
@@ -636,7 +649,7 @@ function Visualization() {
             </div>
           </section>
 
-          <RetroPitch events={sequence} selectedEvent={event} match={match || DEMO.details} football360Linked={football360Linked} />
+          <RetroPitch events={sequence} selectedEvent={event} match={match || DEMO.details} football360Linked={football360Linked} lineups={lineups} />
 
           <section className="glass rounded-2xl p-3">
             <div className="mb-2 flex items-end justify-between gap-2">
