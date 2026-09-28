@@ -307,7 +307,7 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
               top: `${selectedLocated.coordinates.y}%`,
             }}
           >
-            <div className="h-12 w-12 animate-ping rounded-full border border-white/30" />
+            <div className="h-12 w-12 animate-ping motion-reduce:animate-none rounded-full border border-white/30" />
           </div>
         )}
 
@@ -764,7 +764,7 @@ export default function MatchVisualizationPage() {
         <Suspense
           fallback={
             <section className="glass rounded-3xl p-6 text-center">
-              <div className="mx-auto mb-3 h-8 w-8 animate-pulse rounded-full bg-cyan-400/20" />
+              <div className="mx-auto mb-3 h-8 w-8 animate-pulse motion-reduce:animate-none rounded-full bg-cyan-400/20" />
               <p className="text-xs font-bold text-slate-400">در حال آماده‌سازی نمایش مسابقه…</p>
             </section>
           }
