@@ -56,3 +56,17 @@ test("touch targets and stale-data protection remain in the broadcast UI", () =>
   assert.match(source, /setStale\(true\)/);
   assert.match(source, /داده تازه دریافت نشد؛ نمایش زنده متوقف می‌شود/);
 });
+
+test("live empty state is a calm retro broadcast waiting state", () => {
+  const source = read(pagePath);
+  assert.match(source, /function LiveEmptyState/);
+  assert.match(source, /data-testid="live-empty-state"/);
+  assert.match(source, /اسکن پخش زنده/);
+  assert.match(source, /منتظر سیگنال زنده هستیم/);
+  assert.match(source, /آخرین بررسی سیگنال/);
+  assert.match(source, /RETRO PITCH · WAITING FOR SIGNAL/);
+  assert.match(source, /prefers-reduced-motion: reduce/);
+  assert.match(source, /fot10-empty-ball/);
+  assert.doesNotMatch(source, /typewriter/);
+  assert.doesNotMatch(source, /parallax/i);
+});

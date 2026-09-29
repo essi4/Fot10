@@ -314,6 +314,88 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
   );
 }
 
+function LiveEmptyState({ checkedAt }) {
+  const checkedLabel = checkedAt
+    ? new Intl.DateTimeFormat("fa-IR", {
+        timeZone: "Asia/Tehran",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }).format(new Date(checkedAt))
+    : "در حال بررسی";
+
+  return (
+    <section className="space-y-3" data-testid="live-empty-state">
+      <style>{`
+        @keyframes fot10-retro-ball {
+          0%, 100% { transform: translate(-50%, 0); }
+          50% { transform: translate(-50%, -5px); }
+        }
+        @keyframes fot10-signal-pulse {
+          0%, 100% { opacity: .45; transform: scale(.92); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        .fot10-empty-ball { animation: fot10-retro-ball 3.6s ease-in-out infinite; }
+        .fot10-empty-pulse { animation: fot10-signal-pulse 2.8s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .fot10-empty-ball, .fot10-empty-pulse { animation: none !important; }
+        }
+      `}</style>
+
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300/10 bg-emerald-400/[.035] px-3 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="fot10-empty-pulse h-2 w-2 shrink-0 rounded-full bg-emerald-300" aria-hidden="true" />
+          <div className="min-w-0">
+            <b className="block text-[9px] font-black text-emerald-200">اسکن پخش زنده</b>
+            <span className="block truncate text-[8px] text-slate-500">در حال جست‌وجوی مسابقه‌های در حال پخش…</span>
+          </div>
+        </div>
+        <span className="shrink-0 text-[8px] font-black text-slate-600">FOT10 · LIVE</span>
+      </div>
+
+      <div className="overflow-hidden rounded-[30px] border border-emerald-300/10 bg-[#06150f] p-3 shadow-[0_25px_70px_rgba(0,0,0,.28)]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-white/10 bg-[#0b693e]">
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px)",
+            backgroundSize: "20px 20px",
+          }} />
+          <div className="absolute inset-[5%] rounded-lg border-2 border-[#dfe8cf]/75" />
+          <div className="absolute left-1/2 top-[5%] h-[90%] border-l border-[#dfe8cf]/65" />
+          <div className="absolute left-1/2 top-1/2 h-[30%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dfe8cf]/65" />
+          <div className="absolute left-[5%] top-[27%] h-[46%] w-[18%] border-2 border-l-0 border-[#dfe8cf]/65" />
+          <div className="absolute right-[5%] top-[27%] h-[46%] w-[18%] border-2 border-r-0 border-[#dfe8cf]/65" />
+
+          <span className="absolute left-[18%] top-[30%] h-2.5 w-2.5 rounded-[2px] bg-blue-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
+          <span className="absolute left-[25%] top-[62%] h-2.5 w-2.5 rounded-[2px] bg-blue-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
+          <span className="absolute right-[18%] top-[42%] h-2.5 w-2.5 rounded-[2px] bg-red-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
+          <span className="absolute right-[25%] top-[68%] h-2.5 w-2.5 rounded-[2px] bg-red-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
+
+          <div className="fot10-empty-ball absolute left-1/2 top-[42%] h-5 w-5" aria-hidden="true">
+            <span className="absolute inset-0 border-2 border-[#f5f1dc] bg-slate-950 shadow-[0_4px_0_rgba(0,0,0,.25)]" style={{ clipPath: "polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%)" }} />
+            <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 bg-[#f5f1dc]" />
+          </div>
+
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-[7px] font-black text-[#dfe8cf]/80 backdrop-blur">
+            RETRO PITCH · WAITING FOR SIGNAL
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/7 bg-white/[.02] px-4 py-4 text-center">
+        <h2 className="text-sm font-black text-slate-100">منتظر سیگنال زنده هستیم</h2>
+        <p className="mt-1.5 text-[9px] leading-5 text-slate-500">
+          هر مسابقه‌ای که سیگنال پخش زنده دریافت کند، بلافاصله همین‌جا نمایش داده می‌شود.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-[8px] text-slate-600">
+        <span>آخرین بررسی سیگنال</span>
+        <span className="text-slate-400" dir="ltr">{checkedLabel}</span>
+      </div>
+    </section>
+  );
+}
+
 function Visualization() {
   const sp = useSearchParams();
   const enabled = true;
@@ -330,6 +412,7 @@ function Visualization() {
   const [lastMatchDataAt, setLastMatchDataAt] = useState(0);
   const [sharing, setSharing] = useState(false);
   const [football360Live, setFootball360Live] = useState([]);
+  const [football360CheckedAt, setFootball360CheckedAt] = useState(0);
 
   const activeDemo = demo;
   const broadcastCandidates = useMemo(() => football360Live, [football360Live]);
@@ -410,6 +493,7 @@ function Visualization() {
       const response = await fetch("/api/football360/live", { cache: "no-store" });
       const json = await response.json();
       if (response.ok && Array.isArray(json?.matches)) setFootball360Live(json.matches);
+      setFootball360CheckedAt(Date.now());
       else setFootball360Live([]);
     } catch {
       setFootball360Live([]);
@@ -576,11 +660,7 @@ function Visualization() {
       )}
 
       {!hasRenderableMatch && (
-        <section className="rounded-[30px] border border-white/10 bg-white/[.025] p-7 text-center">
-          <Radio className="mx-auto mb-2 text-slate-500" size={22} />
-          <h2 className="text-base font-black text-slate-200">در حال حاضر پخش زنده‌ای در دسترس نیست.</h2>
-          <p className="mt-2 text-xs leading-6 text-slate-600">هر مسابقه‌ای که سیگنال پخش زنده دریافت کند، همین‌جا با سبک پخش مینیمال نوستالژیک نمایش داده می‌شود.</p>
-        </section>
+        <LiveEmptyState checkedAt={football360CheckedAt} />
       )}
 
       {hasRenderableMatch && (
