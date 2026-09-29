@@ -208,8 +208,8 @@ function lineupNumbers(lineups, teamId) {
   return numbers.slice(0, 11);
 }
 
-function RetroBroadcastPlayers({ match, football360Linked, lineups }) {
-  if (!football360Linked) return null;
+function RetroBroadcastPlayers({ match, live, lineups }) {
+  if (!live) return null;
   const homeNumbers = lineupNumbers(lineups, match?.teams?.home?.id);
   const awayNumbers = lineupNumbers(lineups, match?.teams?.away?.id);
   return (
@@ -259,7 +259,7 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
         <div className="retro-six-yard retro-six-yard-left" aria-hidden="true" />
         <div className="retro-six-yard retro-six-yard-right" aria-hidden="true" />
 
-        <RetroBroadcastPlayers match={match} football360Linked={football360Linked} lineups={lineups} />
+        <RetroBroadcastPlayers match={match} live={phaseOf(match) === "live"} lineups={lineups} />
 
         {located.map((p) => {
           const side = eventTeamSide(p, match);
@@ -414,10 +414,19 @@ function Visualization() {
   const [lastMatchDataAt, setLastMatchDataAt] = useState(0);
   const [sharing, setSharing] = useState(false);
   const [football360Live, setFootball360Live] = useState([]);
+  const [liveFixtures, setLiveFixtures] = useState([]);
   const [football360CheckedAt, setFootball360CheckedAt] = useState(0);
 
   const activeDemo = demo;
-  const broadcastCandidates = useMemo(() => football360Live, [football360Live]);
+  const broadcastCandidates = useMemo(() => {
+    const merged = football360Live.map((item) => ({ ...item, _source: "football360" }));
+    for (const item of liveFixtures) {
+      if (!merged.some((candidate) => sameMatch(candidate, item))) {
+        merged.push({ ...item, _source: "api-football" });
+      }
+    }
+    return merged;
+  }, [football360Live, liveFixtures]);
 
   const match = activeDemo
     ? DEMO.details
@@ -464,7 +473,7 @@ function Visualization() {
   useEffect(() => {
     if (!enabled || activeDemo) return;
     loadFootball360Live();
-    const timer = setInterval(loadFootball360Live, 15000);
+    const timer = setInterval(loadFootball360Live, 30000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo]);
 
@@ -472,7 +481,7 @@ function Visualization() {
     if (!enabled || activeDemo || !selected) return;
     setIndex(0);
     loadMatch(selected);
-    const timer = setInterval(() => loadMatch(selected, true), 15000);
+    const timer = setInterval(() => loadMatch(selected, true), 30000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo, selected]);
 
@@ -492,30 +501,50 @@ function Visualization() {
 
   async function loadFootball360Live() {
     try {
-      const response = await fetch("/api/football360/live", { cache: "no-store" });
-      const json = await response.json();
-      const live = response.ok && Array.isArray(json?.matches) ? json.matches : [];
-      setFootball360Live(live);
+      const [signalResponse, liveResponse] = await Promise.all([
+        fetch("/api/football360/live", { cache: "no-store" }),
+        fetch("/api/football/live", { cache: "no-store" }),
+      ]);
+      const [signalJson, liveJson] = await Promise.all([
+        signalResponse.json(),
+        liveResponse.json(),
+      ]);
+
+      const signals = signalResponse.ok && Array.isArray(signalJson?.matches) ? signalJson.matches : [];
+      const verifiedLive = liveResponse.ok && Array.isArray(liveJson?.matches) ? liveJson.matches : [];
+
+      setFootball360Live(signals);
+      setLiveFixtures(verifiedLive);
       setFootball360CheckedAt(Date.now());
     } catch {
       setFootball360Live([]);
+      setLiveFixtures([]);
+      setFootball360CheckedAt(Date.now());
     }
+  }
+
+  function buildLiveFallbackDetails(signal) {
+    if (!signal) return null;
+    return {
+      fixture: {
+        status: { short: signal.statusShort || "LIVE", elapsed: signal.elapsed ?? null },
+        date: signal.date || null,
+      },
+      teams: {
+        home: { id: signal.homeId ?? `live-home-${signal.id || signal.home}`, name: signal.home, logo: signal.homeLogo || "" },
+        away: { id: signal.awayId ?? `live-away-${signal.id || signal.away}`, name: signal.away, logo: signal.awayLogo || "" },
+      },
+      goals: { home: signal.homeScore ?? null, away: signal.awayScore ?? null },
+      league: { name: signal.league || "پخش زنده" },
+    };
   }
 
 
   async function loadMatch(id, quiet = false) {
     if (!id) return;
-    const signal = football360Live.find((item) => String(item.id || "") === String(id));
-    if (signal && !signal.sourceMatchId) {
-      const fallbackDetails = {
-        fixture: { status: { short: "LIVE", elapsed: signal.elapsed ?? null }, date: signal.date || null },
-        teams: {
-          home: { id: `360-home-${signal.id || signal.home}`, name: signal.home, logo: signal.homeLogo || "" },
-          away: { id: `360-away-${signal.id || signal.away}`, name: signal.away, logo: signal.awayLogo || "" },
-        },
-        goals: { home: signal.homeScore ?? null, away: signal.awayScore ?? null },
-        league: { name: signal.league || "پخش زنده" },
-      };
+    const liveCandidate = broadcastCandidates.find((item) => String(item.id || "") === String(id));
+    if (liveCandidate?._source === "football360" && !liveCandidate.sourceMatchId) {
+      const fallbackDetails = buildLiveFallbackDetails(liveCandidate);
       setDetails(fallbackDetails);
       setLineups([]);
       setRawEvents([]);
@@ -525,7 +554,7 @@ function Visualization() {
       return;
     }
 
-    const providerId = signal?.sourceMatchId || id;
+    const providerId = liveCandidate?.sourceMatchId || id;
     try {
       const [detailsResponse, eventsResponse, lineupsResponse] = await Promise.all([
         fetch(`/api/football/fixture?id=${providerId}&section=details`, { cache: "no-store" }),
@@ -540,17 +569,8 @@ function Visualization() {
       ]);
 
       if (!detailsResponse.ok || !detailsJson?.ok || !detailsJson?.data) {
-        if (!signal) throw new Error(detailsJson?.error || "جزئیات مسابقه در دسترس نیست.");
-        const fallbackDetails = {
-          fixture: { status: { short: "LIVE", elapsed: signal.elapsed ?? null }, date: signal.date || null },
-          teams: {
-            home: { id: `360-home-${signal.id || signal.home}`, name: signal.home, logo: signal.homeLogo || "" },
-            away: { id: `360-away-${signal.id || signal.away}`, name: signal.away, logo: signal.awayLogo || "" },
-          },
-          goals: { home: signal.homeScore ?? null, away: signal.awayScore ?? null },
-          league: { name: signal.league || "پخش زنده" },
-        };
-        setDetails(fallbackDetails);
+        if (!liveCandidate) throw new Error(detailsJson?.error || "جزئیات مسابقه در دسترس نیست.");
+        const fallbackDetails = buildLiveFallbackDetails(liveCandidate);
         setLineups([]);
         setRawEvents([]);
         setLastMatchDataAt(Date.now());
@@ -629,23 +649,26 @@ function Visualization() {
 
   return (
     <section className="space-y-3">
-      {!activeDemo && football360Live.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب پخش زنده">
-          {football360Live.map((fixture) => (
-            <button
-              type="button"
-              key={fixture.id}
-              onClick={() => selectFixture(fixture.id)}
-              className={`min-w-[180px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation ${String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]"}`}
-            >
-              <span className="block truncate text-[8px] text-slate-500">
-                ۳۶۰ · پخش زنده · {fixture.statusShort || "LIVE"}
-              </span>
-              <span className="mt-1 block truncate text-[9px] font-black text-slate-300">
-                {fixture.home || "—"} · {fixture.away || "—"}
-              </span>
-            </button>
-          ))}
+      {!activeDemo && broadcastCandidates.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب مسابقه زنده">
+          {broadcastCandidates.map((fixture) => {
+            const fromFootball360 = fixture._source === "football360";
+            return (
+              <button
+                type="button"
+                key={`${fixture._source}-${fixture.id}`}
+                onClick={() => selectFixture(fixture.id)}
+                className={`min-w-[180px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation ${String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]"}`}
+              >
+                <span className="block truncate text-[8px] text-slate-500">
+                  {fromFootball360 ? "۳۶۰ · سیگنال پخش" : "LIVE · داده زنده"} · {fixture.statusShort || "LIVE"}
+                </span>
+                <span className="mt-1 block truncate text-[9px] font-black text-slate-300">
+                  {fixture.home || "—"} · {fixture.away || "—"}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -675,11 +698,15 @@ function Visualization() {
                   <span className="text-[9px] font-black tracking-[0.12em] text-cyan-200">MATCH CENTER</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {football360Linked && (
+                  {football360Linked ? (
                     <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-2.5 py-1 text-[8px] font-black text-amber-200">
                       ۳۶۰ · پخش زنده
                     </span>
-                  )}
+                  ) : !activeDemo ? (
+                    <span className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-2.5 py-1 text-[8px] font-black text-cyan-200">
+                      LIVE · داده واقعی
+                    </span>
+                  ) : null}
                   <span
                     className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}
                   >
