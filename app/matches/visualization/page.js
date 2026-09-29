@@ -543,7 +543,7 @@ function Visualization() {
   async function loadMatch(id, quiet = false) {
     if (!id) return;
     const liveCandidate = broadcastCandidates.find((item) => String(item.id || "") === String(id));
-    if (liveCandidate?._source === "football360" && !liveCandidate.sourceMatchId) {
+    if (liveCandidate && !liveCandidate.sourceMatchId) {
       const fallbackDetails = buildLiveFallbackDetails(liveCandidate);
       setDetails(fallbackDetails);
       setLineups([]);
