@@ -396,16 +396,6 @@ function Visualization() {
   }, [activeDemo, sequence.length]);
 
   useEffect(() => {
-    if (activeDemo || league === "all") return;
-    if (selected && !filtered.some((item) => String(item.id) === String(selected))) {
-      setSelected(filtered[0]?.id ? String(filtered[0].id) : "");
-      setDetails(null);
-      setRawEvents([]);
-      setLineups([]);
-    }
-  }, [activeDemo, league, filtered, selected]);
-
-  useEffect(() => {
     if (!enabled || activeDemo || !lastMatchDataAt) return;
     const timer = setInterval(() => {
       const status = String(match?.fixture?.status?.short || "").toUpperCase();
@@ -603,10 +593,17 @@ function Visualization() {
                   <span className="text-[9px] font-black tracking-[0.12em] text-cyan-200">MATCH CENTER</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {football360Linked && <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-2.5 py-1 text-[8px] font-black text-amber-200">۳۶۰ · پخش زنده</span>}
-                  <span className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}>
-                  {phase === "stale" ? "داده قدیمی" : phaseLabel(phaseForUi)}
-                </span>
+                  {football360Linked && (
+                    <span className="rounded-full border border-amber-300/15 bg-amber-400/10 px-2.5 py-1 text-[8px] font-black text-amber-200">
+                      ۳۶۰ · پخش زنده
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[8px] font-black ${phase === "stale" ? "border-amber-300/15 bg-amber-400/10 text-amber-200" : phaseClass(phaseForUi)}`}
+                  >
+                    {phase === "stale" ? "داده قدیمی" : phaseLabel(phaseForUi)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -614,9 +611,7 @@ function Visualization() {
               <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 text-center">
                 <TeamBlock team={homeTeam} score={scoreHome} />
                 <div className="pt-5">
-                  <span className="text-xl font-black tabular-nums text-slate-300">
-                    {currentMinute}
-                  </span>
+                  <span className="text-xl font-black tabular-nums text-slate-300">{currentMinute}</span>
                   <span className="mt-1 block text-[8px] text-slate-600">زمان مسابقه</span>
                 </div>
                 <TeamBlock team={awayTeam} score={scoreAway} />
