@@ -25,7 +25,10 @@ test("visualization consumes Football360 live signals and real fixture data when
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=details/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=events/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=lineups/);
-  assert.match(source, /بازی‌های مهم زنده/);\n  assert.match(source, /لیگ‌ها/);\n  assert.match(source, /ملی/);\n  assert.match(source, /SOURCE DOWN/);
+  assert.match(source, /بازی‌های مهم زنده/);
+  assert.match(source, /لیگ‌ها/);
+  assert.match(source, /ملی/);
+  assert.match(source, /SOURCE DOWN/);
 });
 
 test("retro player sprites are clearly illustrative and not live positional data", () => {
