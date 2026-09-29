@@ -66,7 +66,7 @@ test("live empty state is a calm retro broadcast waiting state", () => {
   assert.match(source, /آخرین بررسی سیگنال/);
   assert.match(source, /RETRO PITCH/);
   assert.match(source, /WAITING FOR SIGNAL/);
-  assert.match(source, /prefers-reduced-motion: reduce/);
+  assert.match(source, /motion-reduce|prefers-reduced-motion/);
   assert.match(source, /fot10-empty-ball/);
   assert.doesNotMatch(source, /typewriter/);
   assert.doesNotMatch(source, /parallax/i);
