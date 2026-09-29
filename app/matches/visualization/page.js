@@ -185,16 +185,19 @@ const HOME_RETRO_POSITIONS = [
 ];
 const AWAY_RETRO_POSITIONS = HOME_RETRO_POSITIONS.map(([x, y]) => [100 - x, y]);
 
-function RetroPlayerSprite({ number, side }) {
+function RetroPlayerSprite({ number = "", side, decorative = false }) {
   const home = side === "home";
   return (
-    <div className="relative h-6 w-5 drop-shadow-[0_3px_4px_rgba(0,0,0,.35)]" aria-label={`بازیکن ${number}`}>
-      <span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full border border-[#f5f1dc]/80 bg-[#d9c6ad]" />
-      <span className={`absolute left-1/2 top-1.5 h-2.5 w-3.5 -translate-x-1/2 rounded-[3px] border border-black/20 ${home ? "bg-blue-600" : "bg-red-600"}`} />
-      <span className="absolute left-1/2 top-2.5 -translate-x-1/2 text-[5px] font-black leading-none text-white">{number}</span>
-      <span className={`absolute left-1 top-4 h-2 w-1 rounded-b-sm ${home ? "bg-blue-800" : "bg-red-800"}`} />
-      <span className={`absolute right-1 top-4 h-2 w-1 rounded-b-sm ${home ? "bg-blue-800" : "bg-red-800"}`} />
-    </div>
+    <span
+      className={"retro-sprite " + (home ? "retro-sprite-home" : "retro-sprite-away")}
+      aria-hidden={decorative ? "true" : undefined}
+      aria-label={decorative ? undefined : (number ? "بازیکن شماره " + number : "بازیکن")}
+    >
+      <span className="retro-sprite-pixel retro-sprite-skin" aria-hidden="true" />
+      <span className="retro-sprite-pixel retro-sprite-shirt" aria-hidden="true" />
+      <span className="retro-sprite-pixel retro-sprite-legs" aria-hidden="true" />
+      {number ? <span className="retro-sprite-number">{number}</span> : null}
+    </span>
   );
 }
 
@@ -228,6 +231,26 @@ function RetroBroadcastPlayers({ match, football360Linked, lineups }) {
   );
 }
 
+function RetroBroadcastPlayers({ match, football360Linked, lineups }) {
+  if (!football360Linked) return null;
+  const homeNumbers = lineupNumbers(lineups, match?.teams?.home?.id);
+  const awayNumbers = lineupNumbers(lineups, match?.teams?.away?.id);
+  return (
+    <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+      {HOME_RETRO_POSITIONS.map(([x, y], index) => (
+        <div key={"h-" + index} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: x + "%", top: y + "%" }}>
+          <RetroPlayerSprite number={homeNumbers[index] ?? ""} side="home" decorative />
+        </div>
+      ))}
+      {AWAY_RETRO_POSITIONS.map(([x, y], index) => (
+        <div key={"a-" + index} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: x + "%", top: y + "%" }}>
+          <RetroPlayerSprite number={awayNumbers[index] ?? ""} side="away" decorative />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }) {
   const canonicalEvents = events.map((e) => e?.canonicalEvent).filter(Boolean);
   const located = selectRenderablePitchEvents(canonicalEvents);
@@ -237,29 +260,24 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
   const awayName = match?.teams?.away?.name || "مهمان";
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#07130f] p-2 shadow-[0_25px_80px_rgba(0,0,0,.38)]">
-      <div className="mb-2 flex items-center justify-between gap-2 px-1 text-[8px] font-black">
-        <span className="truncate text-blue-200">{homeName}</span>
-        <span className="rounded-full border border-white/10 bg-white/[.04] px-2 py-1 text-[7px] text-slate-500">
-          EVENT MAP · REAL DATA
-        </span>
-        <span className="truncate text-right text-red-200">{awayName}</span>
+    <div className="retro-pitch-card">
+      <div className="retro-pitch-heading">
+        <span className="retro-team-label retro-team-label-home">{homeName}</span>
+        <span className="retro-micro-label">EVENT MAP · REAL DATA</span>
+        <span className="retro-team-label retro-team-label-away">{awayName}</span>
       </div>
 
-      <div className="relative aspect-[16/9] overflow-hidden rounded-[22px] border border-white/15 bg-[#0b693e]">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <div className="absolute inset-[3.5%] rounded-xl border-2 border-[#f5f1dc]/80" />
-        <div className="absolute left-1/2 top-[3.5%] h-[93%] border-l border-[#f5f1dc]/75" />
-        <div className="absolute left-1/2 top-1/2 h-[29%] w-[16%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f5f1dc]/75" />
-        <div className="absolute left-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-l-0 border-[#f5f1dc]/75" />
-        <div className="absolute right-[3.5%] top-[25%] h-[50%] w-[17%] border-2 border-r-0 border-[#f5f1dc]/75" />
+      <div className="retro-live-pitch">
+        {[0, 1, 2, 3, 4, 5].map((stripe) => (
+          <span key={stripe} className={"retro-pitch-stripe " + (stripe % 2 ? "retro-pitch-stripe-light" : "")} aria-hidden="true" />
+        ))}
+        <div className="retro-field-border" aria-hidden="true" />
+        <div className="retro-halfway" aria-hidden="true" />
+        <div className="retro-center-circle" aria-hidden="true" />
+        <div className="retro-box retro-box-left" aria-hidden="true" />
+        <div className="retro-box retro-box-right" aria-hidden="true" />
+        <div className="retro-six-yard retro-six-yard-left" aria-hidden="true" />
+        <div className="retro-six-yard retro-six-yard-right" aria-hidden="true" />
 
         <RetroBroadcastPlayers match={match} football360Linked={football360Linked} lineups={lineups} />
 
@@ -269,46 +287,39 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
           return (
             <div
               key={p.event_id}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 ${active ? "z-20 scale-125" : "z-10"}`}
-              style={{ left: `${p.coordinates.x}%`, top: `${p.coordinates.y}%` }}
-              title={`${p.game_clock || "—"} · ${p.event_type}`}
+              className={"retro-event-marker " + (active ? "retro-event-marker-active" : "")}
+              style={{ left: p.coordinates.x + "%", top: p.coordinates.y + "%" }}
+              title={(p.game_clock || "—") + " · " + p.event_type}
             >
-              <div
-                className={`grid h-8 w-8 place-items-center rounded-full border-2 shadow-lg ${side === "home" ? "border-blue-300 bg-blue-500/90" : side === "away" ? "border-red-300 bg-red-500/90" : "border-[#f5f1dc] bg-slate-800/90"} ${active ? "ring-4 ring-white/25" : ""}`}
-              >
-                <EventIcon type={p.event_type} />
-              </div>
+              <span className="retro-event-core"><EventIcon type={p.event_type} /></span>
+              <span className={"retro-event-team " + (side === "home" ? "retro-event-team-home" : side === "away" ? "retro-event-team-away" : "")} aria-hidden="true" />
             </div>
           );
         })}
 
         {selectedLocated && (
           <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
-            style={{
-              left: `${selectedLocated.coordinates.x}%`,
-              top: `${selectedLocated.coordinates.y}%`,
-            }}
-          >
-            <div className="h-12 w-12 animate-ping motion-reduce:animate-none rounded-full border border-white/30" />
-          </div>
+            className="retro-selected-marker"
+            style={{ left: selectedLocated.coordinates.x + "%", top: selectedLocated.coordinates.y + "%" }}
+            aria-hidden="true"
+          />
         )}
 
         {!located.length && (
-          <div className="absolute inset-0 grid place-items-center">
-            <div className="rounded-2xl border border-white/10 bg-black/35 px-5 py-4 text-center backdrop-blur">
-              <Radio className="mx-auto mb-1 text-slate-400" size={18} />
-              <b className="block text-[9px] text-slate-200">مختصات معتبر رویداد موجود نیست</b>
-              <span className="mt-1 block text-[7px] text-slate-500">
-                هیچ بازیکن یا توپی به‌صورت ساختگی روی زمین قرار نمی‌گیرد.
-              </span>
-            </div>
+          <div className="retro-pitch-empty-note">
+            <span className="retro-empty-lamp" aria-hidden="true" />
+            <b>مختصات معتبر رویداد موجود نیست</b>
+            <span>رویداد بدون مختصات روی زمین قرار نمی‌گیرد.</span>
           </div>
         )}
 
-        <div className="absolute left-3 top-3 rounded-lg border border-white/10 bg-black/35 px-2 py-1 text-[7px] font-black text-white backdrop-blur">
-          PITCH · {located.length} موقعیت واقعی
+        <div className="retro-pitch-status">
+          <span>PITCH</span>
+          <span>{located.length} موقعیت واقعی</span>
         </div>
+
+        <div className="retro-crt-lines" aria-hidden="true" />
+        <div className="retro-crt-noise" aria-hidden="true" />
       </div>
     </div>
   );
@@ -325,72 +336,83 @@ function LiveEmptyState({ checkedAt }) {
     : "در حال بررسی";
 
   return (
-    <section className="space-y-3" data-testid="live-empty-state">
-      <style>{`
-        @keyframes fot10-retro-ball {
-          0%, 100% { transform: translate(-50%, 0); }
-          50% { transform: translate(-50%, -5px); }
-        }
-        @keyframes fot10-signal-pulse {
-          0%, 100% { opacity: .45; transform: scale(.92); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        .fot10-empty-ball { animation: fot10-retro-ball 3.6s ease-in-out infinite; }
-        .fot10-empty-pulse { animation: fot10-signal-pulse 2.8s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) {
-          .fot10-empty-ball, .fot10-empty-pulse { animation: none !important; }
-        }
-      `}</style>
-
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300/10 bg-emerald-400/[.035] px-3 py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="fot10-empty-pulse h-2 w-2 shrink-0 rounded-full bg-emerald-300" aria-hidden="true" />
-          <div className="min-w-0">
-            <b className="block text-[9px] font-black text-emerald-200">اسکن پخش زنده</b>
-            <span className="block truncate text-[8px] text-slate-500">در حال جست‌وجوی مسابقه‌های در حال پخش…</span>
+    <section className="retro-empty-state" data-testid="live-empty-state">
+      <div className="retro-signal-bar">
+        <div className="retro-signal-copy">
+          <span className="retro-signal-lamp" aria-hidden="true" />
+          <div>
+            <b>اسکن پخش زنده</b>
+            <span>در حال جست‌وجوی مسابقه‌های در حال پخش…</span>
           </div>
         </div>
-        <span className="shrink-0 text-[8px] font-black text-slate-600">FOT10 · LIVE</span>
+        <span className="retro-live-label">● LIVE</span>
       </div>
 
-      <div className="overflow-hidden rounded-[30px] border border-emerald-300/10 bg-[#06150f] p-3 shadow-[0_25px_70px_rgba(0,0,0,.28)]">
-        <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-white/10 bg-[#0b693e]">
-          <div className="absolute inset-0 opacity-20" style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px)",
-            backgroundSize: "20px 20px",
-          }} />
-          <div className="absolute inset-[5%] rounded-lg border-2 border-[#dfe8cf]/75" />
-          <div className="absolute left-1/2 top-[5%] h-[90%] border-l border-[#dfe8cf]/65" />
-          <div className="absolute left-1/2 top-1/2 h-[30%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dfe8cf]/65" />
-          <div className="absolute left-[5%] top-[27%] h-[46%] w-[18%] border-2 border-l-0 border-[#dfe8cf]/65" />
-          <div className="absolute right-[5%] top-[27%] h-[46%] w-[18%] border-2 border-r-0 border-[#dfe8cf]/65" />
+      <div className="retro-monitor-frame">
+        <div className="retro-monitor-bezel" aria-hidden="true">
+          <span>FOT10</span>
+          <span>LIVE BROADCAST</span>
+        </div>
 
-          <span className="absolute left-[18%] top-[30%] h-2.5 w-2.5 rounded-[2px] bg-blue-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
-          <span className="absolute left-[25%] top-[62%] h-2.5 w-2.5 rounded-[2px] bg-blue-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
-          <span className="absolute right-[18%] top-[42%] h-2.5 w-2.5 rounded-[2px] bg-red-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
-          <span className="absolute right-[25%] top-[68%] h-2.5 w-2.5 rounded-[2px] bg-red-500 shadow-[0_0_0_2px_rgba(255,255,255,.08)]" aria-hidden="true" />
+        <div className="retro-monitor-screen">
+          {[0, 1, 2, 3, 4, 5].map((stripe) => (
+            <span key={stripe} className={"retro-pitch-stripe " + (stripe % 2 ? "retro-pitch-stripe-light" : "")} aria-hidden="true" />
+          ))}
+          <div className="retro-field-border" aria-hidden="true" />
+          <div className="retro-halfway" aria-hidden="true" />
+          <div className="retro-center-circle" aria-hidden="true" />
+          <div className="retro-box retro-box-left" aria-hidden="true" />
+          <div className="retro-box retro-box-right" aria-hidden="true" />
+          <div className="retro-six-yard retro-six-yard-left" aria-hidden="true" />
+          <div className="retro-six-yard retro-six-yard-right" aria-hidden="true" />
 
-          <div className="fot10-empty-ball absolute left-1/2 top-[42%] h-5 w-5" aria-hidden="true">
-            <span className="absolute inset-0 border-2 border-[#f5f1dc] bg-slate-950 shadow-[0_4px_0_rgba(0,0,0,.25)]" style={{ clipPath: "polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%)" }} />
-            <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 bg-[#f5f1dc]" />
+          <div className="retro-empty-player retro-empty-player-blue retro-empty-player-1" aria-hidden="true">
+            <RetroPlayerSprite side="home" decorative />
+          </div>
+          <div className="retro-empty-player retro-empty-player-blue retro-empty-player-2" aria-hidden="true">
+            <RetroPlayerSprite side="home" decorative />
+          </div>
+          <div className="retro-empty-player retro-empty-player-red retro-empty-player-3" aria-hidden="true">
+            <RetroPlayerSprite side="away" decorative />
+          </div>
+          <div className="retro-empty-player retro-empty-player-red retro-empty-player-4" aria-hidden="true">
+            <RetroPlayerSprite side="away" decorative />
           </div>
 
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-[7px] font-black text-[#dfe8cf]/80 backdrop-blur">
-            RETRO PITCH · WAITING FOR SIGNAL
+          <div className="retro-empty-ball" aria-hidden="true">
+            <span className="retro-ball-pixel" />
           </div>
+
+          <div className="retro-screen-topline">
+            <span className="retro-pixel-caption">RETRO PITCH</span>
+            <span className="retro-pixel-caption">WAITING FOR SIGNAL</span>
+          </div>
+
+          <div className="retro-waiting-copy">
+            <span className="retro-waiting-kicker">FOT10 · LIVE SIGNAL</span>
+            <b>منتظر سیگنال زنده هستیم</b>
+            <span>مسابقه واقعی که سیگنال زنده بگیرد، همین قاب به پخش زنده واقعی تبدیل می‌شود.</span>
+          </div>
+
+          <div className="retro-screen-status">
+            <span className="retro-status-lamp" aria-hidden="true" />
+            <span>WAITING</span>
+          </div>
+
+          <div className="retro-crt-lines" aria-hidden="true" />
+          <div className="retro-crt-noise" aria-hidden="true" />
+          <div className="retro-crt-vignette" aria-hidden="true" />
+        </div>
+
+        <div className="retro-monitor-foot" aria-hidden="true">
+          <span>CHANNEL 10</span>
+          <span>SCAN</span>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/7 bg-white/[.02] px-4 py-4 text-center">
-        <h2 className="text-sm font-black text-slate-100">منتظر سیگنال زنده هستیم</h2>
-        <p className="mt-1.5 text-[9px] leading-5 text-slate-500">
-          هر مسابقه‌ای که سیگنال پخش زنده دریافت کند، بلافاصله همین‌جا نمایش داده می‌شود.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center gap-2 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-[8px] text-slate-600">
+      <div className="retro-last-check">
         <span>آخرین بررسی سیگنال</span>
-        <span className="text-slate-400" dir="ltr">{checkedLabel}</span>
+        <strong dir="ltr">{checkedLabel}</strong>
       </div>
     </section>
   );
@@ -830,12 +852,12 @@ function MetaRow({ icon: Icon, label, value }) {
 
 export default function MatchVisualizationPage() {
   return (
-    <main className="fot-shell">
+    <main className="fot-shell fot-retro-page">
       <div className="fot-container space-y-4 pb-28">
         <header className="flex items-center gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-black text-slate-100">FOT10 · پخش مینیمال</h1>
-            <p className="text-[10px] text-slate-500">پخش نوستالژیک مسابقات زنده · داده واقعی</p>
+            <h1 className="truncate text-xl font-black text-slate-100">FOT10 · پخش نوستالژیک</h1>
+            <p className="text-[10px] text-slate-500">پخش زنده با حال‌وهوای کنسول‌های قدیمی · داده واقعی</p>
           </div>
         </header>
 

@@ -70,3 +70,19 @@ test("live empty state is a calm retro broadcast waiting state", () => {
   assert.doesNotMatch(source, /typewriter/);
   assert.doesNotMatch(source, /parallax/i);
 });
+
+test("retro final appearance uses a pixel grid and old-broadcast treatment", () => {
+  const source = read(pagePath);
+  const css = read(path.join(process.cwd(), "app/globals.css"));
+  assert.match(source, /fot-retro-page/);
+  assert.match(source, /retro-monitor-screen/);
+  assert.match(source, /retro-empty-player/);
+  assert.match(source, /retro-empty-ball/);
+  assert.match(source, /RetroPlayerSprite/);
+  assert.match(css, /--retro-field:#1a6b2c/);
+  assert.match(css, /aspect-ratio:4\/3/);
+  assert.match(css, /image-rendering:pixelated/);
+  assert.match(css, /border-radius:0/);
+  assert.match(css, /@keyframes retroLamp/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+});
