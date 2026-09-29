@@ -19,6 +19,8 @@ test("FOT10 home is the minimalist broadcast", () => {
 test("visualization consumes Football360 live signals and real fixture data when a provider id exists", () => {
   const source = read(pagePath);
   assert.match(source, /\/api\/football360\/live/);
+  assert.match(source, /\/api\/football\/live/);
+  assert.match(source, /sameMatch/);
   assert.match(source, /Football360/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=details/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=events/);
