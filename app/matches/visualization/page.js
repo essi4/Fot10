@@ -231,26 +231,6 @@ function RetroBroadcastPlayers({ match, football360Linked, lineups }) {
   );
 }
 
-function RetroBroadcastPlayers({ match, football360Linked, lineups }) {
-  if (!football360Linked) return null;
-  const homeNumbers = lineupNumbers(lineups, match?.teams?.home?.id);
-  const awayNumbers = lineupNumbers(lineups, match?.teams?.away?.id);
-  return (
-    <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-      {HOME_RETRO_POSITIONS.map(([x, y], index) => (
-        <div key={"h-" + index} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: x + "%", top: y + "%" }}>
-          <RetroPlayerSprite number={homeNumbers[index] ?? ""} side="home" decorative />
-        </div>
-      ))}
-      {AWAY_RETRO_POSITIONS.map(([x, y], index) => (
-        <div key={"a-" + index} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: x + "%", top: y + "%" }}>
-          <RetroPlayerSprite number={awayNumbers[index] ?? ""} side="away" decorative />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }) {
   const canonicalEvents = events.map((e) => e?.canonicalEvent).filter(Boolean);
   const located = selectRenderablePitchEvents(canonicalEvents);
