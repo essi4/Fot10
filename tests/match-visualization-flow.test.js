@@ -19,13 +19,13 @@ test("FOT10 home is the minimalist broadcast", () => {
 test("visualization consumes Football360 live signals and real fixture data when a provider id exists", () => {
   const source = read(pagePath);
   assert.match(source, /\/api\/football360\/live/);
-  assert.match(source, /\/api\/football\/live/);
-  assert.match(source, /sameMatch/);
+  assert.match(source, /\/api\/fot10\/live/);
+  assert.match(source, /categoryLabel/);
   assert.match(source, /Football360/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=details/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=events/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=lineups/);
-  assert.match(source, /مسابقه واقعی که سیگنال زنده بگیرد، همین قاب به پخش زنده واقعی تبدیل می‌شود/);
+  assert.match(source, /بازی‌های مهم زنده/);\n  assert.match(source, /لیگ‌ها/);\n  assert.match(source, /ملی/);\n  assert.match(source, /SOURCE DOWN/);
 });
 
 test("retro player sprites are clearly illustrative and not live positional data", () => {

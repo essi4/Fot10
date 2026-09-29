@@ -14,7 +14,6 @@ import { useSearchParams } from "next/navigation";
 import visualizationNormalizer from "../../../lib/match-visualization-normalizer.cjs";
 import { teamName } from "../../../lib/team-identity";
 import retroPitchRenderer from "../../../lib/retro-pitch-renderer.cjs";
-import { sameMatch } from "../../../lib/football360-live.cjs";
 
 const { buildVisualizationFeed } = visualizationNormalizer;
 const { selectRenderablePitchEvents } = retroPitchRenderer;
@@ -305,7 +304,8 @@ function RetroPitch({ events, selectedEvent, match, football360Linked, lineups }
   );
 }
 
-function LiveEmptyState({ checkedAt }) {
+function LiveEmptyState({ checkedAt, state = "NO_MATCH" }) {
+  const sourceDown = state === "SOURCE_DOWN";
   const checkedLabel = checkedAt
     ? new Intl.DateTimeFormat("fa-IR", {
         timeZone: "Asia/Tehran",
@@ -365,13 +365,13 @@ function LiveEmptyState({ checkedAt }) {
 
           <div className="retro-screen-topline">
             <span className="retro-pixel-caption">RETRO PITCH</span>
-            <span className="retro-pixel-caption">WAITING FOR SIGNAL</span>
+            <span className="retro-pixel-caption">{sourceDown ? "SOURCE DOWN" : "WAITING FOR SIGNAL"}</span>
           </div>
 
           <div className="retro-waiting-copy">
-            <span className="retro-waiting-kicker">FOT10 · LIVE SIGNAL</span>
-            <b>منتظر سیگنال زنده هستیم</b>
-            <span>مسابقه واقعی که سیگنال زنده بگیرد، همین قاب به پخش زنده واقعی تبدیل می‌شود.</span>
+            <span className="retro-waiting-kicker">{sourceDown ? "FOT10 · SOURCE DOWN" : "FOT10 · LIVE SIGNAL"}</span>
+            <b>{sourceDown ? "منابع داده زنده در دسترس نیستند" : "هنوز مسابقه زنده‌ای پیدا نشد"}</b>
+            <span>{sourceDown ? "Resolver نمی‌تواند وضعیت زنده را از منابع فعلی تأیید کند؛ FOT10 در این حالت وانمود به پخش زنده نمی‌کند." : "Resolver مسابقه‌های واقعی در حال پخش را جست‌وجو می‌کند؛ مسابقات ملی و لیگ‌ها هر دو در دامنه جست‌وجو هستند."}</span>
           </div>
 
           <div className="retro-screen-status">
@@ -413,20 +413,19 @@ function Visualization() {
   const [error, setError] = useState("");
   const [lastMatchDataAt, setLastMatchDataAt] = useState(0);
   const [sharing, setSharing] = useState(false);
-  const [football360Live, setFootball360Live] = useState([]);
-  const [liveFixtures, setLiveFixtures] = useState([]);
-  const [football360CheckedAt, setFootball360CheckedAt] = useState(0);
+  const [liveResolverData, setLiveResolverData] = useState({ state: "NO_MATCH", matches: [], checkedAt: 0, sources: [] });
+  const [liveCategory, setLiveCategory] = useState("all");
 
   const activeDemo = demo;
-  const broadcastCandidates = useMemo(() => {
-    const merged = football360Live.map((item) => ({ ...item, _source: "football360" }));
-    for (const item of liveFixtures) {
-      if (!merged.some((candidate) => sameMatch(candidate, item))) {
-        merged.push({ ...item, _source: "api-football" });
-      }
-    }
-    return merged;
-  }, [football360Live, liveFixtures]);
+  const broadcastCandidates = liveResolverData.matches;
+  const selectedCandidate = useMemo(
+    () => broadcastCandidates.find((item) => String(item.id) === String(selected)),
+    [broadcastCandidates, selected],
+  );
+  const visibleCandidates = useMemo(
+    () => liveCategory === "all" ? broadcastCandidates : broadcastCandidates.filter((item) => item.category === liveCategory),
+    [broadcastCandidates, liveCategory],
+  );
 
   const match = activeDemo
     ? DEMO.details
@@ -468,12 +467,12 @@ function Visualization() {
   const event = sequence[Math.min(index, Math.max(sequence.length - 1, 0))] || sequence[0] || null;
   const phase = stale ? "stale" : activeDemo ? "finished" : phaseOf(match);
   const phaseForUi = phase === "stale" ? "live" : phase;
-  const football360Linked = Boolean(!activeDemo && match && football360Live.some((candidate) => sameMatch(match, candidate)));
+  const football360Linked = Boolean(!activeDemo && selectedCandidate?.broadcastAvailable && selectedCandidate?.broadcastSource === "football360");
 
   useEffect(() => {
     if (!enabled || activeDemo) return;
-    loadFootball360Live();
-    const timer = setInterval(loadFootball360Live, 30000);
+    loadLiveResolver();
+    const timer = setInterval(loadLiveResolver, 30000);
     return () => clearInterval(timer);
   }, [enabled, activeDemo]);
 
@@ -499,27 +498,25 @@ function Visualization() {
     return () => clearInterval(timer);
   }, [enabled, activeDemo, lastMatchDataAt, match]);
 
-  async function loadFootball360Live() {
+  async function loadLiveResolver() {
     try {
-      const [signalResponse, liveResponse] = await Promise.all([
-        fetch("/api/football360/live", { cache: "no-store" }),
-        fetch("/api/football/live", { cache: "no-store" }),
-      ]);
-      const [signalJson, liveJson] = await Promise.all([
-        signalResponse.json(),
-        liveResponse.json(),
-      ]);
-
-      const signals = signalResponse.ok && Array.isArray(signalJson?.matches) ? signalJson.matches : [];
-      const verifiedLive = liveResponse.ok && Array.isArray(liveJson?.matches) ? liveJson.matches : [];
-
-      setFootball360Live(signals);
-      setLiveFixtures(verifiedLive);
-      setFootball360CheckedAt(Date.now());
+      const response = await fetch("/api/fot10/live", { cache: "no-store" });
+      const payload = await response.json();
+      const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+      setLiveResolverData({
+        state: payload?.state || (matches.length ? "LIVE" : "NO_MATCH"),
+        matches,
+        checkedAt: payload?.checkedAt || new Date().toISOString(),
+        sources: Array.isArray(payload?.sources) ? payload.sources : [],
+      });
+      if (payload?.state === "SOURCE_DOWN") {
+        setError("منابع داده زنده در دسترس نیستند؛ این وضعیت با «هیچ مسابقه‌ای پیدا نشد» فرق دارد.");
+      } else if (!matches.length) {
+        setError("");
+      }
     } catch {
-      setFootball360Live([]);
-      setLiveFixtures([]);
-      setFootball360CheckedAt(Date.now());
+      setLiveResolverData({ state: "SOURCE_DOWN", matches: [], checkedAt: new Date().toISOString(), sources: [] });
+      setError("Resolver زنده FOT10 در دسترس نیست.");
     }
   }
 
@@ -543,7 +540,7 @@ function Visualization() {
   async function loadMatch(id, quiet = false) {
     if (!id) return;
     const liveCandidate = broadcastCandidates.find((item) => String(item.id || "") === String(id));
-    if (liveCandidate && !liveCandidate.sourceMatchId) {
+    if (liveCandidate && liveCandidate.provider !== "api-football") {
       const fallbackDetails = buildLiveFallbackDetails(liveCandidate);
       setDetails(fallbackDetails);
       setLineups([]);
@@ -650,26 +647,76 @@ function Visualization() {
   return (
     <section className="space-y-3">
       {!activeDemo && broadcastCandidates.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب مسابقه زنده">
-          {broadcastCandidates.map((fixture) => {
-            const fromFootball360 = fixture._source === "football360";
-            return (
+        <>
+          <div className="rounded-2xl border border-white/7 bg-white/[.02] p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <b className="block text-[10px] font-black text-slate-200">بازی‌های مهم زنده</b>
+                <span className="text-[7px] text-slate-600">مرتب‌سازی Resolver؛ بر پایه اهمیت رقابت و حضور ایران، نه آمار واقعی بینندگان.</span>
+              </div>
+              <span className="text-[8px] font-black text-emerald-300">{broadcastCandidates.length} LIVE</span>
+            </div>
+            <div className="mt-2 flex gap-1.5 overflow-x-auto scrollbar-none">
+              {broadcastCandidates.slice(0, 4).map((fixture) => (
+                <button
+                  type="button"
+                  key={"featured-" + fixture.provider + "-" + fixture.id}
+                  onClick={() => selectFixture(fixture.id)}
+                  className={"min-w-[190px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation " + (String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]")}
+                >
+                  <span className="flex items-center justify-between gap-2 text-[7px] text-slate-500">
+                    <span>{fixture.priority >= 300 ? "⭐ مهم" : "LIVE"}</span>
+                    <span>{fixture.categoryLabel}</span>
+                  </span>
+                  <span className="mt-1 block truncate text-[9px] font-black text-slate-200">
+                    {fixture.home || "—"} · {fixture.away || "—"}
+                  </span>
+                  <span className="mt-1 block truncate text-[7px] text-slate-600">
+                    {fixture.league || "مسابقه زنده"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none" aria-label="دسته‌بندی مسابقه زنده">
+            {[
+              ["all", "همه"],
+              ["league", "لیگ‌ها"],
+              ["cup", "جام‌ها"],
+              ["international", "ملی"],
+            ].map(([value, label]) => (
               <button
                 type="button"
-                key={`${fixture._source}-${fixture.id}`}
-                onClick={() => selectFixture(fixture.id)}
-                className={`min-w-[180px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation ${String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]"}`}
+                key={value}
+                onClick={() => setLiveCategory(value)}
+                className={"min-h-[44px] shrink-0 rounded-xl border px-3 text-[8px] font-black touch-manipulation " + (liveCategory === value ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-200" : "border-white/7 bg-white/[.02] text-slate-500")}
               >
-                <span className="block truncate text-[8px] text-slate-500">
-                  {fromFootball360 ? "۳۶۰ · سیگنال پخش" : "LIVE · داده زنده"} · {fixture.statusShort || "LIVE"}
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" aria-label="انتخاب مسابقه زنده">
+            {visibleCandidates.map((fixture) => (
+              <button
+                type="button"
+                key={"live-" + fixture.provider + "-" + fixture.id}
+                onClick={() => selectFixture(fixture.id)}
+                className={"min-w-[190px] shrink-0 rounded-2xl border p-2.5 text-right touch-manipulation " + (String(fixture.id) === String(selected) ? "border-cyan-300/25 bg-cyan-400/10" : "border-white/7 bg-white/[.02]")}
+              >
+                <span className="flex items-center justify-between gap-2 text-[7px] text-slate-500">
+                  <span>{fixture.categoryLabel}</span>
+                  <span>{fixture.statusShort || "LIVE"}</span>
                 </span>
                 <span className="mt-1 block truncate text-[9px] font-black text-slate-300">
                   {fixture.home || "—"} · {fixture.away || "—"}
                 </span>
+                <span className="mt-1 block truncate text-[7px] text-slate-600">
+                  {fixture.league || "مسابقه زنده"}
+                </span>
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {error && (
@@ -685,7 +732,7 @@ function Visualization() {
       )}
 
       {!hasRenderableMatch && (
-        <LiveEmptyState checkedAt={football360CheckedAt} />
+        <LiveEmptyState checkedAt={liveResolverData.checkedAt} state={liveResolverData.state} />
       )}
 
       {hasRenderableMatch && (

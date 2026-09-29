@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:visualization": "node --test tests/canonical-event.test.js tests/match-visualization-normalizer.test.js tests/match-visualization-flow.test.js tests/ui-event-model.test.js tests/retro-pitch-renderer.test.js tests/football360-live.test.js tests/football360-route.test.js tests/espn-live.test.js"
+    "test:visualization": "node --test tests/canonical-event.test.js tests/match-visualization-normalizer.test.js tests/match-visualization-flow.test.js tests/ui-event-model.test.js tests/retro-pitch-renderer.test.js tests/football360-live.test.js tests/football360-route.test.js tests/espn-live.test.js tests/fot10-live-resolver.test.js tests/fot10-live-route.test.js"
   },
   "dependencies": {
     "next": "14.2.35",
