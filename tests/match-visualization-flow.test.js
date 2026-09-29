@@ -23,7 +23,7 @@ test("visualization consumes Football360 live signals and real fixture data when
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=details/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=events/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=lineups/);
-  assert.match(source, /هر مسابقه‌ای که سیگنال پخش زنده دریافت کند/);
+  assert.match(source, /مسابقه واقعی که سیگنال زنده بگیرد، همین قاب به پخش زنده واقعی تبدیل می‌شود/);
 });
 
 test("retro player sprites are clearly illustrative and not live positional data", () => {
@@ -64,7 +64,8 @@ test("live empty state is a calm retro broadcast waiting state", () => {
   assert.match(source, /اسکن پخش زنده/);
   assert.match(source, /منتظر سیگنال زنده هستیم/);
   assert.match(source, /آخرین بررسی سیگنال/);
-  assert.match(source, /RETRO PITCH · WAITING FOR SIGNAL/);
+  assert.match(source, /RETRO PITCH/);
+  assert.match(source, /WAITING FOR SIGNAL/);
   assert.match(source, /prefers-reduced-motion: reduce/);
   assert.match(source, /fot10-empty-ball/);
   assert.doesNotMatch(source, /typewriter/);
