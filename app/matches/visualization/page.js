@@ -492,9 +492,9 @@ function Visualization() {
     try {
       const response = await fetch("/api/football360/live", { cache: "no-store" });
       const json = await response.json();
-      if (response.ok && Array.isArray(json?.matches)) setFootball360Live(json.matches);
+      const live = response.ok && Array.isArray(json?.matches) ? json.matches : [];
+      setFootball360Live(live);
       setFootball360CheckedAt(Date.now());
-      else setFootball360Live([]);
     } catch {
       setFootball360Live([]);
     }
