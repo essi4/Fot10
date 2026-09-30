@@ -18,10 +18,13 @@ test("FOT10 home is the minimalist broadcast", () => {
 
 test("visualization consumes the unified live resolver and real fixture data when a provider id exists", () => {
   const source = read(pagePath);
+  // قرارداد ۱: endpoint قدیمی مستقیماً مصرف نمی‌شود
   assert.doesNotMatch(source, /\/api\/football360\/live/);
+  // قرارداد ۲: Unified Live Resolver endpoint مصرف می‌شود
   assert.match(source, /\/api\/fot10\/live/);
+  // قرارداد ۳: Football360 هنوز به‌عنوان provider معتبر شناخته می‌شود
+  assert.match(source, /broadcastSource\s*===\s*["']football360["']/);
   assert.match(source, /categoryLabel/);
-  assert.match(source, /Football360/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=details/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=events/);
   assert.match(source, /\/api\/football\/fixture\?id=\$\{providerId\}&section=lineups/);
