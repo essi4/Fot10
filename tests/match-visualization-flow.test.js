@@ -16,9 +16,9 @@ test("FOT10 home is the minimalist broadcast", () => {
   assert.match(source, /export \{ default \} from "\.\/matches\/visualization\/page"/);
 });
 
-test("visualization consumes Football360 live signals and real fixture data when a provider id exists", () => {
+test("visualization consumes the unified live resolver and real fixture data when a provider id exists", () => {
   const source = read(pagePath);
-  assert.match(source, /\/api\/football360\/live/);
+  assert.doesNotMatch(source, /\/api\/football360\/live/);
   assert.match(source, /\/api\/fot10\/live/);
   assert.match(source, /categoryLabel/);
   assert.match(source, /Football360/);
@@ -29,6 +29,7 @@ test("visualization consumes Football360 live signals and real fixture data when
   assert.match(source, /لیگ‌ها/);
   assert.match(source, /ملی/);
   assert.match(source, /SOURCE DOWN/);
+  assert.match(source, /NO_MATCH/);
 });
 
 test("retro player sprites are clearly illustrative and not live positional data", () => {
@@ -62,16 +63,19 @@ test("touch targets and stale-data protection remain in the broadcast UI", () =>
   assert.match(source, /داده تازه دریافت نشد؛ نمایش زنده متوقف می‌شود/);
 });
 
-test("live empty state is a calm retro broadcast waiting state", () => {
+test("live empty state distinguishes source down from no match", () => {
   const source = read(pagePath);
   assert.match(source, /function LiveEmptyState/);
   assert.match(source, /data-testid="live-empty-state"/);
   assert.match(source, /اسکن پخش زنده/);
-  assert.match(source, /منتظر سیگنال زنده هستیم/);
+  assert.match(source, /هنوز مسابقه زنده‌ای پیدا نشد/);
+  assert.match(source, /منابع داده زنده در دسترس نیستند/);
+  assert.match(source, /SOURCE DOWN/);
+  assert.match(source, /WAITING FOR SIGNAL/);
   assert.match(source, /آخرین بررسی سیگنال/);
   assert.match(source, /RETRO PITCH/);
-  assert.match(source, /WAITING FOR SIGNAL/);
   assert.match(source, /motion-reduce|prefers-reduced-motion/);
+  assert.doesNotMatch(source, /منتظر سیگنال زنده هستیم/);
   assert.doesNotMatch(source, /typewriter/);
   assert.doesNotMatch(source, /parallax/i);
 });
