@@ -26,5 +26,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Match Visualization tests
+        run: npm run test:visualization
+
       - name: Production build
         run: npm run build

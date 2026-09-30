@@ -1,92 +1,91 @@
 import { NextResponse } from "next/server";
-import { getMatchesResilient } from "../../../../lib/football-resilient";
-import { getSportsDbLiveMatches } from "../../../../lib/thesportsdb-day";
-import { runWithApiFootballCircuit } from "../../../../lib/api-football-circuit";
+import { getMatches } from "../../../../lib/sports-data";
+import { noStoreHeaders } from "../../../../lib/http-cache";
+import { getEspnLiveMatches } from "../../../../lib/espn-live.cjs";
 
 export const dynamic = "force-dynamic";
 
-const LIVE_CODES = new Set(["1H", "HT", "2H", "ET", "P", "BT", "LIVE", "IN PLAY"]);
-const LIVE_CACHE_SECONDS = 15;
-const LIVE_STALE_SECONDS = 15;
-
-const LIVE_COUNTRIES = new Set([
-  "iran", "ایران", "spain", "اسپانیا", "england", "انگلیس", "italy", "ایتالیا", "france", "فرانسه",
-  "germany", "آلمان", "netherlands", "هلند", "turkey", "ترکیه", "saudi arabia", "عربستان سعودی",
-  "qatar", "قطر", "portugal", "پرتغال", "belgium", "بلژیک", "austria", "اتریش", "denmark", "دانمارک",
-  "scotland", "اسکاتلند", "czech republic", "جمهوری چک", "sweden", "سوئد", "croatia", "کرواسی", "greece", "یونان",
-]);
-const LIVE_LEAGUES = new Set([
-  "uefa champions league", "afc champions league", "afc champions league elite", "afc champions league two",
-  "champions league", "لیگ قهرمانان اروپا", "لیگ قهرمانان آسیا",
-]);
-
-function liveHeaders() {
-  return { "Cache-Control": `public, s-maxage=${LIVE_CACHE_SECONDS}, stale-while-revalidate=${LIVE_STALE_SECONDS}` };
-}
-
-function iranToday(offset = 0) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit" })
-    .formatToParts(new Date()).reduce((acc, part) => ({ ...acc, [part.type]: part.value }), {});
-  const base = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+03:30`);
-  base.setDate(base.getDate() + offset);
-  return base.toISOString().slice(0, 10);
-}
-
-function isActuallyLive(match) {
-  const status = String(match?.statusShort || match?.status || "").trim().toUpperCase();
-  return LIVE_CODES.has(status) || /LIVE|IN PLAY|HALF/i.test(status);
-}
-
-function normalizeScope(value) {
-  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function isInLiveScope(match) {
-  const country = normalizeScope(match?.country);
-  const league = normalizeScope(match?.league);
-  return LIVE_COUNTRIES.has(country) || LIVE_LEAGUES.has(league) || /champions league|لیگ قهرمانان/i.test(league);
-}
-
-async function fallbackLiveMatches() {
-  const dates = [iranToday(0), iranToday(-1), iranToday(1)];
-  const batches = await Promise.allSettled(dates.map((date) => getSportsDbLiveMatches(date)));
-  const byId = new Map();
-  for (const batch of batches) {
-    if (batch.status !== "fulfilled") continue;
-    for (const match of batch.value || []) {
-      if (match?.id && isInLiveScope(match) && isActuallyLive(match)) byId.set(String(match.id), match);
-    }
-  }
-  return [...byId.values()];
+function responsePayload(matches, extra = {}) {
+  return {
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    matches: Array.isArray(matches) ? matches : [],
+    ...extra,
+  };
 }
 
 export async function GET() {
   const checkedAt = new Date().toISOString();
-  try {
-    const guarded = await runWithApiFootballCircuit(() => getMatchesResilient({ live: "all" }));
-    if (!guarded.skipped && !guarded.error) {
-      const result = guarded.result;
-      const matches = Array.isArray(result?.data) ? result.data : [];
-      const liveMatches = matches.filter(isActuallyLive).filter(isInLiveScope);
-      if (liveMatches.length) {
-        return NextResponse.json(
-          { matches: liveMatches, source: result?.source || "api-football", checkedAt },
-          { headers: liveHeaders() },
-        );
-      }
-    }
-  } catch {}
 
   try {
-    const fallback = await fallbackLiveMatches();
-    return NextResponse.json(
-      { matches: fallback, source: "thesportsdb-live", checkedAt },
-      { headers: liveHeaders() },
-    );
-  } catch {
-    return NextResponse.json(
-      { matches: [], source: "thesportsdb-live", checkedAt },
-      { status: 200, headers: liveHeaders() },
-    );
+    const primaryMatches = await getMatches({ live: true });
+    if (primaryMatches.length) {
+      return NextResponse.json(
+        responsePayload(
+          primaryMatches.map((match) => ({
+            ...match,
+            broadcastAvailable: false,
+            broadcastSource: "api-football-live",
+          })),
+          { source: "api-football-live", fallback: false },
+        ),
+        { headers: noStoreHeaders() },
+      );
+    }
+
+    try {
+      const fallbackMatches = await getEspnLiveMatches();
+      return NextResponse.json(
+        responsePayload(fallbackMatches, {
+          source: "espn-public-fallback",
+          fallback: true,
+          primary: "api-football-live",
+        }),
+        { headers: noStoreHeaders() },
+      );
+    } catch (fallbackError) {
+      return NextResponse.json(
+        responsePayload([], {
+          source: "api-football-live",
+          fallback: true,
+          code: "NO_LIVE_DATA",
+          fallbackCode: "ESPN_UNAVAILABLE",
+          error: fallbackError?.message || "منبع پشتیبان داده زنده در دسترس نیست.",
+        }),
+        { status: 200, headers: noStoreHeaders() },
+      );
+    }
+  } catch (error) {
+    try {
+      const fallbackMatches = await getEspnLiveMatches();
+      return NextResponse.json(
+        responsePayload(fallbackMatches, {
+          source: "espn-public-fallback",
+          fallback: true,
+          primaryCode: error?.code || "API_ERROR",
+        }),
+        { headers: noStoreHeaders() },
+      );
+    } catch (fallbackError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          source: "api-football-live",
+          checkedAt,
+          matches: [],
+          code: error?.code || "API_ERROR",
+          fallbackCode: fallbackError?.name || "ESPN_UNAVAILABLE",
+          error:
+            error?.code === "CONFIG_ERROR"
+              ? "سرویس داده زنده فعلاً پیکربندی نشده است."
+              : error?.code === "RATE_LIMIT"
+                ? "سقف درخواست سرویس فوتبال موقتاً پر شده است."
+                : error?.code === "SUSPENDED"
+                  ? "منبع اصلی معلق است و منبع پشتیبان هم در دسترس نیست."
+                  : "دریافت داده زنده فوتبال فعلاً ممکن نیست.",
+        },
+        { status: 200, headers: noStoreHeaders() },
+      );
+    }
   }
 }
